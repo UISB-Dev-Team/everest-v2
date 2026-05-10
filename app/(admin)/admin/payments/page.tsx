@@ -1,1 +1,1 @@
-export { AdminPaymentsPage as default } from "@/features/payments/components/admin-payments-page";
+export { AdminPaymentsPage as default } from "@/features/payments/components/admin/admin-payments-page";
