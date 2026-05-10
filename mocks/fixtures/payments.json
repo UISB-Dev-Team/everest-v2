@@ -1,0 +1,38 @@
+[
+  {
+    "id": "pay-1",
+    "bill_id": "bill-1",
+    "academic_period_id": "ap-2025-1",
+    "dormer_id": "00000000-0000-0000-0000-0000000000d1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "amount": 1500,
+    "payment_method": "Cash",
+    "notes": null,
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-08-15T09:30:00.000Z"
+  },
+  {
+    "id": "pay-2",
+    "bill_id": "bill-2",
+    "academic_period_id": "ap-2025-1",
+    "dormer_id": "00000000-0000-0000-0000-0000000000d1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "amount": 500,
+    "payment_method": "GCash",
+    "notes": "Partial payment",
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-10T14:15:00.000Z"
+  },
+  {
+    "id": "pay-3",
+    "bill_id": "bill-4",
+    "academic_period_id": "ap-2025-1",
+    "dormer_id": "00000000-0000-0000-0000-0000000000d2",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "amount": 1500,
+    "payment_method": "Cash",
+    "notes": null,
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-12T11:00:00.000Z"
+  }
+]

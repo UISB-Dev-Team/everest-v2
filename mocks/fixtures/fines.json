@@ -1,0 +1,32 @@
+[
+  {
+    "id": "fine-cat-1",
+    "name": "Late Curfew",
+    "description": "Returned to the dormitory after the 9:00 PM curfew.",
+    "amount": 100,
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "is_deleted": false,
+    "recorded_by": null,
+    "created_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "fine-cat-2",
+    "name": "Missed Cleanup Duty",
+    "description": "Missed scheduled cleanup duty.",
+    "amount": 75,
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "is_deleted": false,
+    "recorded_by": null,
+    "created_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "fine-cat-3",
+    "name": "Silent Hour Violation",
+    "description": "Loud noise after quiet hours.",
+    "amount": 50,
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "is_deleted": false,
+    "recorded_by": null,
+    "created_at": "2025-08-01T00:00:00.000Z"
+  }
+]

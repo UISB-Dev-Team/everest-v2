@@ -1,0 +1,29 @@
+[
+  {
+    "id": "ap-2024-1",
+    "academic_year": "2024-2025",
+    "semester": "1st",
+    "start_date": "2024-08-12",
+    "end_date": "2024-12-20",
+    "is_current": false,
+    "created_at": "2024-07-01T00:00:00.000Z"
+  },
+  {
+    "id": "ap-2024-2",
+    "academic_year": "2024-2025",
+    "semester": "2nd",
+    "start_date": "2025-01-13",
+    "end_date": "2025-05-30",
+    "is_current": false,
+    "created_at": "2024-12-01T00:00:00.000Z"
+  },
+  {
+    "id": "ap-2025-1",
+    "academic_year": "2025-2026",
+    "semester": "1st",
+    "start_date": "2025-08-11",
+    "end_date": "2025-12-19",
+    "is_current": true,
+    "created_at": "2025-07-01T00:00:00.000Z"
+  }
+]
