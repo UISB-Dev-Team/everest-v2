@@ -61,9 +61,9 @@ export const unpaidFinesReminderTemplate = (
                       return `
                         <tr>
                             <td>${fine.finesRemarks}</td>
-                            <td>₱${fine.totalAmountDue.toFixed(2)}</td>
-                            <td>₱${fine.amountPaid.toFixed(2)}</td>
-                            <td>₱${fine.remainingBalance.toFixed(2)}</td>
+                            <td>${fine.totalAmountDue.toFixed(2)}</td>
+                            <td>${fine.amountPaid.toFixed(2)}</td>
+                            <td>${fine.remainingBalance.toFixed(2)}</td>
                             <td>${dateImposed}</td>
                         </tr>
                       `;
@@ -71,7 +71,7 @@ export const unpaidFinesReminderTemplate = (
                 </tbody>
             </table>
 
-            <p class="total">Total Outstanding: ₱${totalOutstanding.toFixed(2)}</p>
+            <p class="total">Total Outstanding: ${totalOutstanding.toFixed(2)}</p>
 
             <p>Please contact your dormitory management if you have any questions or need assistance with payment arrangements.</p>
             <p>Thank you for your attention to this matter.</p>

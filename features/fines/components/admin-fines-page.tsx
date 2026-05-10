@@ -109,10 +109,10 @@ export function AdminFinesPage() {
                           {formatDate(f.date_imposed)}
                         </TableCell>
                         <TableCell className="text-[#333333] text-xs sm:text-sm">
-                          ₱{formatAmount(f.amount)}
+                          {formatAmount(f.amount)}
                         </TableCell>
                         <TableCell className="text-[#2E7D32] font-semibold text-xs sm:text-sm">
-                          ₱{formatAmount(f.amount_paid)}
+                          {formatAmount(f.amount_paid)}
                         </TableCell>
                         <TableCell>
                           <span

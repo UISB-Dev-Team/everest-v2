@@ -66,9 +66,9 @@ export const billPaymentInvoiceTemplate = (
                         <tr>
                             <td>${getBillingPeriodLabel(bill.billingPeriod)}</td>
                             <td>${bill.description || "—"}</td>
-                            <td>₱${bill.totalAmountDue.toFixed(2)}</td>
-                            <td>₱${bill.amountPaid.toFixed(2)}</td>
-                            <td>₱${bill.remainingBalance.toFixed(2)}</td>
+                            <td>${bill.totalAmountDue.toFixed(2)}</td>
+                            <td>${bill.amountPaid.toFixed(2)}</td>
+                            <td>${bill.remainingBalance.toFixed(2)}</td>
                             <td>${new Date(bill.paymentDate).toLocaleDateString()}</td>
                         </tr>
                     `).join("")}
@@ -102,9 +102,9 @@ export const billPaymentInvoiceTemplate = (
                 <tbody>
                     <tr>
                         <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalBills}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 18px;">₱${overallSummary.totalAmountDue.toFixed(2)}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 18px;">₱${overallSummary.totalPaid.toFixed(2)}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 18px;">₱${overallSummary.totalRemaining.toFixed(2)}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalAmountDue.toFixed(2)}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalPaid.toFixed(2)}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalRemaining.toFixed(2)}</td>
                     </tr>
                 </tbody>
             </table>

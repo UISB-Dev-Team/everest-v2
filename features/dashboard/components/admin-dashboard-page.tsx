@@ -42,21 +42,21 @@ export function AdminDashboardPage() {
   const kpiData: KPI[] = [
     {
       title: "Dorm Fund Balance",
-      value: `₱${formatAmount(snapshot.totalCollected)}`,
+      value: `${formatAmount(snapshot.totalCollected)}`,
       description: "Current available funds",
       icon: Wallet,
       trend: "up",
     },
     {
       title: "Total Collectibles",
-      value: `₱${formatAmount(snapshot.outstanding)}`,
+      value: `${formatAmount(snapshot.outstanding)}`,
       description: "Remaining collectibles",
       icon: TrendingUp,
       trend: "up",
     },
     {
       title: "Unpaid Fines",
-      value: `₱${formatAmount(snapshot.unpaidFinesTotal)}`,
+      value: `${formatAmount(snapshot.unpaidFinesTotal)}`,
       description: "Outstanding fine balance",
       icon: TrendingDown,
       trend: "down",
@@ -229,7 +229,7 @@ function BillRow({ bill }: { bill: Bill }) {
         </div>
       </div>
       <div className={`flex-shrink-0 font-bold text-xs sm:text-sm md:text-base ${tone}`}>
-        ₱{formatAmount(bill.total_amount_due)}
+        {formatAmount(bill.total_amount_due)}
       </div>
     </div>
   );

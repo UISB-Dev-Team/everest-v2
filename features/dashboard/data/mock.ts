@@ -32,9 +32,13 @@ function decorateImposition(imp: FineImposition): FineImpositionWithCategory {
   return {
     ...imp,
     category_name: cat?.name ?? "Unknown",
+    category_description: cat?.description ?? null,
     dormer_full_name: dormer
       ? `${dormer.first_name} ${dormer.last_name}`
       : "Unknown",
+    dormer_room: dormer?.room_number ?? null,
+    room_fine_id: null,
+    room_number: dormer?.room_number ?? null,
   };
 }
 

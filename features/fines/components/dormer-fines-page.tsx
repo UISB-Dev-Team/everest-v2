@@ -92,17 +92,17 @@ export function DormerFinesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                   <SummaryTile
                     label="Total Amount Due"
-                    value={`₱${formatAmount(total)}`}
+                    value={`${formatAmount(total)}`}
                     tone="neutral"
                   />
                   <SummaryTile
                     label="Total Amount Paid"
-                    value={`₱${formatAmount(paid)}`}
+                    value={`${formatAmount(paid)}`}
                     tone="positive"
                   />
                   <SummaryTile
                     label="Outstanding Balance"
-                    value={`₱${formatAmount(balance)}`}
+                    value={`${formatAmount(balance)}`}
                     tone={balance === 0 ? "positive" : "danger"}
                   />
                 </div>
@@ -174,17 +174,17 @@ function FinesTable({
                   {f.category_name}
                 </TableCell>
                 <TableCell className="text-[#333333] text-xs sm:text-sm">
-                  ₱{formatAmount(f.amount)}
+                  {formatAmount(f.amount)}
                 </TableCell>
                 <TableCell className="text-[#2E7D32] font-semibold text-xs sm:text-sm">
-                  ₱{formatAmount(f.amount_paid)}
+                  {formatAmount(f.amount_paid)}
                 </TableCell>
                 <TableCell
                   className={`font-semibold text-xs sm:text-sm ${
                     balance === 0 ? "text-[#2E7D32]" : "text-red-600"
                   }`}
                 >
-                  ₱{formatAmount(balance)}
+                  {formatAmount(balance)}
                 </TableCell>
                 <TableCell>
                   <span

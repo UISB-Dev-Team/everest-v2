@@ -141,17 +141,17 @@ export function DormerPaymentsPage() {
                             {bill.description}
                           </TableCell>
                           <TableCell className="font-semibold text-[#333333] text-xs sm:text-sm w-[120px]">
-                            ₱{formatAmount(bill.total_amount_due)}
+                            {formatAmount(bill.total_amount_due)}
                           </TableCell>
                           <TableCell className="text-[#2E7D32] font-semibold text-xs sm:text-sm w-[120px]">
-                            ₱{formatAmount(bill.amount_paid)}
+                            {formatAmount(bill.amount_paid)}
                           </TableCell>
                           <TableCell
                             className={`font-semibold text-xs sm:text-sm w-[120px] ${
                               isFullyPaid ? "text-[#2E7D32]" : "text-red-600"
                             }`}
                           >
-                            ₱{formatAmount(remaining)}
+                            {formatAmount(remaining)}
                           </TableCell>
                           <TableCell className="text-gray-600 text-xs sm:text-sm hidden md:table-cell w-[180px]">
                             {bill.status === "Unpaid"
@@ -183,17 +183,17 @@ export function DormerPaymentsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                   <SummaryTile
                     label="Total Amount Due"
-                    value={`₱${formatAmount(summary.totalDue)}`}
+                    value={`${formatAmount(summary.totalDue)}`}
                     tone="neutral"
                   />
                   <SummaryTile
                     label="Total Amount Paid"
-                    value={`₱${formatAmount(summary.totalPaid)}`}
+                    value={`${formatAmount(summary.totalPaid)}`}
                     tone="positive"
                   />
                   <SummaryTile
                     label="Outstanding Balance"
-                    value={`₱${formatAmount(summary.totalBalance)}`}
+                    value={`${formatAmount(summary.totalBalance)}`}
                     tone={summary.totalBalance === 0 ? "positive" : "danger"}
                   />
                 </div>

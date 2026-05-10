@@ -95,11 +95,11 @@ export function AdminClearancePage() {
                           {c.dormerFullName}
                         </TableCell>
                         <TableCell className="text-[#333333] text-xs sm:text-sm">
-                          {c.unpaidBillsCount} (₱
+                          {c.unpaidBillsCount} (
                           {formatAmount(c.unpaidBillsTotal)})
                         </TableCell>
                         <TableCell className="text-[#333333] text-xs sm:text-sm">
-                          {c.unpaidFinesCount} (₱
+                          {c.unpaidFinesCount} (
                           {formatAmount(c.unpaidFinesTotal)})
                         </TableCell>
                         <TableCell
@@ -109,7 +109,7 @@ export function AdminClearancePage() {
                               : "text-red-600"
                           }`}
                         >
-                          ₱{formatAmount(c.outstandingTotal)}
+                          {formatAmount(c.outstandingTotal)}
                         </TableCell>
                         <TableCell>
                           <span

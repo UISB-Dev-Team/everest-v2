@@ -76,9 +76,9 @@ export const paymentInvoiceTemplate = (
                     ${finesArray.map(fine => `
                         <tr>
                             <td>${fine.finesRemarks}</td>
-                            <td>₱${fine.totalAmountDue.toFixed(2)}</td>
-                            <td>₱${fine.amountPaid.toFixed(2)}</td>
-                            <td>₱${fine.remainingBalance.toFixed(2)}</td>
+                            <td>${fine.totalAmountDue.toFixed(2)}</td>
+                            <td>${fine.amountPaid.toFixed(2)}</td>
+                            <td>${fine.remainingBalance.toFixed(2)}</td>
                             <td>${typeof fine.paymentDate === 'string' ? fine.paymentDate : new Date(fine.paymentDate).toLocaleDateString()}</td>
                         </tr>
                     `).join('')}
@@ -126,9 +126,9 @@ export const paymentInvoiceTemplate = (
                 <tbody>
                     <tr>
                         <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalFines}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 18px;">₱${overallSummary.totalAmountDue.toFixed(2)}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 18px;">₱${overallSummary.totalPaid.toFixed(2)}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 18px;">₱${overallSummary.totalRemaining.toFixed(2)}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalAmountDue.toFixed(2)}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalPaid.toFixed(2)}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 18px;">${overallSummary.totalRemaining.toFixed(2)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -136,7 +136,7 @@ export const paymentInvoiceTemplate = (
 
             ${!isMultipleFines && paymentData.remainingBalance > 0 ? `
             <div class="highlight warning">
-                Outstanding Balance for This Fine: ₱${paymentData.remainingBalance.toFixed(2)}<br>
+                Outstanding Balance for This Fine: ${paymentData.remainingBalance.toFixed(2)}<br>
                 <span style="font-weight: normal; font-size: 14px;">Please settle the remaining balance at your earliest convenience.</span>
             </div>
             ` : (overallSummary && overallSummary.totalRemaining === 0) || (!isMultipleFines && paymentData.remainingBalance === 0) ? `

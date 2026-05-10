@@ -1,0 +1,30 @@
+[
+  {
+    "id": "evp-1",
+    "academic_period_id": "ap-2025-1",
+    "event_id": "ev-1",
+    "dormer_id": "00000000-0000-0000-0000-0000000000d1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "amount": 200,
+    "status": "Paid",
+    "payment_method": "Cash",
+    "payment_date": "2025-09-15",
+    "notes": null,
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-15T11:00:00.000Z"
+  },
+  {
+    "id": "evp-2",
+    "academic_period_id": "ap-2025-1",
+    "event_id": "ev-1",
+    "dormer_id": "00000000-0000-0000-0000-0000000000d2",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "amount": 100,
+    "status": "Pending",
+    "payment_method": "GCash",
+    "payment_date": "2025-09-20",
+    "notes": "Half paid, balance pending",
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-20T13:00:00.000Z"
+  }
+]

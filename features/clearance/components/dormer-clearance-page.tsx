@@ -83,21 +83,21 @@ export function DormerClearancePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
               <SummaryTile
                 label="Unpaid Bills"
-                value={`${status.unpaidBillsCount} (₱${formatAmount(
+                value={`${status.unpaidBillsCount} (${formatAmount(
                   status.unpaidBillsTotal
                 )})`}
                 tone={status.unpaidBillsCount === 0 ? "positive" : "danger"}
               />
               <SummaryTile
                 label="Unpaid Fines"
-                value={`${status.unpaidFinesCount} (₱${formatAmount(
+                value={`${status.unpaidFinesCount} (${formatAmount(
                   status.unpaidFinesTotal
                 )})`}
                 tone={status.unpaidFinesCount === 0 ? "positive" : "danger"}
               />
               <SummaryTile
                 label="Outstanding Total"
-                value={`₱${formatAmount(status.outstandingTotal)}`}
+                value={`${formatAmount(status.outstandingTotal)}`}
                 tone={status.outstandingTotal === 0 ? "positive" : "danger"}
               />
             </div>

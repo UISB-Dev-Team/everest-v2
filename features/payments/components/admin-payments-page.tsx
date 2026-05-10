@@ -115,10 +115,10 @@ export function AdminPaymentsPage() {
                           {bill.description}
                         </TableCell>
                         <TableCell className="text-[#333333] text-xs sm:text-sm">
-                          ₱{formatAmount(bill.total_amount_due)}
+                          {formatAmount(bill.total_amount_due)}
                         </TableCell>
                         <TableCell className="text-[#2E7D32] font-semibold text-xs sm:text-sm">
-                          ₱{formatAmount(bill.amount_paid)}
+                          {formatAmount(bill.amount_paid)}
                         </TableCell>
                         <TableCell className="text-gray-600 text-xs sm:text-sm hidden md:table-cell">
                           {bill.due_date ? formatDate(bill.due_date) : "—"}

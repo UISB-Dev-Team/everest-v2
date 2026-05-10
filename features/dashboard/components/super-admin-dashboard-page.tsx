@@ -59,13 +59,13 @@ export function SuperAdminDashboardPage() {
     },
     {
       title: "Collected",
-      value: `₱${formatAmount(snapshot.totalCollected)}`,
+      value: `${formatAmount(snapshot.totalCollected)}`,
       description: "Lifetime payments recorded",
       icon: TrendingUp,
     },
     {
       title: "Outstanding",
-      value: `₱${formatAmount(snapshot.outstanding)}`,
+      value: `${formatAmount(snapshot.outstanding)}`,
       description: "Across all dormitories",
       icon: TrendingUp,
     },

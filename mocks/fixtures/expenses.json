@@ -1,0 +1,44 @@
+[
+  {
+    "id": "exp-1",
+    "academic_period_id": "ap-2025-1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "title": "Plumber service — common bathroom",
+    "description": "Repaired leaking sink in 2nd floor common bathroom.",
+    "amount": 850,
+    "expense_date": "2025-09-04",
+    "category": "Maintenance",
+    "receipt_image_url": null,
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-04T15:00:00.000Z",
+    "updated_at": "2025-09-04T15:00:00.000Z"
+  },
+  {
+    "id": "exp-2",
+    "academic_period_id": "ap-2025-1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "title": "Cleaning supplies (Sept)",
+    "description": "Brooms, mops, and disinfectant restocked.",
+    "amount": 1240,
+    "expense_date": "2025-09-12",
+    "category": "Supplies",
+    "receipt_image_url": null,
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-12T10:00:00.000Z",
+    "updated_at": "2025-09-12T10:00:00.000Z"
+  },
+  {
+    "id": "exp-3",
+    "academic_period_id": "ap-2025-1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "title": "Water bill — August 2025",
+    "description": "Monthly water bill payment.",
+    "amount": 3200,
+    "expense_date": "2025-09-18",
+    "category": "Utilities",
+    "receipt_image_url": null,
+    "recorded_by": "00000000-0000-0000-0000-0000000000a2",
+    "created_at": "2025-09-18T09:00:00.000Z",
+    "updated_at": "2025-09-18T09:00:00.000Z"
+  }
+]

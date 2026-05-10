@@ -1,0 +1,32 @@
+[
+  {
+    "id": "rc-1",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "name": "Monthly Dorm Fee",
+    "description": "Standard monthly dormitory fee.",
+    "amount": 1500,
+    "is_deleted": false,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "rc-2",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "name": "Water Share",
+    "description": "Per-dormer share of monthly water bill.",
+    "amount": 200,
+    "is_deleted": false,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "rc-3",
+    "dormitory_id": "11111111-1111-1111-1111-111111111111",
+    "name": "Electricity Share",
+    "description": "Per-dormer share of monthly electricity bill.",
+    "amount": 350,
+    "is_deleted": false,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  }
+]

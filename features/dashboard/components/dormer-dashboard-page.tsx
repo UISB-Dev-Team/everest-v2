@@ -46,28 +46,28 @@ export function DormerDashboardPage() {
   const statsCards: StatCard[] = [
     {
       title: "Total Amount Due",
-      value: `₱${formatAmount(totalDue)}`,
+      value: `${formatAmount(totalDue)}`,
       description: "Amount to be Paid by Dormers",
       icon: DollarSign,
       color: "text-[#12372A]",
     },
     {
       title: "Total Amount Paid",
-      value: `₱${formatAmount(totalPayments)}`,
+      value: `${formatAmount(totalPayments)}`,
       description: "Overall Payments",
       icon: TrendingUp,
       color: "text-[#2E7D32]",
     },
     {
       title: "Dorm Fund Balance",
-      value: `₱${formatAmount(remainingBalance)}`,
+      value: `${formatAmount(remainingBalance)}`,
       description: "Available Money",
       icon: Wallet,
       color: "text-red-600",
     },
     {
       title: "Total Dorm Expenses",
-      value: `₱${formatAmount(totalExpenses)}`,
+      value: `${formatAmount(totalExpenses)}`,
       description: "Overall Expenses",
       icon: TrendingDown,
       color: "text-[#2E7D32]",
@@ -172,12 +172,12 @@ function BillRow({ bill }: { bill: Bill }) {
           Period {bill.billing_month}
         </p>
         <p className="text-xs sm:text-sm lg:text-xs text-slate-500 truncate">
-          Amount: ₱{formatAmount(bill.total_amount_due)}
+          Amount: {formatAmount(bill.total_amount_due)}
         </p>
       </div>
       <div className="text-right flex-shrink-0 ml-3">
         <p className="font-medium text-sm sm:text-base lg:text-sm text-[#12372A]">
-          ₱{formatAmount(bill.amount_paid)}
+          {formatAmount(bill.amount_paid)}
         </p>
         <span
           className={`text-xs sm:text-sm lg:text-xs px-2 py-0.5 sm:py-1 lg:py-0.5 rounded inline-block mt-1 font-medium ${

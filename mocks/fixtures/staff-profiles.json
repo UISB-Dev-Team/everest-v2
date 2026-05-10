@@ -1,0 +1,46 @@
+[
+  {
+    "id": "00000000-0000-0000-0000-0000000000a1",
+    "first_name": "Mara",
+    "last_name": "Adviser",
+    "email": "adviser@example.com",
+    "phone": "+63 917 555 0201",
+    "is_active": true,
+    "deactivation_reason": null,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a2",
+    "first_name": "Tomas",
+    "last_name": "Treasurer",
+    "email": "treasurer@example.com",
+    "phone": "+63 917 555 0202",
+    "is_active": true,
+    "deactivation_reason": null,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a3",
+    "first_name": "Aria",
+    "last_name": "Auditor",
+    "email": "auditor@example.com",
+    "phone": "+63 917 555 0203",
+    "is_active": true,
+    "deactivation_reason": null,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  },
+  {
+    "id": "00000000-0000-0000-0000-0000000000a4",
+    "first_name": "Sandy",
+    "last_name": "SA",
+    "email": "sa@example.com",
+    "phone": "+63 917 555 0204",
+    "is_active": true,
+    "deactivation_reason": null,
+    "created_at": "2025-08-01T00:00:00.000Z",
+    "updated_at": "2025-08-01T00:00:00.000Z"
+  }
+]
