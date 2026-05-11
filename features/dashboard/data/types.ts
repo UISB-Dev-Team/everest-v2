@@ -9,13 +9,25 @@ export interface DormerDashboardSnapshot {
   recentFines: FineImpositionWithCategory[];
 }
 
+export interface RecentTransaction {
+  id: string;
+  type: "payment" | "expense";
+  date: string;
+  amount: number;
+  description: string;
+}
+
 export interface AdminDashboardSnapshot {
   dormerCount: number;
   totalBilled: number;
   totalCollected: number;
   outstanding: number;
+  totalCollectibles: number;
+  totalExpenses: number;
+  dormFundBalance: number;
   unpaidFinesTotal: number;
   recentBills: Bill[];
+  recentTransactions: RecentTransaction[];
 }
 
 export interface SuperAdminDashboardSnapshot {

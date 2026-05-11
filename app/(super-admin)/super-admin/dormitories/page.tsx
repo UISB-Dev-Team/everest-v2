@@ -1,1 +1,1 @@
-export { DormitoriesPage as default } from "@/features/dashboard/components/dormitories-page";
+export { SuperAdminDormitoriesPage as default } from "@/features/dormitories/components/super-admin/super-admin-dormitories-page";

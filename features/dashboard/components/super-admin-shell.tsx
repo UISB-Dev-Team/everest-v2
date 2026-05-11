@@ -1,12 +1,18 @@
 "use client";
 
-import { Building, CalendarRange, LayoutDashboard } from "lucide-react";
+import {
+  Building,
+  CalendarRange,
+  LayoutDashboard,
+  Users,
+} from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RoleShell, type NavItem } from "./role-shell";
 
 const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", url: "/super-admin/dashboard", icon: LayoutDashboard },
   { title: "Dormitories", url: "/super-admin/dormitories", icon: Building },
+  { title: "Advisers", url: "/super-admin/advisers", icon: Users },
   {
     title: "Academic Periods",
     url: "/super-admin/academic-periods",
