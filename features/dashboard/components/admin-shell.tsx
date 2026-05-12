@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useDormitory } from "@/features/dashboard/hooks/useDormitory";
 import { RoleShell, type NavItem } from "./role-shell";
+import { PeriodSelector } from "@/features/academic-periods/components/academic-periods-page";
 
 const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
@@ -47,6 +48,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       userSecondaryLine={user?.email ?? null}
       variant="dorm"
     >
+      <PeriodSelector />
       {children}
     </RoleShell>
   );

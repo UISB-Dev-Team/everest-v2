@@ -1,43 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { academicPeriodsData } from "@/features/academic-periods/data";
-import type { AcademicPeriod } from "@/features/academic-periods/data";
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useAcademicPeriodStore } from "../store";
+import { AcademicPeriod } from "../type";
 
-export function useAcademicPeriods() {
-  const [periods, setPeriods] = useState<AcademicPeriod[]>([]);
-  const [loading, setLoading] = useState(true);
+const supabase = createClient();
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    academicPeriodsData
-      .list()
-      .then((p) => !cancelled && setPeriods(p))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+export function useAcademicPeriod() {
+    const { all, selected, loading, error, setAll, setSelected, setLoading, setError } =
+        useAcademicPeriodStore();
 
-  return { periods, loading };
-}
+    useEffect(() => {
+        if (all.length > 0) return;
 
-export function useCurrentAcademicPeriod() {
-  const [period, setPeriod] = useState<AcademicPeriod | null>(null);
-  const [loading, setLoading] = useState(true);
+        setLoading(true);
+        supabase
+            .from("academic_periods")
+            .select("id, academic_year, semester, start_date, end_date, is_current")
+            .order("start_date", { ascending: false })
+            .then(({ data, error }) => {
+                if (error || !data) {
+                    setError(error?.message ?? "Failed to load periods");
+                    setLoading(false);
+                    return;
+                }
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    academicPeriodsData
-      .getCurrent()
-      .then((p) => !cancelled && setPeriod(p))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+                const mapped = data.map((d) => ({
+                    id: d.id,
+                    academic_year: d.academic_year,
+                    semester: d.semester,
+                    start_date: d.start_date,
+                    end_date: d.end_date,
+                    is_current: d.is_current,
+                }));
 
-  return { period, loading };
+                setAll(mapped as AcademicPeriod[]);
+                const current = mapped.find((p) => p.is_current) ?? mapped[0];
+                if (current && !selected) setSelected(current as AcademicPeriod);
+                setLoading(false);
+            });
+    }, []);
+
+    return { all, selected, loading, error, setSelected };
 }
