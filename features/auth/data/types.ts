@@ -1,4 +1,5 @@
 import type { Enums } from "@/database.types";
+import { DormerProfile } from "@/features/dormers/data";
 
 export type AuthRole = Enums<"user_role_enum">;
 

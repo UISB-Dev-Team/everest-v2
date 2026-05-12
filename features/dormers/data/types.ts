@@ -2,6 +2,7 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/database.types";
 
 export type DormerProfile = Tables<"profiles">;
 export type DormerEnrollment = Tables<"dormitory_enrollment">;
+export type DormerRoleWithProfile = Tables<"dormitory_roles"> & { profiles: DormerProfile };
 
 /**
  * A dormer = profiles row joined with their current dormitory_enrollment.
