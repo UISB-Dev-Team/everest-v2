@@ -1,4 +1,3 @@
-// features/academic-period/PeriodSelector.tsx
 "use client";
 
 import {

@@ -22,6 +22,8 @@ import { formatAmount, formatDate } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useAdminDashboard } from "@/features/dashboard/hooks/useDashboard";
 import type { Bill } from "@/features/payments/data";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface KPI {
   title: string;
@@ -32,8 +34,16 @@ interface KPI {
 }
 
 export function AdminDashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const { snapshot, loading } = useAdminDashboard(user?.dormitoryId ?? null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace("/login");
+    }
+  }, [authLoading, user, router]);
+
 
   if (loading || !snapshot) {
     return <AdminDashboardSkeleton />;

@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "./lib/supabase/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function proxy(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    });
-    
+    let supabaseResponse = NextResponse.next({ request });
+
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,36 +33,37 @@ export async function proxy(request: NextRequest) {
         const { data: dormRole } = await supabase
             .from("dormitory_roles")
             .select("role")
-            .eq("user_id", user!.id)
-            .single()
-
-        role = dormRole?.role as string | null;
+            .eq("user_id", user.id)
+            .single();
+        role = dormRole?.role ?? null;
     }
 
     const path = request.nextUrl.pathname;
 
-    const getDashboardUrl = (userRole: string | null) => {
+    // ✅ Helper that always carries refreshed cookies forward
+    const redirect = (pathname: string) => {
         const url = request.nextUrl.clone();
-        if (userRole === "super_admin")
-            url.pathname = "/super-admin/dashboard";
-        else if (["adviser", "treasurer", "auditor", "sa"].includes(userRole || ""))
-            url.pathname = "/admin/dashboard";
-        else if (userRole === "dormer" || !userRole)
-            url.pathname = "/dashboard";
-        else
-            url.pathname = "/login";
-        return url;
+        url.pathname = pathname;
+        const res = NextResponse.redirect(url);
+        supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
+            res.cookies.set(name, value);
+        });
+        return res;
+    };
+
+    const getDashboardPath = (userRole: string | null) => {
+        if (userRole === "super_admin") return "/super-admin/dashboard";
+        if (["adviser", "treasurer", "auditor", "sa"].includes(userRole || "")) return "/admin/dashboard";
+        return "/dashboard";
     };
 
     if (!user && path !== "/login") {
-        const url = request.nextUrl.clone();
-        url.pathname = "/login";
-        return NextResponse.redirect(url);
+        return redirect("/login");
     }
 
     if (user) {
         if (path === "/login") {
-            return NextResponse.redirect(getDashboardUrl(role));
+            return redirect(getDashboardPath(role));
         }
 
         const isSuperAdminRoute = path.startsWith("/super-admin");
@@ -74,17 +72,9 @@ export async function proxy(request: NextRequest) {
             (p) => path === p || path.startsWith(p + "/")
         );
 
-        if (isSuperAdminRoute && role !== "super_admin") {
-            return NextResponse.redirect(getDashboardUrl(role));
-        }
-
-        if (isAdminRoute && !["adviser", "treasurer", "auditor", "sa"].includes(role || "")) {
-            return NextResponse.redirect(getDashboardUrl(role));
-        }
-
-        if (isDormerRoute && role && role !== "dormer") {
-            return NextResponse.redirect(getDashboardUrl(role));
-        }
+        if (isSuperAdminRoute && role !== "super_admin") return redirect(getDashboardPath(role));
+        if (isAdminRoute && !["adviser", "treasurer", "auditor", "sa"].includes(role || "")) return redirect(getDashboardPath(role));
+        if (isDormerRoute && role && role !== "dormer") return redirect(getDashboardPath(role));
     }
 
     return supabaseResponse;

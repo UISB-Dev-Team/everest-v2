@@ -7,8 +7,8 @@ import type { SignInInput } from "@/features/auth/data";
 export function useAuth() {  
   const state = useSyncExternalStore(
     authData.subscribe,
-    authData.getSnapshot,       
-    authData.getServerSnapshot  
+    authData.getSnapshot,
+    authData.getServerSnapshot
   );
 
   const signIn = useCallback(

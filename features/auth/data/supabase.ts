@@ -1,42 +1,25 @@
+
 import { createClient } from "@/lib/supabase/client";
 import type { AuthRole, AuthSession, AuthState, AuthUser, SignInInput, SignInResult } from "./types";
 import { Session, User } from "@supabase/supabase-js";
 
-const supabaseClient = createClient();
+const supabaseClient = await createClient();
 
 async function mapSupabaseUser(user: User | null): Promise<AuthUser | null> {
-    if (!user) {
-        return null;
-    }
+    if (!user) return null;
 
-    const { data: dormerRoleWithProfile, error } = await supabaseClient
-        .from("dormitory_roles")
-        .select("*, profiles!user_id(*)")
-        .eq("user_id", user.id)  
-        .single();
+    console.log("[mapSupabaseUser]", user.id, "metadata:", user.user_metadata);
 
+    const meta = user.user_metadata || {};
 
-    if (error) {
-        console.error("[mapSupabaseUser] Error fetching role: ", error);
-        return {
-            id: user.id,
-            email: user.email || "",
-            fullName: "",
-            role: "dormer",
-            dormitoryId: null,
-            avatarUrl: null,
-        };
-    }
+    // ✅ Everything from JWT — no DB call, no hanging
     return {
         id: user.id,
         email: user.email || "",
-        fullName:
-            dormerRoleWithProfile.profiles.first_name +
-            " " +
-            dormerRoleWithProfile.profiles.last_name,
-        role: dormerRoleWithProfile.role,
-        dormitoryId: dormerRoleWithProfile.dormitory_id ?? null,
-        avatarUrl: null,
+        fullName: meta.full_name ?? `${meta.first_name ?? ""} ${meta.last_name ?? ""}`.trim(),
+        role: (meta.role as AuthRole) ?? "dormer",
+        dormitoryId: meta.dormitory_id ?? null,
+        avatarUrl: meta.avatar_url ?? null,
     };
 }
 
@@ -55,6 +38,7 @@ let currentState: AuthState = {
     session: null,
 }
 
+
 const listeners = new Set<(state: AuthState) => void>();
 
 function updateState(newState: Partial<AuthState>) {
@@ -72,14 +56,30 @@ supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
         session: mapSupabaseSession(session, mappedUser),
     });
 });
+
+const loadingTimeout = setTimeout(() => {
+    if (currentState.loading) {
+        console.warn("[auth] Loading timeout — forcing unauthenticated state");
+        updateState({ loading: false, user: null, session: null });
+    }
+}, 5000);
+
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-    const mappedUser = await mapSupabaseUser(session?.user ?? null);
-    updateState({
-        loading: false,
-        user: mappedUser,
-        session: mapSupabaseSession(session, mappedUser)
-    })
-})
+    console.log("[onAuthStateChange]", _event, session?.user?.id);
+    try {
+        const mappedUser = await mapSupabaseUser(session?.user ?? null);
+        clearTimeout(loadingTimeout); 
+        updateState({
+            loading: false,
+            user: mappedUser,
+            session: mapSupabaseSession(session, mappedUser),
+        });
+    } catch (err) {
+        console.error("[onAuthStateChange] error:", err);
+        clearTimeout(loadingTimeout);
+        updateState({ loading: false, user: null, session: null }); 
+    }
+});
 
 export function subscribe(listener: (state: AuthState) => void) : () => void {
     listeners.add(listener);
