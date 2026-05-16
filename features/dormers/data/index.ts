@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   CreateDormerInput,
   Dormer,
@@ -17,7 +17,7 @@ export interface DormersDataAccess {
   importMany(inputs: CreateDormerInput[]): Promise<Dormer[]>;
 }
 
-export const dormersData: DormersDataAccess = mock;
+export const dormersData: DormersDataAccess = supabase;
 
 export type {
   CreateDormerInput,
