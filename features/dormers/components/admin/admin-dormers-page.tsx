@@ -17,7 +17,9 @@ import { PlaceholderModal } from "@/features/dormers/components/admin/placeholde
 export function AdminDormersPage() {
   const {
     dormers,
+    setDormers,
     bills,
+    setBills,
     loading,
     paginatedDormers,
     filteredDormers,
@@ -35,7 +37,7 @@ export function AdminDormersPage() {
     saveDormer,
     updateDormer,
     deleteDormer,
-  } = useDormerActions(dormers, bills);
+  } = useDormerActions(dormers, bills, setDormers, setBills);
 
   const { modal, selectedDormer, openModal, closeModal } = useModal();
 

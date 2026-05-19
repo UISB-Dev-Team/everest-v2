@@ -104,7 +104,9 @@ export function useDormers() {
 
   return {
     dormers,
+    setDormers,
     bills,
+    setBills,
     payables,
     loading,
     paginatedDormers,

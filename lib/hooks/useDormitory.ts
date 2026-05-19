@@ -8,6 +8,7 @@ interface DormitoryInfo {
     dormitoryId: string | null;
     enrollmentId: string | null;
     roomNumber: string | null;
+    dormitoryName: string | null;
     loading: boolean;
 }
 
@@ -19,6 +20,7 @@ export function useDormitory(): DormitoryInfo {
         dormitoryId: null,
         enrollmentId: null,
         roomNumber: null,
+        dormitoryName: null,
         loading: true,
     })
 
@@ -28,6 +30,7 @@ export function useDormitory(): DormitoryInfo {
                 dormitoryId: null,
                 enrollmentId: null,
                 roomNumber: null,
+                dormitoryName: null,
                 loading: false,
             });
             return;
@@ -38,13 +41,14 @@ export function useDormitory(): DormitoryInfo {
                 dormitoryId: user.dormitoryId,
                 enrollmentId: null,
                 roomNumber: null,
+                dormitoryName: null,
                 loading: false,
             })
         }
 
         supabaseClient
             .from("dormitory_enrollment")
-            .select("id, dormitory_id, room_number, academic_period_id")
+            .select("id, dormitory_id, room_number, academic_period_id, dormitory_id(name)")
             .eq("dormer_id", user.id)
             .limit(1)
             .single()
@@ -55,6 +59,7 @@ export function useDormitory(): DormitoryInfo {
                         dormitoryId: data.dormitory_id,
                         enrollmentId: data.id,
                         roomNumber: data.room_number,
+                        dormitoryName: data.dormitory_id?.name ?? null,
                         loading: false,
                     })
                 } else {
@@ -62,12 +67,13 @@ export function useDormitory(): DormitoryInfo {
                         dormitoryId: null,
                         enrollmentId: null,
                         roomNumber: null,
+                        dormitoryName: null,
                         loading: false,
                     })
                 }
             })
         
     }, [user?.id, user?.dormitoryId]);
-
+    console.log(info)
     return info;
 }

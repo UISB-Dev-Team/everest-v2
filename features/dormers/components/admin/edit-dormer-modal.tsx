@@ -26,8 +26,8 @@ import {
   SampaguitaRoomNumber,
 } from "@/lib/constants/room-numbers";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useDormitory } from "@/features/dashboard/hooks/useDormitory";
 import type { Dormer, UpdateDormerInput } from "@/features/dormers/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface EditDormerModalProps {
   isOpen: boolean;
@@ -48,9 +48,8 @@ export default function EditDormerModal({
   const [phone, setPhone] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
 
-  const { user } = useAuth();
-  const { dormitory } = useDormitory(user?.dormitoryId ?? null);
-  const isMabolo = dormitory?.name?.toLowerCase().includes("mabolo");
+  const dormitory = useDormitory();
+  const isMabolo = dormitory.dormitoryName?.toLowerCase().includes("mabolo");
 
   useEffect(() => {
     if (dormerData) {

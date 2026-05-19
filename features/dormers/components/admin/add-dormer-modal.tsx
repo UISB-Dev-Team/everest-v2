@@ -26,8 +26,8 @@ import {
   SampaguitaRoomNumber,
 } from "@/lib/constants/room-numbers";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useDormitory } from "@/features/dashboard/hooks/useDormitory";
 import type { CreateDormerInput } from "@/features/dormers/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface AddDormerModalProps {
   isOpen: boolean;
@@ -46,9 +46,9 @@ export default function AddDormerModal({
   const [phone, setPhone] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
   const { user } = useAuth();
-  const { dormitory } = useDormitory(user?.dormitoryId ?? null);
-  const isMabolo = dormitory?.name?.toLowerCase().includes("mabolo");
-
+  const dormitory = useDormitory();
+  const isMabolo = dormitory?.dormitoryName?.toLowerCase().includes("mabolo");
+  
   const handleSave = async () => {
     if (!firstName || !lastName || !email || !roomNumber) {
       toast.info("Please fill in all required fields.");

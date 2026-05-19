@@ -34,13 +34,29 @@ export async function list(academicPeriodId?: string): Promise<Dormer[]> {
 
   const { data, error } = await query;
 
+  if (error || !data) {
+    console.error("Error fetching enrollments:", error);
+    return [];
+  }
+
+  const { data: roles, error: roleError } = await supabase
+    .from("dormitory_roles")
+    .select("*")
+    .eq("role", "dormer")
+
+  if (roleError) {
+    console.error("Error fetching roles:", roleError);
+    return [];
+  }
+
+  const dormers = data.filter((row) => roles.some((role) => role.user_id === row.profiles?.id));
+
   if (error) {
     console.error("Error fetching dormers:", error);
     return [];
   }
 
-  console.log(data);
-  return data as unknown as Dormer[];
+  return dormers as unknown as Dormer[];
 }
 
 export async function listForDormitory(
@@ -53,6 +69,7 @@ export async function listForDormitory(
     .from("dormitory_enrollment")
     .select("*, profiles(*)")
     .eq("dormitory_id", dormitoryId)
+    .eq("status", "active")
     .eq("academic_period_id", periodId);
 
   if (error) {
@@ -60,7 +77,20 @@ export async function listForDormitory(
     return [];
   }
 
-  return data.map((row) => ({
+  const { data: roles, error: roleError } = await supabase
+    .from("dormitory_roles")
+    .select("*")
+    .eq("dormitory_id", dormitoryId)
+    .eq("role", "dormer")
+
+  if (roleError) {
+    console.error("Error fetching roles:", roleError);
+    return [];
+  }
+
+  const dormers = data.filter((row) => roles.some((role) => role.user_id === row.profiles?.id));
+
+  return dormers.map((row) => ({
     ...(row.profiles as DormerProfile),
     dormitory_id: row.dormitory_id,
     room_number: row.room_number,
@@ -77,6 +107,7 @@ export async function listForDormitoryWithBills(
     .from("dormitory_enrollment")
     .select("*, profiles(*)")
     .eq("dormitory_id", dormitoryId)
+    .eq("status", "active")
     .eq("academic_period_id", periodId);
 
   if (enrollError || !enrollments) {
@@ -88,6 +119,19 @@ export async function listForDormitoryWithBills(
     .map((e) => (e.profiles as DormerProfile)?.id)
     .filter(Boolean) as string[];
 
+  const { data: roles, error: roleError } = await supabase
+    .from("dormitory_roles")
+    .select("*")
+    .in("user_id", profileIds)
+    .eq("role", "dormer")
+
+  if (roleError) {
+    console.error("Error fetching roles:", roleError);
+    return [];
+  }
+
+  const dormers = enrollments.filter((row) => roles.some((role) => role.user_id === row.profiles?.id));
+
   const { data: bills, error: billsError } = await supabase
     .from("bills")
     .select("*")
@@ -98,7 +142,7 @@ export async function listForDormitoryWithBills(
     console.error("Error fetching bills:", billsError);
   }
 
-  return enrollments.map((row) => {
+  return dormers.map((row) => {
     const profile = row.profiles as DormerProfile;
     return {
       ...profile,
@@ -138,6 +182,7 @@ export async function getById(id: string): Promise<Dormer | null> {
       .from("dormitory_enrollment")
       .select("*, profiles(*)")
       .eq("dormer_id", id)
+      .eq("status", "active")
       .eq("academic_period_id", periodId)
       .maybeSingle();
 
@@ -171,7 +216,6 @@ export async function create(input: CreateDormerInput) {
 
   if (!dormitory_id) throw new Error("dormitory_id is required to create a dormer.");
 
-  // Step 1: Create auth user (triggers profile row creation)
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email: profileInput.email,
     password: "DefaultPass123!",
@@ -189,7 +233,6 @@ export async function create(input: CreateDormerInput) {
 
   const userId = authData.user.id;
 
-  // Step 2: Upsert profile (trigger may have already created it)
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .upsert({
@@ -201,14 +244,12 @@ export async function create(input: CreateDormerInput) {
 
   if (profileError) throw profileError;
 
-  // Step 3: Get current academic period (required for enrollment)
   const academicPeriod = await getCurrentAcademicPeriodId()
 
   if (!academicPeriod) {
     throw new Error("No active academic period found. Please set a current academic period before enrolling a dormer.");
   }
 
-  // Step 4: Create dormitory enrollment
   const { error: enrollmentError } = await supabase
     .from("dormitory_enrollment")
     .insert({
@@ -221,7 +262,6 @@ export async function create(input: CreateDormerInput) {
 
   if (enrollmentError) throw enrollmentError;
 
-  // Step 5: Create dormitory role as dormer
   const { error: roleError } = await supabase
     .from("dormitory_roles")
     .insert({
@@ -232,7 +272,13 @@ export async function create(input: CreateDormerInput) {
 
   if (roleError) throw roleError;
 
-  return profile;
+
+  return {
+    ...profile,
+    dormitory_id,
+    room_number,
+    status: "active",
+  } as Dormer;
 }
 
 export async function update(
@@ -292,7 +338,7 @@ export async function remove(id: string): Promise<void> {
     const periodId = await getCurrentAcademicPeriodId();
     const { error } = await supabase
       .from("dormitory_enrollment")
-      .delete()
+      .update({ status: "inactive" })
       .eq("dormer_id", id)
       .eq("academic_period_id", periodId);
 
@@ -300,8 +346,29 @@ export async function remove(id: string): Promise<void> {
       console.error("Error removing dormer enrollment:", error);
       throw new Error(error.message);
     }
+
+    const { error: roleError } = await supabase
+      .from("dormitory_roles")
+      .update({ is_active: false })
+      .eq("user_id", id);
+
+    if (roleError) {
+      console.error("Error removing dormer role:", roleError);
+      throw new Error(roleError.message);
+    }
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ is_active: false })
+      .eq("id", id);
+
+    if (profileError) {
+      console.error("Error removing dormer profile:", profileError);
+      throw new Error(profileError.message);
+    }
   } catch (e) {
     console.error("Failed to remove enrollment", e);
+    throw e;
   }
 }
 
@@ -310,7 +377,7 @@ export async function importMany(
 ): Promise<Dormer[]> {
   const created: Dormer[] = [];
   for (const input of inputs) {
-    //created.push(await create(input));
+    created.push(await create(input));
   }
   return created;
 }
