@@ -7,9 +7,9 @@ import type {
 } from "./types";
 
 export interface DormersDataAccess {
-  list(): Promise<Dormer[]>;
-  listForDormitory(dormitoryId: string): Promise<Dormer[]>;
-  listForDormitoryWithBills(dormitoryId: string): Promise<DormerWithBills[]>;
+  list(academicPeriodId?: string): Promise<Dormer[]>;
+  listForDormitory(dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
+  listForDormitoryWithBills(dormitoryId: string, academicPeriodId: string): Promise<DormerWithBills[]>;
   getById(id: string): Promise<Dormer | null>;
   create(input: CreateDormerInput): Promise<Dormer>;
   update(id: string, input: UpdateDormerInput): Promise<Dormer>;
