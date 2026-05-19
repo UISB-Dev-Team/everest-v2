@@ -20,7 +20,7 @@ export function useDormers() {
   const { selected: selectedPeriod } = useAcademicPeriod();
   const academicPeriodId = selectedPeriod?.id ?? null;
 
-  const [dormers, setDormers] = useState<Dormer[]>([]);
+  const [dormers, setDormers] = useState<DormerWithBills[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [payables, setPayables] = useState<RegularCharge[]>([]);
   const [loading, setLoading] = useState(true);

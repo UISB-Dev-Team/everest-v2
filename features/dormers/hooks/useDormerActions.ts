@@ -8,6 +8,7 @@ import { paymentsData } from "@/features/payments/data";
 import type {
   CreateDormerInput,
   Dormer,
+  DormerWithBills,
   UpdateDormerInput,
 } from "@/features/dormers/data";
 import type { Bill, CreatePaymentInput } from "@/features/payments/data";
@@ -27,7 +28,7 @@ interface PaymentInput {
  * mutation through the data-access seam. Email-sending is mocked with a toast
  * so flows feel complete; backend dev wires real `sendEmail()` later.
  */
-export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers: React.Dispatch<React.SetStateAction<Dormer[]>>, setBills: React.Dispatch<React.SetStateAction<Bill[]>>) {
+export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers: React.Dispatch<React.SetStateAction<DormerWithBills[]>>, setBills: React.Dispatch<React.SetStateAction<Bill[]>>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const { user } = useAuth();
@@ -47,7 +48,8 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           ...newProfile,
           dormitory_id: input.dormitory_id ?? null,
           room_number: input.room_number ?? null,
-          status: "active"
+          status: "active",
+          bills: []
         }
       ])
       toast.success("Dormer added successfully!");
@@ -206,7 +208,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     setIsSubmitting(true);
     setErrors([]);
     const errorList: string[] = [];
-    const created: Dormer[] = []
+    const created: DormerWithBills[] = []
     try {
       for (const row of rows) {
         if (_dormers.some((d) => d.email === row.email)) {
@@ -219,7 +221,8 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           dormitory_id: row.dormitory_id ?? null,
           room_number: row.room_number ?? null,
           status: "active",
-        } satisfies Dormer);
+          bills: []
+        });
       }
       if (created.length) setDormers((prev) => [...prev, ...created]);
       setErrors(errorList);

@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { regularChargesData } from "@/features/regular-charges/data";
 import type {
   CreateRegularChargeInput,
   RegularCharge,
   UpdateRegularChargeInput,
 } from "@/features/regular-charges/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { createRegularCharge, listForDormitory, updateRegularCharge } from "../data/supabase";
 
 export function useRegularCharges() {
-  const { user } = useAuth();
-  const dormitoryId = user?.dormitoryId ?? null;
+  const { dormitoryId } = useDormitory()
   const [payables, setPayables] = useState<RegularCharge[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,32 +24,42 @@ export function useRegularCharges() {
     }
     setLoading(true);
     try {
-      const list = await regularChargesData.listForDormitory(dormitoryId);
+      const list = await listForDormitory(dormitoryId);
+      console.log(list)
       setPayables(list);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
-    let cancelled = false;
-    if (!dormitoryId) {
-      setLoading(false);
-      return;
+  let cancelled = false;
+
+  if (!dormitoryId) {
+    setLoading(false);
+    // ❌ removed setPayables([]) — don't wipe on transient undefined
+    return;
+  }
+  
+  setLoading(true);
+
+  const fetchPayables = async () => {
+    try {
+      const list = await listForDormitory(dormitoryId);
+      if (!cancelled) setPayables(list);
+    } catch (e) {
+      console.error(e);
+      if (!cancelled) toast.error("Failed to load payables.");
+    } finally {
+      if (!cancelled) setLoading(false);
     }
-    setLoading(true);
-    regularChargesData
-      .listForDormitory(dormitoryId)
-      .then((list) => {
-        if (!cancelled) setPayables(list);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [dormitoryId]);
+  };
+
+  fetchPayables();
+
+  return () => {
+    cancelled = true;
+  };
+}, [dormitoryId]);
 
   const savePayable = async (input: {
     id?: string;
@@ -69,7 +79,7 @@ export function useRegularCharges() {
           amount: input.amount,
           description: input.description,
         };
-        await regularChargesData.update(input.id, update);
+        await updateRegularCharge(input.id, update);
         toast.success("Payable updated!");
       } else {
         const create: CreateRegularChargeInput = {
@@ -78,7 +88,7 @@ export function useRegularCharges() {
           description: input.description,
           dormitory_id: dormitoryId,
         };
-        await regularChargesData.create(create);
+        await createRegularCharge(create);
         toast.success("Payable added!");
       }
       await refresh();
@@ -89,6 +99,6 @@ export function useRegularCharges() {
       setIsSubmitting(false);
     }
   };
-
+  console.log("payables here: ", payables)
   return { payables, loading, isSubmitting, savePayable, refresh };
 }

@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   Bill,
   BillWithDormer,
@@ -14,10 +14,10 @@ import type {
 
 export interface PaymentsDataAccess {
   // Bills
-  listBillsForDormer(dormerId: string): Promise<Bill[]>;
-  listBillsForDormitory(dormitoryId: string): Promise<BillWithDormer[]>;
+  listBillsForDormer(dormerId: string, academicPeriodId: string): Promise<Bill[]>;
+  listBillsForDormitory(dormitoryId: string, academicPeriodId: string): Promise<BillWithDormer[]>;
   listBillsForDormitoryWithPayments(
-    dormitoryId: string
+    dormitoryId: string, academicPeriodId: string
   ): Promise<BillWithPayments[]>;
   getBillById(id: string): Promise<BillWithDormer | null>;
   createBill(input: CreateBillInput): Promise<Bill>;
@@ -31,22 +31,22 @@ export interface PaymentsDataAccess {
   ): Promise<Bill[]>;
 
   // Payments
-  listForDormer(dormerId: string): Promise<Payment[]>;
+  listForDormer(dormerId: string, academicPeriodId: string): Promise<Payment[]>;
   listPaymentsForDormitory(
-    dormitoryId: string
+    dormitoryId: string, academicPeriodId: string
   ): Promise<PaymentWithRecorder[]>;
-  listPaymentsForBill(billId: string): Promise<PaymentWithRecorder[]>;
+  listPaymentsForBill(billId: string, academicPeriodId: string): Promise<PaymentWithRecorder[]>;
   getPaymentById(id: string): Promise<Payment | null>;
   recordPayment(input: CreatePaymentInput): Promise<Payment>;
   updatePayment(id: string, input: UpdatePaymentInput): Promise<Payment>;
   removePayment(id: string): Promise<void>;
 
   // Aggregates
-  summaryForDormer(dormerId: string): Promise<PaymentSummary>;
-  summaryForDormitory(dormitoryId: string): Promise<PaymentSummary>;
+  summaryForDormer(dormerId: string, academicPeriodId: string): Promise<PaymentSummary>;
+  summaryForDormitory(dormitoryId: string, academicPeriodId: string): Promise<PaymentSummary>;
 }
 
-export const paymentsData: PaymentsDataAccess = mock;
+export const paymentsData: PaymentsDataAccess = supabase;
 
 export type {
   Bill,
