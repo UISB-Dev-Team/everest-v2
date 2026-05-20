@@ -459,7 +459,7 @@ function mapPayment(input: any, academicPeriodId: string, dormitoryId: string, r
     dormitory_id: dormitoryId,
     bill_id: input.bill_id,
     dormer_id: input.dormer_id,
-    amount: input.amount_paid,
+    amount: input.amount_paid ?? input.amount,
     created_at: input.payment_date,
     payment_method: input.payment_method,
     recorded_by: recordedBy,
@@ -508,6 +508,7 @@ export async function recordPayment(
 
   return payment;
 }
+
 
 export async function updatePayment(
   id: string,

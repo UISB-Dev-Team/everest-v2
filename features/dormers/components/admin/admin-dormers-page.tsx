@@ -68,7 +68,7 @@ export function AdminDormersPage() {
 
   const { modal, selectedDormer, openModal, closeModal } = useModal();
 
-  const { handleRecordPayment } = usePaymentActions();
+  const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
 
   const saveBill = async (billData: any, user: any) => {
     setIsSubmitting(true);
@@ -146,14 +146,42 @@ export function AdminDormersPage() {
   };
 
   const handlePayAll = async () => {
-    if (selectedDormer) {
-      const unpaidBills = bills.filter(
-        (b) => b.dormer_id === selectedDormer.id && b.status === "Unpaid"
-      );
-      if (unpaidBills.length > 0) {
-        await payAllBills(unpaidBills);
-      }
-    }
+    if (!selectedDormer) return;
+
+    const unpaidBills: Bill[] = bills.filter(
+      (b) => b.dormer_id === selectedDormer.id && (b.status === "Unpaid" || b.status === "Partial")
+    );
+
+    if (unpaidBills.length === 0) return;
+
+    await handlePayAllBills(unpaidBills);
+
+    // ✅ optimistic update for bills list
+    setBills((prev: Bill[]) =>
+      prev.map((b) => {
+        if (!unpaidBills.some((ub) => ub.id === b.id)) return b;
+        return {
+          ...b,
+          amount_paid: b.total_amount_due,
+          status: "Paid",
+        };
+      })
+    );
+
+    // ✅ optimistic update for dormers
+    setDormers((prev) =>
+      prev.map((d) => {
+        if (d.id !== selectedDormer.id) return d;
+        return {
+          ...d,
+          bills: d.bills.map((b) =>
+            unpaidBills.some((ub) => ub.id === b.id)
+              ? { ...b, amount_paid: b.total_amount_due, status: "Paid" }
+              : b
+          ),
+        };
+      })
+    );
   };
   const hasFilters = searchTerm !== "" || statusFilter !== "All";
 

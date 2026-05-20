@@ -12,6 +12,8 @@ import type {
   UpdateDormerInput,
 } from "@/features/dormers/data";
 import type { Bill, CreatePaymentInput } from "@/features/payments/data";
+import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface PaymentInput {
   bill_id: string;
@@ -101,20 +103,11 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     }
   };
 
-  const handleSavePayment = async (paymentInput: PaymentInput) => {
+  const handleSavePayment = async (paymentInput: any, academicPeriod: any, dormitoryId: any, user: any) => {
     setIsSubmitting(true);
     try {
-      const payload: CreatePaymentInput = {
-        bill_id: paymentInput.bill_id,
-        academic_period_id: paymentInput.academic_period_id,
-        dormer_id: paymentInput.dormer_id,
-        dormitory_id: paymentInput.dormitory_id,
-        amount: paymentInput.amount,
-        payment_method: paymentInput.payment_method,
-        notes: paymentInput.notes ?? null,
-        recorded_by: user?.id ?? null,
-      };
-      await paymentsData.recordPayment(payload);
+      
+      await paymentsData.recordPayment(paymentInput.bill_id, academicPeriod?.id!, dormitoryId, user?.id);
       setBills((prev) =>
         prev.map((b) => {
           if (b.id !== paymentInput.bill_id) return b;
@@ -168,7 +161,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     }
   };
 
-  const payAllBills = async (unpaidBills: Bill[]) => {
+  const payAllBills = async (unpaidBills: Bill[], academicPeriod: any, dormitoryId: any, user: any) => {
     setIsSubmitting(true);
     try {
       for (const bill of unpaidBills) {
@@ -177,16 +170,8 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           bill.total_amount_due - bill.amount_paid
         );
         if (remaining <= 0) continue;
-        await paymentsData.recordPayment({
-          bill_id: bill.id,
-          academic_period_id: bill.academic_period_id,
-          dormer_id: bill.dormer_id,
-          dormitory_id: bill.dormitory_id,
-          amount: remaining,
-          payment_method: "Cash",
-          notes: "Pay all bills",
-          recorded_by: user?.id ?? null,
-        });
+        await paymentsData.recordPayment(bill.id, academicPeriod?.id!, dormitoryId!, user?.id!);
+        
       }
       setBills((prev) =>
         prev.map((b) =>
