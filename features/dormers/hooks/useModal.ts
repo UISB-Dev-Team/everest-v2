@@ -16,8 +16,8 @@ export function useModal() {
     bill: Bill | null = null
   ) => {
     setModal(modalType);
-    setSelectedDormer(dormer);
-    setSelectedBill(bill);
+    if (dormer !== undefined) setSelectedDormer(dormer);  // only update if explicitly passed
+    if (bill !== undefined) setSelectedBill(bill); 
   };
 
   const closeModal = () => {

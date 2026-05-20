@@ -23,13 +23,16 @@ import GenerateBillModal from "./generate-bill-modal";
 import { regularChargesData } from "@/features/regular-charges/data";
 import { useBills } from "../../hooks/usBills";
 import { useState } from "react";
+import PaymentModal from "./payments-modal";
+import { DormerWithBills } from "../../data";
+import { usePaymentActions } from "@/features/payments/hooks/usePaymentActions";
 
 export function AdminDormersPage() {
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showBulkConfirmDialog, setShowBulkConfirmDialog] = useState(false);
-  const [billToCreate, setBillToCreate] = useState<any>(null);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [bulkDuplicates, setBulkDuplicates] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImportingBills, setIsImportingBills] = useState(false);
@@ -65,6 +68,7 @@ export function AdminDormersPage() {
 
   const { modal, selectedDormer, openModal, closeModal } = useModal();
 
+  const { handleRecordPayment } = usePaymentActions();
 
   const saveBill = async (billData: any, user: any) => {
     setIsSubmitting(true);
@@ -80,6 +84,59 @@ export function AdminDormersPage() {
     setIsImportingBills(false);
     setShowBulkConfirmDialog(false);
   };
+
+  const handleGenerateBill = async (billData: any) => {
+    setIsSubmitting(true);
+    try {
+      const newBill = await generateBill(billData);
+      if(!newBill) return;
+      const bill = newBill as Bill; // ✅ narrow the type once
+
+      setDormers((prev) =>
+        prev.map((d) => {
+          if (d.id !== billData.dormer_id) return d;
+          const exists = d.bills.some((b) => b.id === bill.id);
+          return {
+            ...d,
+            bills: exists
+              ? d.bills.map((b) => (b.id === bill.id ? bill : b))
+              : [...d.bills, bill],
+          };
+        })
+      );
+
+      setBills((prev: Bill[]) => {
+        const exists = prev.some((b) => b.id === bill.id);
+        return exists
+          ? prev.map((b) => (b.id === bill.id ? bill : b))
+          : [...prev, bill];
+      });
+
+      closeModal();
+    } catch (err) {
+      console.error("Failed to generate bill:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  const handleSavePayment = async(paymentData: any) => {
+    setIsSubmitting(true);
+    await handleRecordPayment(paymentData);
+    setBills((prev: Bill[]) =>
+      prev.map((b) => {
+        if (b.id !== paymentData.bill_id) return b;
+        const newAmountPaid = (b.amount_paid ?? 0) + paymentData.amount_paid;
+        const remaining = b.total_amount_due - newAmountPaid;
+        return {
+          ...b,
+          amount_paid: newAmountPaid,
+          status: remaining <= 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid",
+        };
+      })
+    );
+    setIsSubmitting(false);
+    closeModal();
+  }
 
   if (loading) return <DormersPageSkeleton />;
 
@@ -99,6 +156,7 @@ export function AdminDormersPage() {
     }
   };
   const hasFilters = searchTerm !== "" || statusFilter !== "All";
+
 
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -175,7 +233,10 @@ export function AdminDormersPage() {
         isOpen={modal === "bills"}
         onClose={closeModal}
         dormer={selectedDormer}
-        onRecordPayment={(b) => openModal("payment", b as any)}
+        onRecordPayment={(b) => {
+          setSelectedBill(b as Bill);   // ✅ set bill first
+          openModal("payment", selectedDormer, b as Bill);          // ✅ don't pass bill as dormer
+        }}
         onPayAll={handlePayAll}
         payables={payables}
       />
@@ -184,22 +245,25 @@ export function AdminDormersPage() {
         isOpen={modal === "generateBill"}
         onClose={closeModal}
         dormer={selectedDormer}
-        onGenerateBill={generateBill}
+        onGenerateBill={handleGenerateBill}
         onGenerateBillsBulk={generateBillsBulk}
         payables={payables}
         bills={bills}
         setShowConfirmDialog={setShowConfirmDialog}
         setShowErrorModal={setShowErrorModal}
-        setBillToCreate={setBillToCreate}
+        setBillToCreate={setSelectedBill}
+      />
+
+      <PaymentModal
+        isOpen={modal === "payment"}
+        onClose={closeModal}
+        dormer={selectedDormer}        // ✅ actual dormer from useModal
+        bill={selectedBill}            // ✅ actual bill from state
+        onSavePayment={handleSavePayment}
       />
 
       {/* Placeholders — to be ported in a follow-up batch */}
-      
-      <PlaceholderModal
-        isOpen={modal === "payment"}
-        onClose={closeModal}
-        title="Record Payment"
-      />
+
       <PlaceholderModal
         isOpen={modal === "import"}
         onClose={closeModal}
@@ -234,7 +298,7 @@ export function AdminDormersPage() {
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => generateBill(billToCreate)}
+              onClick={() => generateBill(selectedBill)}
               disabled={isSubmitting}
               variant={undefined}
               size={undefined}

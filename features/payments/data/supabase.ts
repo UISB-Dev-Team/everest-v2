@@ -15,6 +15,9 @@ import type {
 } from "./types";
 import type { Tables } from "@/database.types";
 import { getById } from "@/features/dormers/data/supabase";
+import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 const supabase = createClient();
 
@@ -450,10 +453,31 @@ export async function getPaymentById(id: string): Promise<Payment | null> {
   return data ?? null;
 }
 
-export async function recordPayment(input: CreatePaymentInput): Promise<Payment> {
+function mapPayment(input: any, academicPeriodId: string, dormitoryId: string, recordedBy: string) {
+  return {
+    academic_period_id: academicPeriodId,
+    dormitory_id: dormitoryId,
+    bill_id: input.bill_id,
+    dormer_id: input.dormer_id,
+    amount: input.amount_paid,
+    created_at: input.payment_date,
+    payment_method: input.payment_method,
+    recorded_by: recordedBy,
+    notes: input.notes,
+  } as CreatePaymentInput;
+}
+
+export async function recordPayment(
+  input: any,
+  academicPeriodId: string,
+  dormitoryId: string,
+  recordedBy: string
+): Promise<Payment> {
+  const mappedInput = mapPayment(input, academicPeriodId, dormitoryId, recordedBy);
+  console.log("mappedInput ", mappedInput)
   const { data: payment, error: paymentError } = await supabase
     .from("payments")
-    .insert(input)
+    .insert(mappedInput)
     .select()
     .single();
 
@@ -467,15 +491,18 @@ export async function recordPayment(input: CreatePaymentInput): Promise<Payment>
 
   if (billError) throw billError;
 
-  const newAmountPaid = bill.amount_paid + input.amount;
+  const newAmountPaid = (bill.amount_paid ?? 0) + input.amount_paid;
   const remaining = bill.total_amount_due - newAmountPaid;
   const status =
     remaining <= 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid";
 
   const { error: updateError } = await supabase
-    .from("bills")
-    .update({ amount_paid: newAmountPaid, status })
-    .eq("id", input.bill_id);
+  .from("bills")
+  .update({ 
+    amount_paid: newAmountPaid, 
+    status 
+  })
+  .eq("id", input.bill_id);
 
   if (updateError) throw updateError;
 

@@ -28,8 +28,9 @@ export function useBills() {
     const generateBill = async (billData: any) => {
         try {
             const mappedInput = mapBillInput(billData) as CreateBillInput;
-            await createBill(mappedInput);
+            const result = await createBill(mappedInput);
             toast.success("Bill generated successfully");
+            return result;
         } catch (error) {
             toast.error("Failed to generate bill");
         }
