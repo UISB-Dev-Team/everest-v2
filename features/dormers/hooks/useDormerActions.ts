@@ -8,9 +8,12 @@ import { paymentsData } from "@/features/payments/data";
 import type {
   CreateDormerInput,
   Dormer,
+  DormerWithBills,
   UpdateDormerInput,
 } from "@/features/dormers/data";
 import type { Bill, CreatePaymentInput } from "@/features/payments/data";
+import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface PaymentInput {
   bill_id: string;
@@ -27,7 +30,7 @@ interface PaymentInput {
  * mutation through the data-access seam. Email-sending is mocked with a toast
  * so flows feel complete; backend dev wires real `sendEmail()` later.
  */
-export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
+export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers: React.Dispatch<React.SetStateAction<DormerWithBills[]>>, setBills: React.Dispatch<React.SetStateAction<Bill[]>>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const { user } = useAuth();
@@ -40,7 +43,17 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
         toast.error("A dormer with this email already exists.");
         return;
       }
-      await dormersData.create(input);
+      const newProfile = await dormersData.create(input);
+      setDormers((prev) => [
+        ...prev,
+        {
+          ...newProfile,
+          dormitory_id: input.dormitory_id ?? null,
+          room_number: input.room_number ?? null,
+          status: "active",
+          bills: []
+        }
+      ])
       toast.success("Dormer added successfully!");
       toast.message("(Welcome email would be sent in production.)");
     } catch (e) {
@@ -55,6 +68,17 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
     setIsSubmitting(true);
     try {
       await dormersData.update(id, input);
+      setDormers((prev) => 
+        prev.map((dormer) => 
+          dormer.id === id ? { 
+            ...dormer, 
+            ...input, 
+            dormitory_id: input.dormitory_id ?? dormer.dormitory_id,
+            room_number: input.room_number ?? dormer.room_number,
+            status: input.is_active ? "active" : "inactive",
+          } : dormer
+        )
+      )
       toast.success("Dormer updated successfully!");
     } catch (e) {
       console.error(e);
@@ -68,6 +92,8 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
     setIsSubmitting(true);
     try {
       await dormersData.remove(dormerId);
+      setDormers((prev) => prev.filter((dormer) => dormer.id !== dormerId))
+      setBills((prev) => prev.filter((bill) => bill.dormer_id !== dormerId))
       toast.success("Dormer deleted successfully!");
     } catch (e) {
       console.error(e);
@@ -77,20 +103,24 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
     }
   };
 
-  const handleSavePayment = async (paymentInput: PaymentInput) => {
+  const handleSavePayment = async (paymentInput: any, academicPeriod: any, dormitoryId: any, user: any) => {
     setIsSubmitting(true);
     try {
-      const payload: CreatePaymentInput = {
-        bill_id: paymentInput.bill_id,
-        academic_period_id: paymentInput.academic_period_id,
-        dormer_id: paymentInput.dormer_id,
-        dormitory_id: paymentInput.dormitory_id,
-        amount: paymentInput.amount,
-        payment_method: paymentInput.payment_method,
-        notes: paymentInput.notes ?? null,
-        recorded_by: user?.id ?? null,
-      };
-      await paymentsData.recordPayment(payload);
+      
+      await paymentsData.recordPayment(paymentInput.bill_id, academicPeriod?.id!, dormitoryId, user?.id);
+      setBills((prev) =>
+        prev.map((b) => {
+          if (b.id !== paymentInput.bill_id) return b;
+          const newAmountPaid = b.amount_paid + paymentInput.amount;
+          const remaining = b.total_amount_due - newAmountPaid;
+          return {
+            ...b,
+            amount_paid: newAmountPaid,
+            status:
+              remaining <= 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid",
+          };
+        })
+      )
       toast.success("Payment recorded successfully!");
       toast.message("(Receipt email would be sent in production.)");
     } catch (e) {
@@ -115,12 +145,13 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
   ) => {
     setIsSubmitting(true);
     try {
-      await paymentsData.createBill({
+      const newBill = await paymentsData.createBill({
         ...billInput,
         amount_paid: 0,
         status: "Unpaid",
         created_by: user?.id ?? null,
       });
+      setBills((prev) => [...prev, newBill])
       toast.success("Bill generated successfully!");
     } catch (e) {
       console.error(e);
@@ -130,7 +161,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
     }
   };
 
-  const payAllBills = async (unpaidBills: Bill[]) => {
+  const payAllBills = async (unpaidBills: Bill[], academicPeriod: any, dormitoryId: any, user: any) => {
     setIsSubmitting(true);
     try {
       for (const bill of unpaidBills) {
@@ -139,17 +170,16 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
           bill.total_amount_due - bill.amount_paid
         );
         if (remaining <= 0) continue;
-        await paymentsData.recordPayment({
-          bill_id: bill.id,
-          academic_period_id: bill.academic_period_id,
-          dormer_id: bill.dormer_id,
-          dormitory_id: bill.dormitory_id,
-          amount: remaining,
-          payment_method: "Cash",
-          notes: "Pay all bills",
-          recorded_by: user?.id ?? null,
-        });
+        await paymentsData.recordPayment(bill.id, academicPeriod?.id!, dormitoryId!, user?.id!);
+        
       }
+      setBills((prev) =>
+        prev.map((b) =>
+          unpaidBills.some((u) => u.id === b.id)
+            ? { ...b, amount_paid: b.total_amount_due, status: "Paid" }
+            : b
+        )
+      );
       toast.success("All bills marked as paid!");
     } catch (e) {
       console.error(e);
@@ -163,14 +193,23 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[]) {
     setIsSubmitting(true);
     setErrors([]);
     const errorList: string[] = [];
+    const created: DormerWithBills[] = []
     try {
       for (const row of rows) {
         if (_dormers.some((d) => d.email === row.email)) {
           errorList.push(`Dormer with email ${row.email} already exists.`);
           continue;
         }
-        await dormersData.create(row);
+        const newProfile = await dormersData.create(row);
+        created.push({
+          ...newProfile,
+          dormitory_id: row.dormitory_id ?? null,
+          room_number: row.room_number ?? null,
+          status: "active",
+          bills: []
+        });
       }
+      if (created.length) setDormers((prev) => [...prev, ...created]);
       setErrors(errorList);
       if (errorList.length === 0) {
         toast.success(`Imported ${rows.length} dormer(s) successfully!`);

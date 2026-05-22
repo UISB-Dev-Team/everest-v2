@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   CreateRegularChargeInput,
   RegularCharge,
@@ -8,15 +8,15 @@ import type {
 export interface RegularChargesDataAccess {
   listForDormitory(dormitoryId: string): Promise<RegularCharge[]>;
   getById(id: string): Promise<RegularCharge | null>;
-  create(input: CreateRegularChargeInput): Promise<RegularCharge>;
-  update(
+  createRegularCharge(input: CreateRegularChargeInput): Promise<RegularCharge>;
+  updateRegularCharge(
     id: string,
     input: UpdateRegularChargeInput
   ): Promise<RegularCharge>;
   remove(id: string): Promise<void>;
 }
 
-export const regularChargesData: RegularChargesDataAccess = mock;
+export const regularChargesData: RegularChargesDataAccess = supabase;
 
 export type {
   CreateRegularChargeInput,

@@ -13,14 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Dormer } from "@/features/dormers/data";
+import type { Dormer, DormerWithBills } from "@/features/dormers/data";
 
 interface DormersTableProps {
-  dormers: Dormer[];
-  onGenerateBill: (dormer: Dormer) => void;
-  onViewBills: (dormer: Dormer) => void;
-  onDelete: (dormer: Dormer) => void;
-  onEdit: (dormer: Dormer) => void;
+  dormers: DormerWithBills[];
+  onGenerateBill: (dormer: DormerWithBills) => void;
+  onViewBills: (dormer: DormerWithBills) => void;
+  onDelete: (dormer: DormerWithBills) => void;
+  onEdit: (dormer: DormerWithBills) => void;
   hasFilters?: boolean;
   onResetFilters?: () => void;
 }

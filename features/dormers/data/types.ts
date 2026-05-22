@@ -4,14 +4,10 @@ export type DormerProfile = Tables<"profiles">;
 export type DormerEnrollment = Tables<"dormitory_enrollment">;
 export type DormerRoleWithProfile = Tables<"dormitory_roles"> & { profiles: DormerProfile };
 
-/**
- * A dormer = profiles row joined with their current dormitory_enrollment.
- * Mirrors the old Firestore "dormer" shape but with snake_case Supabase fields.
- */
 export interface Dormer extends DormerProfile {
   dormitory_id: string | null;
   room_number: string | null;
-  is_deleted?: boolean;
+  status: string | null;
 }
 
 export interface DormerWithBills extends Dormer {

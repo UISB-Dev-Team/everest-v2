@@ -8,6 +8,7 @@ interface DormitoryInfo {
     dormitoryId: string | null;
     enrollmentId: string | null;
     roomNumber: string | null;
+    dormitoryName: string | null;
     loading: boolean;
 }
 
@@ -19,55 +20,91 @@ export function useDormitory(): DormitoryInfo {
         dormitoryId: null,
         enrollmentId: null,
         roomNumber: null,
+        dormitoryName: null,
         loading: true,
-    })
+    });
 
     useEffect(() => {
-        if (!user) {
+    let cancelled = false;
+
+    if (!user) {
+        setInfo({
+            dormitoryId: null,
+            enrollmentId: null,
+            roomNumber: null,
+            dormitoryName: null,
+            loading: false,
+        });
+        return;
+    }
+
+    // ✅ Advisers/admins have dormitoryId directly in metadata — no DB query needed
+    if (user.dormitoryId && user.role !== "dormer") {
+        setInfo({
+            dormitoryId: user.dormitoryId,
+            enrollmentId: null,
+            roomNumber: null,
+            dormitoryName: null,
+            loading: true, // still loading name
+        });
+
+        // just fetch the name
+        supabaseClient
+            .from("dormitories")
+            .select("name")
+            .eq("id", user.dormitoryId)
+            .single()
+            .then(({ data }) => {
+                if (!cancelled) {
+                    setInfo(prev => ({
+                        ...prev,
+                        dormitoryName: data?.name ?? null,
+                        loading: false,
+                    }));
+                }
+            });
+
+        return () => { cancelled = true; };
+    }
+
+    // Dormers — fetch from enrollment
+    setInfo(prev => ({ ...prev, loading: true }));
+
+    const fetchEnrollment = async () => {
+        try {
+            const { data, error } = await supabaseClient
+                .from("dormitory_enrollment")
+                .select("id, dormitory_id, room_number, dormitory_id(name)")
+                .eq("dormer_id", user.id)
+                .limit(1)
+                .single();
+
+            if (cancelled) return;
+            if (error) throw error;
+
             setInfo({
-                dormitoryId: null,
-                enrollmentId: null,
-                roomNumber: null,
+                dormitoryId: data.dormitory_id,
+                enrollmentId: data.id,
+                roomNumber: data.room_number,
+                dormitoryName: data.dormitory_id?.name ?? null,
                 loading: false,
             });
-            return;
+        } catch (e) {
+            if (!cancelled) {
+                console.error("useDormitory fetch error:", e);
+                setInfo({
+                    dormitoryId: user.dormitoryId ?? null,
+                    enrollmentId: null,
+                    roomNumber: null,
+                    dormitoryName: null,
+                    loading: false,
+                });
+            }
         }
+    };
 
-        if(user.dormitoryId) {
-            setInfo({
-                dormitoryId: user.dormitoryId,
-                enrollmentId: null,
-                roomNumber: null,
-                loading: false,
-            })
-        }
-
-        supabaseClient
-            .from("dormitory_enrollment")
-            .select("id, dormitory_id, room_number, academic_period_id")
-            .eq("dormer_id", user.id)
-            .limit(1)
-            .single()
-            .then(({data, error}) => {
-                if(error) throw error;
-                if(data) {
-                    setInfo({
-                        dormitoryId: data.dormitory_id,
-                        enrollmentId: data.id,
-                        roomNumber: data.room_number,
-                        loading: false,
-                    })
-                } else {
-                    setInfo({
-                        dormitoryId: null,
-                        enrollmentId: null,
-                        roomNumber: null,
-                        loading: false,
-                    })
-                }
-            })
-        
-    }, [user?.id, user?.dormitoryId]);
-
+    fetchEnrollment();
+    return () => { cancelled = true; };
+}, [user?.id, user?.dormitoryId, user?.role]);
     return info;
 }
