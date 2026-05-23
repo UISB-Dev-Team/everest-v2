@@ -366,6 +366,15 @@ export async function remove(id: string): Promise<void> {
       console.error("Error removing dormer profile:", profileError);
       throw new Error(profileError.message);
     }
+
+    const { error: billsError } = await supabase
+      .from("bills")
+      .update({ is_deleted: true })
+      .neq("status", "Paid")
+      .eq("dormer_id", id)
+      .eq("academic_period_id", periodId);
+
+    if (billsError) throw new Error(billsError.message);
   } catch (e) {
     console.error("Failed to remove enrollment", e);
     throw e;

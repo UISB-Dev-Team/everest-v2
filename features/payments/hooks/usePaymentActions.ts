@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Bill, paymentsData, type CreatePaymentInput } from "@/features/payments/data";
-import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface PaymentInput {
@@ -19,7 +19,7 @@ interface PaymentInput {
 
 export function usePaymentActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { current: academicPeriod } = useAcademicPeriod();
+  const { selected: academicPeriod } = useAcademicPeriod();
   const { dormitoryId } = useDormitory();
   const { user } = useAuth();
 
@@ -46,7 +46,6 @@ export function usePaymentActions() {
     setIsSubmitting(true);
     try {
       for (const bill of bills) {
-        console.log("Bill", bill);
         await paymentsData.recordPayment(
           {
             bill_id: bill.id,

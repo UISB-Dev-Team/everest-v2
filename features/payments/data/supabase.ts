@@ -67,7 +67,8 @@ export async function listBillsForDormer(dormerId: string, academicPeriodId: str
     try{
         const { data, error } = await supabase.from("bills").select("*")
         .eq("dormer_id", dormerId)
-        .eq("academic_period_id", academicPeriodId);
+        .eq("academic_period_id", academicPeriodId)
+        .or("is_deleted.eq.false,is_deleted.is.null");
         
         if(error){
             throw error;
@@ -98,6 +99,7 @@ export async function listBillsForDormitory(
           `)
           .eq("dormitory_id", dormitoryId)
           .eq("academic_period_id", academicPeriodId)
+          .or("is_deleted.eq.false,is_deleted.is.null")
           .order("billing_month", { ascending: true }),
 
         supabase
@@ -153,6 +155,7 @@ export async function listBillsForDormitoryWithPayments(
         `)
         .eq("dormitory_id", dormitoryId)
         .eq("academic_period_id", academicPeriodId)
+        .or("is_deleted.eq.false,is_deleted.is.null")
         .order("billing_month", { ascending: true }),
 
       supabase
@@ -248,6 +251,7 @@ export async function getBillById(id: string): Promise<BillWithDormer | null> {
         )
       `)
       .eq("id", id)
+      .or("is_deleted.eq.false,is_deleted.is.null")
       .single();
 
     if (billError) throw billError;
@@ -302,7 +306,7 @@ export async function updateBill(id: string, input: UpdateBillInput): Promise<Bi
 export async function removeBill(id: string): Promise<void> {
   const { error } = await supabase
     .from("bills")
-    .delete()
+    .update({ is_deleted: true })
     .eq("id", id);
 
   if (error) throw error;
@@ -338,6 +342,7 @@ export async function generateBillsForDormitory(
     .eq("dormitory_id", dormitoryId)
     .eq("academic_period_id", academicPeriodId)
     .eq("billing_month", billingMonth)
+    .or("is_deleted.eq.false,is_deleted.is.null")
     .eq("regular_charge_id", regularChargeId);
 
   const alreadyBilled = new Set((existingBills ?? []).map((b) => b.dormer_id));
@@ -354,6 +359,7 @@ export async function generateBillsForDormitory(
       total_amount_due: charge.amount,
       amount_paid: 0,
       status: "Unpaid" as const,
+      is_deleted: false,
     }));
 
   if (!billsToInsert.length) return [];
@@ -491,10 +497,10 @@ export async function recordPayment(
 
   if (billError) throw billError;
 
-  const newAmountPaid = (bill.amount_paid ?? 0) + input.amount_paid;
-  const remaining = bill.total_amount_due - newAmountPaid;
+  const newAmountPaid = Math.min((bill.amount_paid ?? 0) + (input.amount_paid ?? input.amount), bill.total_amount_due);
+  const remaining = Math.max(0, bill.total_amount_due - newAmountPaid);
   const status =
-    remaining <= 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid";
+    remaining == 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid";
 
   const { error: updateError } = await supabase
   .from("bills")
@@ -545,6 +551,7 @@ export async function removePayment(id: string): Promise<void> {
     .from("bills")
     .select("total_amount_due, amount_paid")
     .eq("id", payment.bill_id)
+    .or("is_deleted.eq.false,is_deleted.is.null")
     .single();
 
   if (billError) throw billError;
@@ -583,7 +590,8 @@ export async function summaryForDormer(
     .from("bills")
     .select("total_amount_due, amount_paid, status")
     .eq("dormer_id", dormerId)
-    .eq("academic_period_id", academicPeriodId);
+    .eq("academic_period_id", academicPeriodId)
+    .or("is_deleted.eq.false,is_deleted.is.null");
 
   if (error) throw error;
   return computeSummary(data ?? []);
@@ -597,7 +605,8 @@ export async function summaryForDormitory(
     .from("bills")
     .select("total_amount_due, amount_paid, status")
     .eq("dormitory_id", dormitoryId)
-    .eq("academic_period_id", academicPeriodId);
+    .eq("academic_period_id", academicPeriodId)
+    .or("is_deleted.eq.false,is_deleted.is.null");
 
   if (error) throw error;
   return computeSummary(data ?? []);

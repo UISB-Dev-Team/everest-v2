@@ -13,14 +13,18 @@ import PaymentDetailsModal from "@/features/payments/components/admin/list-of-pa
 import PaymentModal from "@/features/payments/components/admin/payment-modal";
 import { PaymentsPageSkeleton } from "@/features/payments/components/admin/payments-page-skeleton";
 import type { BillWithPayments } from "@/features/payments/data";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 export function AdminPaymentsPage() {
+  
+  const user = useAuth()
   const {
     loading,
     paginatedBills,
     uniqueBillingPeriods,
     filteredBills,
     combinedBillData,
+    setCombinedBillData,
     summaryStats,
     searchTerm,
     setSearchTerm,
@@ -61,6 +65,37 @@ export function AdminPaymentsPage() {
   const openPaymentModalForBill = (bill: BillWithPayments) => {
     setSelectedBill(bill);
     setIsPaymentModalOpen(true);
+  };
+
+  const handlePayment = async (paymentInput: any) => {
+    await handleRecordPayment(paymentInput);
+
+    setCombinedBillData(prev =>
+      prev.map(b => {
+        if (b.id !== selectedBill?.id) return b;
+
+        const newAmountPaid = Math.min((b.amount_paid ?? 0) + paymentInput.amount, b.total_amount_due);
+        const remaining = Math.max(b.total_amount_due - newAmountPaid, 0);
+        const newStatus = remaining == 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid";
+
+        return {
+          ...b,
+          amount_paid: newAmountPaid,
+          remaining_balance: Math.max(0, remaining),
+          status: newStatus,
+          payments: [
+            ...b.payments,
+            {
+              ...paymentInput,
+              recorded_by_full_name: user.user?.fullName, // fill in if you have the recorder's name in context
+              recorded_by_email: user.user?.email,
+            },
+          ],
+        };
+      })
+    );
+
+    closePaymentModal();
   };
 
   const closePaymentModal = () => setIsPaymentModalOpen(false);
@@ -104,10 +139,7 @@ export function AdminPaymentsPage() {
         isOpen={isPaymentModalOpen}
         onClose={closePaymentModal}
         bill={selectedBill}
-        onSavePayment={async (paymentInput) => {
-          await handleRecordPayment(paymentInput);
-          closePaymentModal();
-        }}
+        onSavePayment={handlePayment}
       />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">

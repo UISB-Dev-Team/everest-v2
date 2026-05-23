@@ -8,7 +8,8 @@ export function formatAmount(amount: number, currency = "PHP"): string {
 
 export function formatDate(input: string | Date): string {
   const date = typeof input === "string" ? new Date(input) : input;
-  if (Number.isNaN(date.getTime())) return "—";
+
+  if (Number.isNaN(date?.getTime())) return "—";
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "short",

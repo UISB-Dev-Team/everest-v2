@@ -22,8 +22,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useDormitoryBills } from "@/features/payments/hooks/usePayments";
 
 export function AdminPaymentsPage() {
-  const { user } = useAuth();
-  const { bills, loading } = useDormitoryBills(user?.dormitoryId ?? null);
+  const { bills, loading } = useDormitoryBills();
 
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">

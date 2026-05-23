@@ -22,6 +22,7 @@ export function useBills() {
             status: billData.status,
             total_amount_due: billData.totalAmountDue,
             updated_at: new Date().toISOString(),
+            is_deleted: false,
         } as CreateBillInput;
     };
 
