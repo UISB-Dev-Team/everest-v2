@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/table";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { EventDormerData } from "@/features/events/data";
+import DormerFilters from "@/features/dormers/components/admin/dormer-filters";
+import { useMemo, useState } from "react";
 
 interface EventDormersTableProps {
   dormers: EventDormerData[];
@@ -73,6 +75,18 @@ export default function EventDormersTable({
   eventAmount,
   onWaivePayment
 }: EventDormersTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  
+  const filteredDormers = useMemo(() => {
+    return dormers.filter((dormer) => {
+      const searchStr = `${dormer.first_name ?? ""} ${dormer.last_name ?? ""}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "All" || dormer.room_number === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [dormers, searchTerm, statusFilter]);
+  
   return (
     <Card className="border-2 border-gray-100 shadow-md bg-white">
       <CardHeader className="border-b border-gray-100">
@@ -84,9 +98,21 @@ export default function EventDormersTable({
             Track individual payment progress for this event
           </p>
         </div>
+
+        <DormerFilters
+            searchTerm={searchTerm}
+            onSearchChange={(e) => {setSearchTerm(e.target.value)}}
+            statusFilter={statusFilter}
+            onStatusChange={(status) => {setStatusFilter(status)}}
+            count={filteredDormers?.length}
+            resetFilter={() => {
+              setSearchTerm("");
+              setStatusFilter("All");
+              }}
+          />
       </CardHeader>
       <CardContent>
-        {dormers.length === 0 ? (
+        {filteredDormers.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="relative mb-6 inline-block">
               <div className="absolute inset-0 bg-gray-100/50 rounded-full blur-2xl" />
@@ -126,7 +152,7 @@ export default function EventDormersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dormers.map((dormer) => {
+              {filteredDormers.map((dormer) => {
                 const statusConfig = getStatusBadge(dormer.payment_status);
                 const StatusIcon = statusConfig.icon;
                 const initials = `${dormer.first_name?.[0] ?? ""}${
