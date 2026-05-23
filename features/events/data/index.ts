@@ -1,27 +1,31 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   CreateEventInput,
   CreateEventPaymentInput,
   Event,
   EventDormerData,
+  EventPayable,
   EventPayment,
   EventPaymentWithRecorder,
   UpdateEventInput,
 } from "./types";
 
 export interface EventsDataAccess {
-  listForDormitory(dormitoryId: string): Promise<Event[]>;
+  listForDormitory(dormitoryId: string, academicPeriodId: string): Promise<Event[]>;
   getById(id: string): Promise<Event | null>;
-  create(input: CreateEventInput): Promise<Event>;
+  create(input: CreateEventInput, academicPeriodId: string): Promise<Event>;
   update(id: string, input: UpdateEventInput): Promise<Event>;
   remove(id: string): Promise<void>;
 
-  listPaymentsForEvent(eventId: string): Promise<EventPaymentWithRecorder[]>;
-  listDormersForEvent(eventId: string): Promise<EventDormerData[]>;
+  listPaymentsForEvent(eventId: string, academicPeriodId: string): Promise<EventPaymentWithRecorder[]>;
+  listDormersForEvent(eventId: string, academicPeriodId: string): Promise<EventDormerData[]>;
   recordEventPayment(input: CreateEventPaymentInput): Promise<EventPayment>;
+
+  listAllEventPayables(dormitoryId: string, academicPeriodId: string): Promise<EventPayable[]>;
+  waiveEventPayable(payload: Omit<EventPayment, "id">): Promise<EventPayment>;
 }
 
-export const eventsData: EventsDataAccess = mock;
+export const eventsData: EventsDataAccess = supabase;
 
 export type {
   CreateEventInput,
@@ -31,4 +35,5 @@ export type {
   EventPayment,
   EventPaymentWithRecorder,
   UpdateEventInput,
+  EventPayable
 } from "./types";

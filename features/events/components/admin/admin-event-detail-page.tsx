@@ -18,19 +18,27 @@ import { useEventsActions } from "@/features/events/hooks/useEventsActions";
 import EventDormersTable from "@/features/events/components/admin/event-dormers-table";
 import AddEventPaymentModal from "@/features/events/components/admin/add-event-payment-modal";
 import type { EventDormerData } from "@/features/events/data";
+import { toast } from "sonner";
+import { Dormer } from "@/features/dormers/data";
 
 export function AdminEventDetailPage() {
   const params = useParams<{ id: string }>();
   const eventId = params?.id ?? null;
 
   const { event, dormers, loading, refresh } = useEventDetail(eventId);
-  const { recordEventPayment } = useEventsActions();
+  const { recordEventPayment, waiveEventPayable } = useEventsActions();
 
   const [selectedDormer, setSelectedDormer] = useState<EventDormerData | null>(
     null
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
+  const handleWaivePayment = async (dormer: Dormer) => {
+    console.log(dormer)
+    await waiveEventPayable(dormer.id, eventId!)
+    toast.success(`${dormer?.first_name} ${dormer?.last_name}'s event payable has been waived.`)  
+    refresh()
+  }
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -59,7 +67,7 @@ export function AdminEventDetailPage() {
   }
 
   const totalPaid = dormers.reduce((sum, d) => sum + d.amount_paid, 0);
-  const totalDue = event.amount_due * dormers.length;
+  const totalDue = event.amount_due * (dormers.length - dormers.filter((d) => d.payment_status === "Waived").length);
   const progressPercentage = totalDue > 0 ? (totalPaid / totalDue) * 100 : 0;
 
   return (
@@ -128,6 +136,10 @@ export function AdminEventDetailPage() {
           setSelectedDormer(d);
           setIsPaymentModalOpen(true);
         }}
+        onWaivePayment={(d) => {
+          setSelectedDormer(d);
+          handleWaivePayment(d);
+        }}
       />
 
       <AddEventPaymentModal
@@ -146,6 +158,7 @@ export function AdminEventDetailPage() {
             payment_date: input.payment_date,
             notes: input.notes,
             status: "Paid",
+            is_deleted: false
           });
           await refresh();
         }}

@@ -7,6 +7,7 @@ import {
   Clock,
   CreditCard,
   Users,
+  X,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -34,6 +35,7 @@ interface EventDormersTableProps {
   dormers: EventDormerData[];
   onLogPayment: (dormer: EventDormerData) => void;
   eventAmount: number;
+  onWaivePayment: (dormer: EventDormerData) => void;
 }
 
 interface StatusConfig {
@@ -69,6 +71,7 @@ export default function EventDormersTable({
   dormers,
   onLogPayment,
   eventAmount,
+  onWaivePayment
 }: EventDormersTableProps) {
   return (
     <Card className="border-2 border-gray-100 shadow-md bg-white">
@@ -216,7 +219,8 @@ export default function EventDormersTable({
                       )}
                     </TableCell>
                     <TableCell className="text-right w-[160px]">
-                      {dormer.payment_status !== "Paid" ? (
+                      {dormer.payment_status !== "Paid" && dormer.payment_status !== "Waived" ? (
+                        <div>
                         <Button
                           size="sm"
                           onClick={() => onLogPayment(dormer)}
@@ -225,6 +229,16 @@ export default function EventDormersTable({
                           <CreditCard className="h-4 w-4 mr-1" />
                           Log Payment
                         </Button>
+
+                            <Button
+                              size="sm"
+                              onClick={() => onWaivePayment(dormer)}
+                              className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Waive Payment
+                            </Button>
+                          </div>
                       ) : (
                         <Badge
                           variant="outline"
