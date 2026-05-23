@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Expense, UpdateExpenseInput } from "@/features/expenses/data";
+import { uploadReceiptImage } from "../../data/supabase";
 
 interface ViewEditExpenseModalProps {
   isOpen: boolean;
@@ -79,11 +80,16 @@ export default function ViewEditExpenseModal({
     setFormData((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setNewReceiptFile(file);
-      setReceiptPreview(URL.createObjectURL(file));
+      try {
+        const fileUrl = await uploadReceiptImage(file);
+        setNewReceiptFile(file);
+        setReceiptPreview(fileUrl);
+      } catch (error) {
+        toast.error("Failed to upload receipt image");
+      }
     }
   };
 
@@ -110,6 +116,7 @@ export default function ViewEditExpenseModal({
       toast.error(`Error: ${message}`);
     } finally {
       setIsSubmitting(false);
+      onClose();
     }
   };
 
@@ -157,7 +164,7 @@ export default function ViewEditExpenseModal({
               <div>
                 {receiptPreview ? (
                   <div className="relative">
-                    <Image
+                    <img
                       src={receiptPreview}
                       alt="Receipt Preview"
                       width={500}
@@ -206,7 +213,7 @@ export default function ViewEditExpenseModal({
             ) : (
               <div>
                 {receiptPreview && !imgError ? (
-                  <Image
+                  <img
                     src={receiptPreview}
                     alt="Expense Receipt"
                     width={800}

@@ -6,6 +6,7 @@ import {
   Calendar,
   Eye,
   ImageIcon,
+  Trash,
   TrendingDown,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,11 +33,13 @@ import type { ExpenseWithRecorder } from "@/features/expenses/data";
 interface ExpensesTableProps {
   expenses: ExpenseWithRecorder[];
   onViewDetails: (expense: ExpenseWithRecorder) => void;
+  onDelete: (expenseId: string) => void
 }
 
 export default function ExpensesTable({
   expenses,
   onViewDetails,
+  onDelete,
 }: ExpensesTableProps) {
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] =
@@ -109,14 +112,14 @@ export default function ExpensesTable({
                       Recorded By
                     </TableHead>
                     <TableHead className="text-right font-semibold text-gray-700">
-                      Details
+                      Action
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {expenses.map((expense) => {
                     const recorderName =
-                      expense.recorded_by_full_name ?? "Unknown";
+                      expense.recordedByFullName ?? "Unknown";
                     const recorderInitials = recorderName
                       .split(" ")
                       .map((n) => n[0])
@@ -188,9 +191,9 @@ export default function ExpensesTable({
                               </div>
                               <div
                                 className="text-xs text-gray-500 max-w-[200px] truncate"
-                                title={expense.recorded_by_email ?? ""}
+                                title={expense.recordedByEmail ?? ""}
                               >
-                                {expense.recorded_by_email ?? "—"}
+                                {expense.recordedByEmail ?? "—"}
                               </div>
                             </div>
                           </div>
@@ -203,6 +206,14 @@ export default function ExpensesTable({
                             className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all font-medium whitespace-nowrap"
                           >
                             <Eye className="h-4 w-4 mr-1" /> View Details
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onDelete(expense.id)}
+                            className="border-red-500 text-red-600 hover:bg-red-500 hover:text-white transition-all font-medium whitespace-nowrap"
+                          >
+                            <Trash className="h-4 w-4 mr-1" /> Delete
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -235,7 +246,7 @@ export default function ExpensesTable({
               </div>
               <div className="border rounded-lg overflow-hidden">
                 {selectedReceipt.receipt_image_url ? (
-                  <Image
+                  <img
                     src={selectedReceipt.receipt_image_url}
                     alt="Receipt"
                     width={500}

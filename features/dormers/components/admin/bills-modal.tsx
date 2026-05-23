@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Trash } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +31,7 @@ import { getStatusBadgeInfo } from "../../lib/badge-utils";
 import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 import { RegularCharge } from "@/features/regular-charges/data";
+import { toast } from "sonner";
 
 interface BillsModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ interface BillsModalProps {
   onRecordPayment: (bill: Bill) => void;
   onPayAll: () => Promise<void>;
   payables: RegularCharge[];
+  onDeleteBill: (billId: string) => void;
 }
 
 export default function BillsModal({
@@ -48,6 +50,7 @@ export default function BillsModal({
   onRecordPayment,
   onPayAll,
   payables,
+  onDeleteBill
 }: BillsModalProps) {
   const { ConfirmDialog } = useConfirmDialog();
   const [showPayAllConfirm, setShowPayAllConfirm] = useState(false);
@@ -69,7 +72,7 @@ export default function BillsModal({
   const totalUnpaidAmount = unpaidBills.reduce(
     (sum, b) => sum + (b.total_amount_due - (b.amount_paid || 0)),
     0
-  );
+  )
 
   return (
     <>
@@ -175,7 +178,7 @@ export default function BillsModal({
                               <span className="truncate">{bill.status}</span>
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right w-[140px]">
+                          <TableCell className="text-right w-full flex flex-col gap-2">
                             <div className="flex gap-2 justify-end">
                               {(bill.status === "Unpaid" ||
                                 bill.status === "Partial") && (
@@ -188,6 +191,19 @@ export default function BillsModal({
                                 >
                                   <CreditCard className="h-4 w-4 mr-1" /> Pay
                                 </Button>
+                              )}
+                            </div>
+                            <div>
+                              {bill.status === "Unpaid" && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => onDeleteBill(bill.id)}
+                                  className="h-8 bg-red-600 hover:bg-red-700 text-white whitespace-nowrap"
+                                  variant={undefined}
+                                disabled={isPayingAll}
+                              >
+                                <Trash className="h-4 w-4 mr-1" /> Delete
+                              </Button>
                               )}
                             </div>
                           </TableCell>

@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useCurrentAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { expensesData } from "@/features/expenses/data";
 import type {
   CreateExpenseInput,
   UpdateExpenseInput,
 } from "@/features/expenses/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface AddExpenseFormInput {
   title: string;
@@ -22,11 +23,11 @@ interface AddExpenseFormInput {
 export function useExpensesActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const { user } = useAuth();
-  const { period } = useCurrentAcademicPeriod();
-
+  const { dormitoryId } = useDormitory();
+  const { user } = useAuth()
+  const { selected: selectedPeriod } = useAcademicPeriod();
   const addExpense = async (input: AddExpenseFormInput) => {
-    if (!user?.dormitoryId || !period?.id) {
+    if (!dormitoryId || !selectedPeriod?.id) {
       toast.error("Missing dormitory or academic period.");
       return;
     }
@@ -34,11 +35,11 @@ export function useExpensesActions() {
     try {
       const payload: CreateExpenseInput = {
         ...input,
-        dormitory_id: user.dormitoryId,
-        academic_period_id: period.id,
-        recorded_by: user.id,
+        dormitory_id: dormitoryId,
+        academic_period_id: selectedPeriod.id,
+        recorded_by: user?.id || ""
       };
-      await expensesData.create(payload);
+      await expensesData.create(payload, selectedPeriod.id);
       toast.success("Expense added successfully!");
     } catch (e) {
       console.error(e);

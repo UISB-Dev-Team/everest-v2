@@ -4,8 +4,8 @@ export type Expense = Tables<"expenses">;
 
 /** Expense joined with the recorder's profile (Supabase view). */
 export interface ExpenseWithRecorder extends Expense {
-  recorded_by_full_name: string | null;
-  recorded_by_email: string | null;
+  recordedByFullName: string | null;
+  recordedByEmail: string | null;
 }
 
 export type CreateExpenseInput = TablesInsert<"expenses">;

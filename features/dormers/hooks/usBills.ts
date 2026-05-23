@@ -1,9 +1,10 @@
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { CreateBillInput } from "@/features/payments/data";
+import { Bill, CreateBillInput } from "@/features/payments/data";
 import { createBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
+import { deleteBillData } from "../data/supabase";
 
 export function useBills() {
     const { selected: selectedPeriod } = useAcademicPeriod();
@@ -22,6 +23,7 @@ export function useBills() {
             status: billData.status,
             total_amount_due: billData.totalAmountDue,
             updated_at: new Date().toISOString(),
+            is_deleted: false,
         } as CreateBillInput;
     };
 
@@ -38,13 +40,25 @@ export function useBills() {
 
     const generateBillsBulk = async (billsData: any[]) => {
         try {
+            const bills: Bill[] = [];
             for (const billData of billsData) {
                 const mappedInput = mapBillInput(billData) as CreateBillInput;
-                await createBill(mappedInput);
+                const result = await createBill(mappedInput);
+                bills.push(result as Bill);
             }
             toast.success("Bills generated successfully");
+            return bills
         } catch (error) {
             toast.error("Failed to generate bills");
+        }
+    }
+
+    const deleteBill = async (billId: string) => {
+        try {
+            await deleteBillData(billId);
+            toast.success("Bill deleted successfully");
+        } catch (error) {
+            toast.error("Failed to delete bill");
         }
     }
 
@@ -52,5 +66,6 @@ export function useBills() {
     return {
         generateBill,
         generateBillsBulk,
+        deleteBill
     }
 }
