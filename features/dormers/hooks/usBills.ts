@@ -1,6 +1,6 @@
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { CreateBillInput } from "@/features/payments/data";
+import { Bill, CreateBillInput } from "@/features/payments/data";
 import { createBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
@@ -40,11 +40,14 @@ export function useBills() {
 
     const generateBillsBulk = async (billsData: any[]) => {
         try {
+            const bills: Bill[] = [];
             for (const billData of billsData) {
                 const mappedInput = mapBillInput(billData) as CreateBillInput;
-                await createBill(mappedInput);
+                const result = await createBill(mappedInput);
+                bills.push(result as Bill);
             }
             toast.success("Bills generated successfully");
+            return bills
         } catch (error) {
             toast.error("Failed to generate bills");
         }

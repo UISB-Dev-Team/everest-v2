@@ -126,6 +126,46 @@ export function AdminDormersPage() {
     }
   };
 
+  const handleGenerateBulkBills = async (billsData: any[]) => {
+    setIsBillSubmitting(true);
+    try {
+      const newBills = await generateBillsBulk(billsData);
+      if (!newBills) return;
+      const bills = newBills as Bill[];
+
+      setDormers((prev) =>
+        prev.map((d) => {
+          const dormerBills = bills.filter((b) => b.dormer_id === d.id);
+          if (dormerBills.length === 0) return d;
+
+          const updatedBills = [...d.bills];
+          for (const bill of dormerBills) {
+            const idx = updatedBills.findIndex((b) => b.id === bill.id);
+            if (idx !== -1) updatedBills[idx] = bill;
+            else updatedBills.push(bill);
+          }
+          return { ...d, bills: updatedBills };
+        })
+      );
+
+      setBills((prev: Bill[]) => {
+        const updated = [...prev];
+        for (const bill of bills) {
+          const idx = updated.findIndex((b) => b.id === bill.id);
+          if (idx !== -1) updated[idx] = bill;
+          else updated.push(bill);
+        }
+        return updated;
+      });
+
+      closeModal();
+    } catch (err) {
+      console.error("Failed to generate bill:", err);
+    } finally {
+      setIsBillSubmitting(false);
+    }
+  };
+
   const handleDeleteBill = async (billId: string) => {
     setIsBillSubmitting(true);
     await deleteBill(billId);
@@ -297,7 +337,7 @@ export function AdminDormersPage() {
         onClose={closeModal}
         dormer={selectedDormer}
         onGenerateBill={handleGenerateBill}
-        onGenerateBillsBulk={generateBillsBulk}
+        onGenerateBillsBulk={handleGenerateBulkBills}
         payables={payables}
         bills={bills}
         setShowConfirmDialog={setShowConfirmDialog}
