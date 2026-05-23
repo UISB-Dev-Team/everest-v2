@@ -19,7 +19,7 @@ interface PaymentInput {
 
 export function usePaymentActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { selected: academicPeriod } = useAcademicPeriod();
+  const { selected: selectedPeriod } = useAcademicPeriod();
   const { dormitoryId } = useDormitory();
   const { user } = useAuth();
 
@@ -28,7 +28,7 @@ export function usePaymentActions() {
     try {
       await paymentsData.recordPayment(
         input,
-        academicPeriod?.id ?? "",
+        selectedPeriod?.id ?? "",
         dormitoryId ?? "",
         user?.id ?? "",
       );
@@ -56,7 +56,7 @@ export function usePaymentActions() {
             payment_method: "Cash",
             notes: "Paid via Admin",
           },
-          academicPeriod?.id ?? "",
+          selectedPeriod?.id ?? "",
           dormitoryId ?? "",
           user?.id ?? "",
         );

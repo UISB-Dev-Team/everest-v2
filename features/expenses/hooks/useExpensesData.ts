@@ -8,7 +8,7 @@ import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademic
 
 export function useExpensesData() {
   const { dormitoryId } = useDormitory();
-  const { selected: selectedAcademicPeriod } = useAcademicPeriod();
+  const { selected: selectedPeriod } = useAcademicPeriod();
 
   const [expenses, setExpenses] = useState<ExpenseWithRecorder[]>([]);
   const [summary, setSummary] = useState<ExpenseSummaryStats>({
@@ -29,7 +29,7 @@ export function useExpensesData() {
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (!dormitoryId || !selectedAcademicPeriod?.id) {
+    if (!dormitoryId || !selectedPeriod?.id) {
       setLoading(false);
       return;
     }
@@ -38,8 +38,8 @@ export function useExpensesData() {
     setLoading(true);
 
     Promise.all([
-      expensesData.listForDormitory(dormitoryId, selectedAcademicPeriod.id),
-      expensesData.summaryForDormitory(dormitoryId, selectedAcademicPeriod.id),
+      expensesData.listForDormitory(dormitoryId, selectedPeriod.id),
+      expensesData.summaryForDormitory(dormitoryId, selectedPeriod.id),
     ])
       .then(([list, stats]) => {
         if (cancelled) return;
@@ -52,7 +52,7 @@ export function useExpensesData() {
       });
 
     return () => { cancelled = true; };
-  }, [dormitoryId, selectedAcademicPeriod?.id, refreshKey]);
+  }, [dormitoryId, selectedPeriod?.id, refreshKey]);
 
   const filteredExpenses = useMemo(() => {
     const q = searchTerm.toLowerCase();

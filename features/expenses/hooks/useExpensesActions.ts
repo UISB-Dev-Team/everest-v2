@@ -25,10 +25,9 @@ export function useExpensesActions() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { dormitoryId } = useDormitory();
   const { user } = useAuth()
-  const { selected: academicPeriod } = useAcademicPeriod();
-
+  const { selected: selectedPeriod } = useAcademicPeriod();
   const addExpense = async (input: AddExpenseFormInput) => {
-    if (!dormitoryId || !academicPeriod?.id) {
+    if (!dormitoryId || !selectedPeriod?.id) {
       toast.error("Missing dormitory or academic period.");
       return;
     }
@@ -37,10 +36,10 @@ export function useExpensesActions() {
       const payload: CreateExpenseInput = {
         ...input,
         dormitory_id: dormitoryId,
-        academic_period_id: academicPeriod.id,
+        academic_period_id: selectedPeriod.id,
         recorded_by: user?.id || ""
       };
-      await expensesData.create(payload, academicPeriod.id);
+      await expensesData.create(payload, selectedPeriod.id);
       toast.success("Expense added successfully!");
     } catch (e) {
       console.error(e);

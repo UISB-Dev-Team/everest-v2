@@ -10,6 +10,7 @@ import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademic
 export function usePaymentsData() {
   const {dormitoryId} = useDormitory();
   const { selected: selectedPeriod } = useAcademicPeriod();
+  const academicPeriodId = selectedPeriod?.id ?? null;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [billingPeriodFilter, setBillingPeriodFilter] = useState("All");
@@ -22,14 +23,14 @@ export function usePaymentsData() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!dormitoryId) {
+    if (!dormitoryId || !academicPeriodId) {
       setLoading(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     paymentsData
-      .listBillsForDormitoryWithPayments(dormitoryId, selectedPeriod?.id!)
+      .listBillsForDormitoryWithPayments(dormitoryId, academicPeriodId)
       .then((rows) => {
         if (!cancelled) setCombinedBillData(rows);
       })
@@ -39,7 +40,7 @@ export function usePaymentsData() {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId, selectedPeriod]);
+  }, [dormitoryId, academicPeriodId]);
 
   const uniqueBillingPeriods = useMemo(() => {
     if (!combinedBillData.length) return [];
