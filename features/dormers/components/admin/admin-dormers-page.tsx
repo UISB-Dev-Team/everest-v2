@@ -62,9 +62,8 @@ export function AdminDormersPage() {
   } = useDormerActions(dormers, bills, setDormers, setBills);
 
   const { payables } = useRegularCharges();
-  console.log(payables)
 
-  const { generateBill, generateBillsBulk } = useBills()
+  const { generateBill, generateBillsBulk, deleteBill } = useBills()
 
   const { modal, selectedDormer, openModal, closeModal } = useModal();
 
@@ -83,6 +82,14 @@ export function AdminDormersPage() {
     await generateBillsBulk(billsData);
     setIsImportingBills(false);
     setShowBulkConfirmDialog(false);
+  };
+
+  const handleDeleteBill = async (billId: string) => {
+    setIsSubmitting(true);
+    await deleteBill(billId);
+    setBills((prev) => prev.filter((b) => b.id !== billId));
+    setIsSubmitting(false);
+    closeModal();
   };
 
   const handleGenerateBill = async (billData: any) => {
@@ -267,6 +274,7 @@ export function AdminDormersPage() {
         }}
         onPayAll={handlePayAll}
         payables={payables}
+        onDeleteBill={handleDeleteBill}
       />
 
       <GenerateBillModal

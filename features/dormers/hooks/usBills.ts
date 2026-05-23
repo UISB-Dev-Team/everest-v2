@@ -4,6 +4,7 @@ import { CreateBillInput } from "@/features/payments/data";
 import { createBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
+import { deleteBillData } from "../data/supabase";
 
 export function useBills() {
     const { selected: selectedPeriod } = useAcademicPeriod();
@@ -49,9 +50,19 @@ export function useBills() {
         }
     }
 
+    const deleteBill = async (billId: string) => {
+        try {
+            await deleteBillData(billId);
+            toast.success("Bill deleted successfully");
+        } catch (error) {
+            toast.error("Failed to delete bill");
+        }
+    }
+
 
     return {
         generateBill,
         generateBillsBulk,
+        deleteBill
     }
 }

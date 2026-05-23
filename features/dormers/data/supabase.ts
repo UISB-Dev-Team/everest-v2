@@ -136,6 +136,7 @@ export async function listForDormitoryWithBills(
     .from("bills")
     .select("*")
     .in("dormer_id", profileIds)
+    .or("is_deleted.eq.false,is_deleted.is.null")
     .eq("academic_period_id", periodId);
 
   if (billsError) {
@@ -372,6 +373,7 @@ export async function remove(id: string): Promise<void> {
       .update({ is_deleted: true })
       .neq("status", "Paid")
       .eq("dormer_id", id)
+      .or("is_deleted.eq.false,is_deleted.is.null")
       .eq("academic_period_id", periodId);
 
     if (billsError) throw new Error(billsError.message);
@@ -389,4 +391,12 @@ export async function importMany(
     created.push(await create(input));
   }
   return created;
+}
+
+export async function deleteBillData(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("bills")
+    .update({ is_deleted: true })
+    .eq("id", id);
+  if (error) throw error;
 }

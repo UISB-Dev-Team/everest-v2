@@ -9,14 +9,14 @@ import type { Dormer, DormerWithBills } from "@/features/dormers/data";
 import type { Bill } from "@/features/payments/data";
 import type { RegularCharge } from "@/features/regular-charges/data";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 /**
  * Mirrors the old `useDormers` hook surface: pulls dormers + bills + regular
  * charges for the active dormitory, applies search/filter, paginates.
  */
 export function useDormers() {
-  const { user } = useAuth();
-  const dormitoryId = user?.dormitoryId ?? null;
+  const {dormitoryId} = useDormitory()
   const { selected: selectedPeriod } = useAcademicPeriod();
   const academicPeriodId = selectedPeriod?.id ?? null;
 
