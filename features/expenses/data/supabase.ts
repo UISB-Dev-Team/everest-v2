@@ -158,3 +158,20 @@ export async function summaryForDormitory(dormitoryId: string, academicPeriodId:
         expensesByCategory,
     };
 }
+
+export async function uploadReceiptImage(file: File) {
+    const { data, error } = await supabaseAdmin.storage
+        .from("receipt-images")
+        .upload(`${Date.now()}-${file.name}`, file);
+
+    if (error) {
+        console.error("Error uploading receipt:", error);
+        throw new Error("Failed to upload receipt");
+    }
+
+    const { data: urlData } = supabaseAdmin.storage
+        .from("receipt-images")
+        .getPublicUrl(data.path);
+
+    return urlData.publicUrl;
+}

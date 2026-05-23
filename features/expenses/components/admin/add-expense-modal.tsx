@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadReceiptImage } from "../../data/supabase";
 
 export interface AddExpenseInput {
   title: string;
@@ -94,11 +95,8 @@ export default function AddExpenseModal({
 
     setIsSubmitting(true);
     try {
-      // Receipt upload would happen here against Supabase Storage when the
-      // backend dev wires it up. For now we keep the data URL from the
-      // preview so the UI looks complete.
-      const receipt_image_url = receiptFile ? receiptPreview : null;
-
+      const receipt_image_url = await uploadReceiptImage(receiptFile!);
+      console.log(receipt_image_url);
       await onSave({
         title: formData.title,
         description: formData.description,

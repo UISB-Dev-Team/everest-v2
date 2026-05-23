@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { handleExport } from "@/features/payments/lib/csv-export";
 import { usePaymentsData } from "@/features/payments/hooks/usePaymentsData";
@@ -13,11 +13,11 @@ import PaymentDetailsModal from "@/features/payments/components/admin/list-of-pa
 import PaymentModal from "@/features/payments/components/admin/payment-modal";
 import { PaymentsPageSkeleton } from "@/features/payments/components/admin/payments-page-skeleton";
 import type { BillWithPayments } from "@/features/payments/data";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+
+type ModalType = "details" | "payment" | null;
 
 export function AdminPaymentsPage() {
-  
-  const user = useAuth()
+  // ── 1. data ───────────────────────────────────────────────────────────────
   const {
     loading,
     paginatedBills,
@@ -39,67 +39,64 @@ export function AdminPaymentsPage() {
     handlePreviousPage,
   } = usePaymentsData();
 
+  // ── 2. actions ────────────────────────────────────────────────────────────
   const { handleRecordPayment } = usePaymentActions();
 
-  const [selectedBill, setSelectedBill] = useState<BillWithPayments | null>(
-    null
-  );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  // ── 3. ui state ───────────────────────────────────────────────────────────
+  const [modal, setModal] = useState<ModalType>(null);
+  const [selectedBill, setSelectedBill] = useState<BillWithPayments | null>(null);
 
-  // Keep selectedBill in sync with live data so the details modal
-  // always reflects the latest payments after a new payment is recorded.
-  useEffect(() => {
-    if (!selectedBill) return;
-    const updated = combinedBillData.find((b) => b.id === selectedBill.id);
-    if (updated) setSelectedBill(updated);
-  }, [combinedBillData]);
+  // Derive the live version of the selected bill so modals always reflect
+  // the latest payment data without a round-trip re-fetch.
+  const currentBill = selectedBill
+    ? (combinedBillData.find((b) => b.id === selectedBill.id) ?? selectedBill)
+    : null;
 
-  if (loading) return <PaymentsPageSkeleton />;
-
-  const handleViewDetails = (bill: BillWithPayments) => {
+  // ── 4. handlers ───────────────────────────────────────────────────────────
+  const handleOpenDetails = (bill: BillWithPayments) => {
     setSelectedBill(bill);
-    setIsModalOpen(true);
+    setModal("details");
   };
 
-  const openPaymentModalForBill = (bill: BillWithPayments) => {
+  const handleOpenPayment = (bill: BillWithPayments) => {
     setSelectedBill(bill);
-    setIsPaymentModalOpen(true);
+    setModal("payment");
   };
 
-  const handlePayment = async (paymentInput: any) => {
+  const handleCloseModal = () => {
+    setModal(null);
+    setSelectedBill(null);
+  };
+
+  const handleSavePayment = async (paymentInput: any) => {
     await handleRecordPayment(paymentInput);
 
-    setCombinedBillData(prev =>
-      prev.map(b => {
+    // Optimistic update: reflect the new payment immediately in the list.
+    setCombinedBillData((prev) =>
+      prev.map((b) => {
         if (b.id !== selectedBill?.id) return b;
-
-        const newAmountPaid = Math.min((b.amount_paid ?? 0) + paymentInput.amount, b.total_amount_due);
+        const newAmountPaid = Math.min(
+          (b.amount_paid ?? 0) + paymentInput.amount,
+          b.total_amount_due
+        );
         const remaining = Math.max(b.total_amount_due - newAmountPaid, 0);
-        const newStatus = remaining == 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid";
-
         return {
           ...b,
           amount_paid: newAmountPaid,
-          remaining_balance: Math.max(0, remaining),
-          status: newStatus,
-          payments: [
-            ...b.payments,
-            {
-              ...paymentInput,
-              recorded_by_full_name: user.user?.fullName, // fill in if you have the recorder's name in context
-              recorded_by_email: user.user?.email,
-            },
-          ],
+          remaining_balance: remaining,
+          status: remaining === 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid",
+          payments: [...b.payments, paymentInput],
         };
       })
     );
 
-    closePaymentModal();
+    handleCloseModal();
   };
 
-  const closePaymentModal = () => setIsPaymentModalOpen(false);
+  // ── 5. guard ──────────────────────────────────────────────────────────────
+  if (loading) return <PaymentsPageSkeleton />;
 
+  // ── 6. render ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
       <PaymentHeader onExport={() => handleExport(filteredBills)} />
@@ -125,21 +122,8 @@ export function AdminPaymentsPage() {
 
       <PaymentsTable
         bills={paginatedBills}
-        onViewDetails={handleViewDetails}
-        onRecordPayment={openPaymentModalForBill}
-      />
-
-      <PaymentDetailsModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        bill={selectedBill}
-      />
-
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={closePaymentModal}
-        bill={selectedBill}
-        onSavePayment={handlePayment}
+        onViewDetails={handleOpenDetails}
+        onRecordPayment={handleOpenPayment}
       />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">
@@ -167,6 +151,20 @@ export function AdminPaymentsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Modals */}
+      <PaymentDetailsModal
+        isOpen={modal === "details"}
+        onClose={handleCloseModal}
+        bill={currentBill}
+      />
+
+      <PaymentModal
+        isOpen={modal === "payment"}
+        onClose={handleCloseModal}
+        bill={currentBill}
+        onSavePayment={handleSavePayment}
+      />
     </div>
   );
 }

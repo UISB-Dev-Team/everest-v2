@@ -14,7 +14,10 @@ import AddExpenseModal from "@/features/expenses/components/admin/add-expense-mo
 import ViewEditExpenseModal from "@/features/expenses/components/admin/view-edit-expense-modal";
 import type { ExpenseWithRecorder } from "@/features/expenses/data";
 
+type ModalType = "add" | "view" | null;
+
 export function AdminExpensesPage() {
+  // ── 1. data ───────────────────────────────────────────────────────────────
   const {
     paginatedExpenses,
     filteredExpenses,
@@ -31,26 +34,60 @@ export function AdminExpensesPage() {
     refresh,
   } = useExpensesData();
 
-  const { addExpense, updateExpense, sendReport, isSendingEmail, deleteExpense } =
-    useExpensesActions();
+  // ── 2. actions ────────────────────────────────────────────────────────────
+  const {
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    sendReport,
+    isSendingEmail,
+  } = useExpensesActions();
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [viewExpense, setViewExpense] = useState<ExpenseWithRecorder | null>(
-    null
-  );
-  const [isViewOpen, setIsViewOpen] = useState(false);
+  // ── 3. ui state ───────────────────────────────────────────────────────────
+  const [modal, setModal] = useState<ModalType>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseWithRecorder | null>(null);
 
-  const handleDelete = async (expenseId: string) => {
-    // add dialog confirmation here
-    await deleteExpense(expenseId);
+  // ── 4. handlers ───────────────────────────────────────────────────────────
+  const handleOpenAdd = () => {
+    setSelectedExpense(null);
+    setModal("add");
   };
 
+  const handleOpenView = (expense: ExpenseWithRecorder) => {
+    setSelectedExpense(expense);
+    setModal("view");
+  };
+
+  const handleCloseModal = () => {
+    setModal(null);
+    setSelectedExpense(null);
+  };
+
+  const handleAddExpense = async (input: any) => {
+    await addExpense(input);
+    refresh();
+    handleCloseModal();
+  };
+
+  const handleUpdateExpense = async (id: string, input: any) => {
+    await updateExpense(id, input);
+    refresh();
+    handleCloseModal();
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    await deleteExpense(expenseId);
+    refresh();
+  };
+
+  // ── 5. guard ──────────────────────────────────────────────────────────────
   if (loading) return <ExpensesPageSkeleton />;
 
+  // ── 6. render ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
       <ExpensesHeader
-        onAdd={() => setIsAddOpen(true)}
+        onAdd={handleOpenAdd}
         onExport={() => handleExport(filteredExpenses)}
         onEmailReport={sendReport}
         isSendingEmail={isSendingEmail}
@@ -69,11 +106,8 @@ export function AdminExpensesPage() {
 
       <ExpensesTable
         expenses={paginatedExpenses}
-        onViewDetails={(e) => {
-          setViewExpense(e);
-          setIsViewOpen(true);
-        }}
-        onDelete={handleDelete}
+        onViewDetails={handleOpenView}
+        onDelete={handleDeleteExpense}
       />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">
@@ -102,23 +136,18 @@ export function AdminExpensesPage() {
         </div>
       </div>
 
+      {/* Modals */}
       <AddExpenseModal
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onSave={async (input) => {
-          await addExpense(input);
-          refresh();
-        }}
+        isOpen={modal === "add"}
+        onClose={handleCloseModal}
+        onSave={handleAddExpense}
       />
 
       <ViewEditExpenseModal
-        isOpen={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        expense={viewExpense}
-        onSave={async (id, input) => {
-          await updateExpense(id, input);
-          refresh();
-        }}
+        isOpen={modal === "view"}
+        onClose={handleCloseModal}
+        expense={selectedExpense}
+        onSave={handleUpdateExpense}
       />
     </div>
   );

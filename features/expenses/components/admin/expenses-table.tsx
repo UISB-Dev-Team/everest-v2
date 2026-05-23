@@ -60,7 +60,7 @@ export default function ExpensesTable({
     setSelectedReceipt(expense);
     setReceiptModalOpen(true);
   };
-  
+
   return (
     <>
       <Card className="border-2 border-gray-100 shadow-md bg-white gap-0">
@@ -246,7 +246,7 @@ export default function ExpensesTable({
               </div>
               <div className="border rounded-lg overflow-hidden">
                 {selectedReceipt.receipt_image_url ? (
-                  <Image
+                  <img
                     src={selectedReceipt.receipt_image_url}
                     alt="Receipt"
                     width={500}
