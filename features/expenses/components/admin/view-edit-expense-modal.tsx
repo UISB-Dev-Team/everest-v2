@@ -110,6 +110,7 @@ export default function ViewEditExpenseModal({
       toast.error(`Error: ${message}`);
     } finally {
       setIsSubmitting(false);
+      onClose();
     }
   };
 

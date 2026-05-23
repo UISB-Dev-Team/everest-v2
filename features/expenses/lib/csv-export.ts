@@ -23,7 +23,7 @@ export const handleExport = (expenses: ExpenseWithRecorder[]) => {
       e.amount.toFixed(2),
       e.category ?? "Other",
       e.expense_date,
-      `"${e.recorded_by_full_name ?? ""}"`,
+      `"${e.recordedByFullName ?? ""}"`,
     ].join(",")
   );
 

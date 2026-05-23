@@ -31,7 +31,7 @@ export function AdminExpensesPage() {
     refresh,
   } = useExpensesData();
 
-  const { addExpense, updateExpense, sendReport, isSendingEmail } =
+  const { addExpense, updateExpense, sendReport, isSendingEmail, deleteExpense } =
     useExpensesActions();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -39,6 +39,11 @@ export function AdminExpensesPage() {
     null
   );
   const [isViewOpen, setIsViewOpen] = useState(false);
+
+  const handleDelete = async (expenseId: string) => {
+    // add dialog confirmation here
+    await deleteExpense(expenseId);
+  };
 
   if (loading) return <ExpensesPageSkeleton />;
 
@@ -68,6 +73,7 @@ export function AdminExpensesPage() {
           setViewExpense(e);
           setIsViewOpen(true);
         }}
+        onDelete={handleDelete}
       />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">
@@ -101,7 +107,7 @@ export function AdminExpensesPage() {
         onClose={() => setIsAddOpen(false)}
         onSave={async (input) => {
           await addExpense(input);
-          await refresh();
+          refresh();
         }}
       />
 
@@ -111,7 +117,7 @@ export function AdminExpensesPage() {
         expense={viewExpense}
         onSave={async (id, input) => {
           await updateExpense(id, input);
-          await refresh();
+          refresh();
         }}
       />
     </div>
