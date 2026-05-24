@@ -1,4 +1,4 @@
-import { Event } from "../data";
+import { Event } from "@/features/events/data";
 
 
 export const eventReminder = (event: Event) => `

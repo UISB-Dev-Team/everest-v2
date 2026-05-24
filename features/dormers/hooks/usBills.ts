@@ -5,6 +5,11 @@ import { createBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
 import { deleteBillData } from "../data/supabase";
+import { sendEmail } from "@/lib/email";
+import { Dormer, DormerWithBills } from "../data";
+import { newBillTemplate } from "@/emails/dormers/newBill";
+import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
+import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 
 export function useBills() {
     const { selected: selectedPeriod } = useAcademicPeriod();
@@ -27,26 +32,37 @@ export function useBills() {
         } as CreateBillInput;
     };
 
-    const generateBill = async (billData: any) => {
+    const generateBill = async (billData: any, dormer: DormerWithBills) => {
         try {
             const mappedInput = mapBillInput(billData) as CreateBillInput;
             const result = await createBill(mappedInput);
             toast.success("Bill generated successfully");
+            
+            await sendEmail({
+                to: dormer?.email!,
+                subject: `New Bill for ${billData.billingPeriod}`,
+                html: newBillTemplate(
+                    dormer?.first_name!,
+                    billData.billingPeriod,
+                    billData.totalAmountDue
+                )
+            })
+            console.log("Bill email sent successfully!");
             return result;
         } catch (error) {
             toast.error("Failed to generate bill");
         }
     }
 
-    const generateBillsBulk = async (billsData: any[]) => {
+    const generateBillsBulk = async (billsData: any[], dormer: DormerWithBills) => {
         try {
             const bills: Bill[] = [];
             for (const billData of billsData) {
                 const mappedInput = mapBillInput(billData) as CreateBillInput;
-                const result = await createBill(mappedInput);
+                const result = await generateBill(mappedInput, dormer);
                 bills.push(result as Bill);
             }
-            toast.success("Bills generated successfully");
+             
             return bills
         } catch (error) {
             toast.error("Failed to generate bills");

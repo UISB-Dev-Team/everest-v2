@@ -1,24 +1,26 @@
-import { Bill } from "../data";
+import { Bill } from "@/features/payments/data";
 
 export const paymentConfirmationEmailTemplate = (
   dormerName: string,
-  paymentData: any,
-  billData: Bill
+  billingMonth: string, 
+  remainingBalance: number,
+  amountPaid: number,
+  status: string
 ): string => {
   return `<h1>Payment Received!</h1>
             <p>Hi ${dormerName},</p>
-            <p>We've received your payment of <strong>₱${paymentData.amount.toFixed(
+            <p>We've received your payment of <strong>₱${amountPaid?.toFixed(
               2
             )}</strong>.</p>
             <p>This payment has been applied to your bill for <strong>${
-              billData.billing_month
+              billingMonth
             }</strong>.</p>
             ${
-              billData.status === "Paid"
+              status === "Paid"
                 ? `<p>Your bill is now fully paid. Thank you for settling your account!</p>`
                 : `
             <p>Your updated remaining balance is: <strong>₱${(
-              billData.total_amount_due - (billData.amount_paid || 0)
+              remainingBalance
             ).toFixed(2)}</strong>.</p>`
             }
             <p>Thank you!</p>

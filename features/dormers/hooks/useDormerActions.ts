@@ -14,6 +14,10 @@ import type {
 import type { Bill, CreatePaymentInput } from "@/features/payments/data";
 import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { sendEmail } from "@/lib/email";
+import { newBillTemplate } from "@/emails/dormers/newBill";
+import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
+import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 
 interface PaymentInput {
   bill_id: string;
@@ -145,6 +149,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
   ) => {
     setIsSubmitting(true);
     try {
+      const dormer = await dormersData.getById(billInput.dormer_id);
       const newBill = await paymentsData.createBill({
         ...billInput,
         amount_paid: 0,
@@ -161,18 +166,15 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     }
   };
 
-  const payAllBills = async (unpaidBills: Bill[], academicPeriod: any, dormitoryId: any, user: any) => {
+  const payAllBills = async (unpaidBills: Bill[], academicPeriod: any, dormitoryId: any, dormer: any) => {
     setIsSubmitting(true);
     try {
       for (const bill of unpaidBills) {
-        const remaining = Math.max(
-          0,
-          bill.total_amount_due - bill.amount_paid
-        );
+        const remaining = Math.max(0, bill.total_amount_due - bill.amount_paid);
         if (remaining <= 0) continue;
-        await paymentsData.recordPayment(bill.id, academicPeriod?.id!, dormitoryId!, user?.id!);
-        
+        await paymentsData.recordPayment(bill.id, academicPeriod?.id!, dormitoryId!, dormer?.id!);
       }
+
       setBills((prev) =>
         prev.map((b) =>
           unpaidBills.some((u) => u.id === b.id)
@@ -181,6 +183,34 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
         )
       );
       toast.success("All bills marked as paid!");
+
+      const totalAmountDue = unpaidBills.reduce((sum, b) => sum + b.total_amount_due, 0);
+      const totalPaid = unpaidBills.reduce((sum, b) => sum + b.total_amount_due, 0); // paying all
+      const totalRemaining = 0; // since all are being paid
+
+      await sendEmail({
+        to: dormer?.email!,
+        subject: `Bulk Payment Confirmation - VSU DormPay`,
+        html: billPaymentInvoiceTemplate(
+          dormer?.fullName!,
+          unpaidBills.map((bill) => ({
+            billingPeriod: getBillingPeriodLabel(bill.billing_month),
+            description: bill.description,
+            totalAmountDue: bill.total_amount_due,
+            amountPaid: bill.total_amount_due, // fully paid
+            remainingBalance: 0,
+            paymentDate: new Date(),
+          })),
+          `${dormer?.fullName}`,
+          {
+            totalBills: unpaidBills.length,
+            totalAmountDue,
+            totalPaid,
+            totalRemaining,
+          }
+        ),
+      });
+      toast.success("Payment confirmation email sent.");
     } catch (e) {
       console.error(e);
       toast.error("Failed to pay all bills.");

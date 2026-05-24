@@ -6,6 +6,11 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Bill, paymentsData, type CreatePaymentInput } from "@/features/payments/data";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { sendEmail } from "@/lib/email";
+import { DormerWithBills } from "@/features/dormers/data";
+import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
+import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
+import { paymentConfirmationEmailTemplate } from "@/emails/payment/paymentConfirmation";
 
 interface PaymentInput {
   bill_id: string;
@@ -23,17 +28,28 @@ export function usePaymentActions() {
   const { dormitoryId } = useDormitory();
   const { user } = useAuth();
 
-  const handleRecordPayment = async (input: any) => {
+  const handleRecordPayment = async (input: any, dormer: DormerWithBills) => {
     setIsSubmitting(true);
     try {
-      await paymentsData.recordPayment(
+      const { newStatus, newRemaining } = await paymentsData.recordPayment(
         input,
         selectedPeriod?.id ?? "",
         dormitoryId ?? "",
         user?.id ?? "",
       );
       toast.success("Payment recorded successfully!");
-      toast.message("(Receipt email would be sent in production.)");
+      await sendEmail({
+        to: dormer?.email!,
+        subject: `Payment Confirmation - VSU DormPay`,
+        html: paymentConfirmationEmailTemplate(
+          dormer?.first_name! + " " + dormer?.last_name!,
+          getBillingPeriodLabel(input.billing_month),
+          newRemaining,
+          input.amount_paid,
+          newStatus,
+        )
+      })
+      toast.message("Receipt email sent successfully!");
     } catch (e) {
       console.error(e);
       toast.error("Failed to record payment.");
@@ -42,7 +58,7 @@ export function usePaymentActions() {
     }
   };
 
-  const handlePayAllBills = async (bills: Bill[]) => {
+  const handlePayAllBills = async (bills: Bill[], dormer:DormerWithBills) => {
     setIsSubmitting(true);
     try {
       for (const bill of bills) {
@@ -61,7 +77,33 @@ export function usePaymentActions() {
           user?.id ?? "",
         );
         toast.success("Bills paid successfully!");
-        toast.message("(Receipt email would be sent in production.)");
+        const totalAmountDue = bills.reduce((sum, b) => sum + b.total_amount_due, 0);
+        const totalPaid = bills.reduce((sum, b) => sum + b.total_amount_due, 0); // paying all
+        const totalRemaining = 0; // since all are being paid
+        toast.success("Bills generated successfully");
+        await sendEmail({
+            to: dormer?.email!,
+            subject: `Bulk Payment Confirmation - VSU DormPay`,
+            html: billPaymentInvoiceTemplate(
+                dormer?.first_name! + " " + dormer?.last_name!,
+                bills.map((bill) => ({
+                    billingPeriod: getBillingPeriodLabel(bill.billing_month),
+                    description: bill.description,
+                    totalAmountDue: bill.total_amount_due,
+                    amountPaid: bill.total_amount_due, // fully paid
+                    remainingBalance: 0,
+                    paymentDate: new Date(),
+                })),
+                `${user?.fullName}`,
+                {
+                totalBills: bills.length,
+                totalAmountDue,
+                totalPaid,
+                totalRemaining,
+                }
+            ),
+            });
+          toast.success("Payment confirmation email sent.");
       }
     } catch (e) {
       console.error(e);

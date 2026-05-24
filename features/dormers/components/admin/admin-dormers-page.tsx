@@ -94,7 +94,8 @@ export function AdminDormersPage() {
   const handleGenerateBill = async (billData: any) => {
     setIsBillSubmitting(true);
     try {
-      const newBill = await generateBill(billData);
+      const dormer = selectedDormer;
+      const newBill = await generateBill(billData, dormer!);
       if (!newBill) return;
       const bill = newBill as Bill;
 
@@ -129,7 +130,7 @@ export function AdminDormersPage() {
   const handleGenerateBulkBills = async (billsData: any[]) => {
     setIsBillSubmitting(true);
     try {
-      const newBills = await generateBillsBulk(billsData);
+      const newBills = await generateBillsBulk(billsData, selectedDormer!);
       if (!newBills) return;
       const bills = newBills as Bill[];
 
@@ -176,7 +177,7 @@ export function AdminDormersPage() {
 
   const handleSavePayment = async (paymentData: any) => {
     setIsBillSubmitting(true);
-    await handleRecordPayment(paymentData);
+    await handleRecordPayment(paymentData, selectedDormer!);
     setBills((prev: Bill[]) =>
       prev.map((b) => {
         if (b.id !== paymentData.bill_id) return b;
@@ -203,7 +204,7 @@ export function AdminDormersPage() {
     );
     if (unpaidBills.length === 0) return;
 
-    await handlePayAllBills(unpaidBills);
+    await handlePayAllBills(unpaidBills, selectedDormer!)
 
     setBills((prev: Bill[]) =>
       prev.map((b) => {
@@ -227,10 +228,9 @@ export function AdminDormersPage() {
     );
   };
 
-  /** Called by the overwrite-confirm dialog after the user approves. */
   const handleConfirmCreateBill = async (billData: any) => {
     setIsBillSubmitting(true);
-    await generateBill(billData);
+    await generateBill(billData, selectedDormer!);
     setIsBillSubmitting(false);
     setShowConfirmDialog(false);
   };
@@ -238,7 +238,7 @@ export function AdminDormersPage() {
   const handleConfirmBulkOverwrite = async () => {
     setIsImportingBills(true);
     const billsData = bulkDuplicates.map((d) => d.bill);
-    await generateBillsBulk(billsData);
+    await generateBillsBulk(billsData, selectedDormer!);
     setIsImportingBills(false);
     setShowBulkConfirmDialog(false);
   };

@@ -1,6 +1,6 @@
 import { toast } from "sonner";
-import { Expense, ExpenseWithRecorder } from "../data";
 import { Dormer } from "@/features/dormers/data";
+import { ExpenseWithRecorder } from "@/features/expenses/data";
 
 // Note: We need a way to convert data to CSV here as well for the attachment.
 // We'll define a local version or import from csvUtils if structure allows.
