@@ -75,9 +75,6 @@ export function AdminDormersPage() {
   const { generateBill, generateBillsBulk, deleteBill, importBills } = useBills();
   const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
 
-  const { dormitoryName } = useDormitory()
-  const isMabolo = dormitoryName?.toLowerCase().includes("mabolo");
-
   // ── 3. modal state ────────────────────────────────────────────────────────
   const { modal, selectedDormer, openModal, closeModal } = useModal();
 
@@ -257,13 +254,43 @@ export function AdminDormersPage() {
     setShowBulkConfirmDialog(false);
   };
 
-  const handleImportBills = async (bills: ImportedBill[], payable: RegularCharge | null): Promise<{ successCount: number; errorCount: number; errors: string[] }> => {
+  const handleImportBills = async (bills: ImportedBill[], payable: RegularCharge | null) => {
     setIsImportingBills(true);
     const result = await importBills(bills, payable!);
     setIsImportingBills(false);
     setShowBulkConfirmDialog(false);
+    
+    if (result.createdBills && result.createdBills.length > 0) {
+      const newBills = result.createdBills;
+      
+      setDormers((prev) =>
+        prev.map((d) => {
+          const dormerBills = newBills.filter((b) => b.dormer_id === d.id);
+          if (dormerBills.length === 0) return d;
+
+          const updatedBills = [...d.bills];
+          for (const bill of dormerBills) {
+            const idx = updatedBills.findIndex((b) => b.id === bill.id);
+            if (idx !== -1) updatedBills[idx] = bill;
+            else updatedBills.push(bill);
+          }
+          return { ...d, bills: updatedBills };
+        })
+      );
+
+      setBills((prev: Bill[]) => {
+        const updated = [...prev];
+        for (const bill of newBills) {
+          const idx = updated.findIndex((b) => b.id === bill.id);
+          if (idx !== -1) updated[idx] = bill;
+          else updated.push(bill);
+        }
+        return updated;
+      });
+    }
+
     return result;
-  }   
+  }
 
   // ── 6. guard ──────────────────────────────────────────────────────────────
   if (loading) return <DormersPageSkeleton />;

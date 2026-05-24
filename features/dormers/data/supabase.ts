@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { sendEmail } from "@/lib/email";
 import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
+import { Profile } from "@/features/advisers/data";
 
 
 // export interface DormersDataAccess {
@@ -97,6 +98,23 @@ export async function listForDormitory(
     dormitory_id: row.dormitory_id,
     room_number: row.room_number,
   })) as Dormer[];
+}
+
+export async function getDormerByEmail(email: string) : Promise<Profile> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle()
+  
+  if(!data) {
+    throw new Error("No dormers found")
+  }
+  if(error) {
+    throw new Error(error)
+  }
+
+  return data
 }
 
 export async function listForDormitoryWithBills(
