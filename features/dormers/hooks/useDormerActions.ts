@@ -87,6 +87,17 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
             )
           })
         }
+      else if(input.role == "treasurer" || input.role == "auditor") {
+        await sendEmail({
+            to: input?.email!,
+            subject: "Treasurer and Auditor - Dormpay Invitation",
+            html: welcomeSA(
+              input.first_name,
+              input?.email!,
+              "DefaultPass123!",
+            )
+          })
+        }
         else {
           await sendEmail({
             to: input?.email!,

@@ -24,9 +24,16 @@ const NAV_ITEMS: NavItem[] = [
   { title: "Clearance", url: "/admin/clearance", icon: ShieldCheck },
 ];
 
+const RESTRICTED_ROLES = ["treasurer", "auditor"];
+const RESTRICTED_URLS  = ["/admin/events", "/admin/clearance"];
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const dormitory = useDormitory();
   const { user } = useAuth();
+
+  const navItems = RESTRICTED_ROLES.includes(user?.role ?? "") 
+    ? NAV_ITEMS.filter((item) => RESTRICTED_URLS.includes(item.url))
+    : NAV_ITEMS
 
   const initials = user?.fullName
     ? user.fullName
@@ -40,7 +47,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <RoleShell
-      navItems={NAV_ITEMS}
+      navItems={navItems}
       brandLabel="DormPay"
       brandSubLabel={dormitory?.dormitoryName ?? `Admin · ${user?.role ?? ""}`}
       userInitials={initials}
