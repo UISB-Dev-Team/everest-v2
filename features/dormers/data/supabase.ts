@@ -180,8 +180,6 @@ async function getCurrentAcademicPeriodId(): Promise<string> {
     .select("id")
     .eq("is_current", true)
     .single();
-  console.log(data)
-  console.log(error)
 
   if (error || !data) {
     throw new Error("Could not find the current active academic period.");
@@ -193,7 +191,6 @@ export async function getById(id: string): Promise<Dormer | null> {
   let periodId: string | null = null;
   try {
     periodId = await getCurrentAcademicPeriodId();
-    console.log(periodId)
   } catch (e) {
     // Ignore if no active period
   }

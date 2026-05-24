@@ -20,7 +20,6 @@ export interface EventWithStats extends Event {
 export function useEventsData() {
   const { dormitoryId } = useDormitory();
   const { selected: academicPeriod } = useAcademicPeriod();
-  console.log("academicPeriod", academicPeriod);
   const [events, setEvents] = useState<Event[]>([]);
   const [paymentsByEvent, setPaymentsByEvent] = useState<
     Record<string, EventPayment[]>

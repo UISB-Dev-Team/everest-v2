@@ -113,7 +113,6 @@ export async function listDormersForEvent(
   if (!roles) throw new Error("No roles found");
 
   const dormers = enrollments.filter((row) => roles.some((role) => role.user_id === row.dormer_id))
-  console.log(dormers)
   // 2. Get all payments for this specific event
   const { data: payments, error: paymentsError } = await supabase
     .from("event_payments")
@@ -181,7 +180,6 @@ if (!dormitoryId || !academicPeriodId) {
     .eq("academic_period_id", academicPeriodId);
 
   if (error) {
-    console.log(error)
     console.error("Error fetching dormers:", error);
     return [];
   }
@@ -193,7 +191,6 @@ if (!dormitoryId || !academicPeriodId) {
     .eq("role", "dormer")
 
   if (roleError) {
-    console.log(error)
     console.error("Error fetching roles:", roleError);
     return [];
   }

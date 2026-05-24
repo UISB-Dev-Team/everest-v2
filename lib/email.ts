@@ -37,7 +37,6 @@ export async function sendEmail({ to, subject, html, attachments }: SendEmailOpt
         contentType: a.contentType,
       })),
     });
-    console.log('Message sent: %s', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending email:', error);

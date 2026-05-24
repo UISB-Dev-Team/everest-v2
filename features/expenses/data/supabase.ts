@@ -33,7 +33,6 @@ export async function listForDormitory(
             last_name: string;
             email: string;
         } | null;
-        console.log(profile)
 
         return {
             ...expense,

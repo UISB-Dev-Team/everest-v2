@@ -35,7 +35,6 @@ export function AdminEventDetailPage() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const handleWaivePayment = async (dormer: Dormer) => {
-    console.log(dormer)
     await waiveEventPayable(dormer.id, eventId!)
     toast.success(`${dormer?.first_name} ${dormer?.last_name}'s event payable has been waived.`)  
     refresh()

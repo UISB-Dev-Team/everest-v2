@@ -7,13 +7,11 @@ const supabase = createClient();
 
 export async function listForDormitory(dormitoryId: string, academicPeriodId: string): Promise<RegularCharge[]> {
     try{
-        console.log(academicPeriodId)
         const { data, error } = await supabase.from("regular_charges").select("*")
         .eq("dormitory_id", dormitoryId)
         .eq("academic_period_id", academicPeriodId)
         .or("is_deleted.eq.false,is_deleted.is.null");
 
-        console.log("data here", data)
         if(error){
             throw error;
         }

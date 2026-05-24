@@ -29,6 +29,12 @@ import { RecentTransactionItem } from "./recent-transaction-item";
 import AddPayableModal from "@/features/regular-charges/components/admin/add-payable-modal";
 import { useRegularCharges } from "@/features/regular-charges/hooks/useRegularCharges";
 import { regularChargesData } from "@/features/regular-charges/data";
+import { convertToHTMLTable, generateEmailHtml } from "@/emails/dashboard/dormSummary";
+import { sendEmail } from "@/lib/email";
+import { dormersData } from "@/features/dormers/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { toast } from "sonner";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -42,6 +48,8 @@ function formatAmount(value: number) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AdminDashboardPage() {
+  const { dormitoryId, dormitoryName } = useDormitory()
+  const { selected } = useAcademicPeriod()
   const { stats, loading, error } = useDashboard();
   const { savePayable, payables: regularCharges, setPayables } = useRegularCharges()
 
@@ -50,6 +58,7 @@ export function AdminDashboardPage() {
   const [isAddPayableOpen, setIsAddPayableOpen] = useState(false);
   const [payableToEdit, setPayableToEdit] = useState<RegularCharge | null>(null);
   const [savingPayable, setIsSavingPayable] = useState(false)
+  const [ sendingEmail, setSendingEmail ] = useState(false)
 
   if (loading) return <DashboardSkeleton />;
 
@@ -122,6 +131,20 @@ export function AdminDashboardPage() {
     setPayables((prev) => prev.filter((p) => p.id !== payableId))
   }
 
+  const handleSendDormSummaryReport = async () => {
+    setSendingEmail(true)
+    const htmlText = convertToHTMLTable(kpiData)
+    const emailHtml = generateEmailHtml(htmlText, selected)
+    const dormers = await dormersData.listForDormitory(dormitoryId!, selected?.id!)
+    await sendEmail({
+      to: dormers.map((d) => d.email).filter(Boolean).join(","),
+      subject: `${dormitoryName} Funds Summary`,
+      html: emailHtml
+    })
+    toast.success("Email sent successfuly to all dormers!")
+    setSendingEmail(false)
+  }
+
   // Recent payments — most recent 5
   const recentFive = [...recentPayments]
     .sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime())
@@ -142,10 +165,12 @@ export function AdminDashboardPage() {
         <Button
           variant="outline"
           size="sm"
+          onClick={handleSendDormSummaryReport}
+          disabled={sendingEmail}
           className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all w-full sm:w-auto"
         >
           <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
-          <span className="text-sm">Email Report</span>
+          <span className="text-sm">{sendingEmail ? "Sending..." : "Email Report"}</span>
         </Button>
       </div>
 

@@ -56,7 +56,6 @@ export default function PaymentModal({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log(dormer)
     if (isOpen) {
       const today = new Date().toISOString().split("T")[0];
       setPaymentDate(today);
@@ -66,8 +65,6 @@ export default function PaymentModal({
       setPaymentMethod("Cash");
     }
   }, [isOpen]);
-
-  console.log("opnen");
 
   const handlePayment = () => {
     if (!dormer || !bill) return;
@@ -99,10 +96,7 @@ export default function PaymentModal({
     setNotes("");
     onClose();
   };
-
-  console.log("dormer ", dormer)
-  console.log("bill ", bill)
-
+  
   if (!dormer || !bill) {
     return null;
   }

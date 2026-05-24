@@ -48,7 +48,6 @@ export function useBills() {
                     billData.totalAmountDue
                 )
             })
-            console.log("Bill email sent successfully!");
             return result;
         } catch (error) {
             toast.error("Failed to generate bill");
@@ -87,9 +86,7 @@ export function useBills() {
             const parsingErrors = billsData
             .filter((b) => b.error)
             .map((b) => b.error!);
-            console.log(parsingErrors)
             if (parsingErrors.length > 0) {
-                console.log("no parse")
                 return { successCount: 0, errorCount: parsingErrors.length, errors: parsingErrors, createdBills: [] };
             }
 
@@ -115,7 +112,6 @@ export function useBills() {
                     billingPeriod: billData.billing_month, 
                     description: payable.description
                 }) as CreateBillInput;
-                console.log(mappedInput)
                 const result = await createBill(mappedInput);
                 if (result) {
                     successCount++;

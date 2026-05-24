@@ -27,7 +27,6 @@ export function useRegularCharges() {
     setLoading(true);
     try {
       const list = await listForDormitory(dormitoryId, selected?.id!);
-      console.log(list)
       setPayables(list);
     } finally {
       setLoading(false);
