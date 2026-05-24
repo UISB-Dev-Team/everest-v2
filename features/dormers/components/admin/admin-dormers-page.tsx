@@ -38,7 +38,11 @@ import GenerateBillModal from "./generate-bill-modal";
 import PaymentModal from "./payments-modal";
 import type { Bill } from "@/features/payments/data";
 import ImportDormerModal from "./import-dormer-modal";
-import { CreateDormerInput } from "../../data";
+import { CreateDormerInput, ImportedBill } from "../../data";
+import ImportBillsModal from "./import-bills-modal";
+import { RegularCharge } from "@/features/regular-charges/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { BILLING_PERIODS } from "@/lib/constants/billing-periods";
 
 export function AdminDormersPage() {
   // ── 1. data ───────────────────────────────────────────────────────────────
@@ -68,8 +72,11 @@ export function AdminDormersPage() {
     setBills
   );
   const { payables } = useRegularCharges();
-  const { generateBill, generateBillsBulk, deleteBill } = useBills();
+  const { generateBill, generateBillsBulk, deleteBill, importBills } = useBills();
   const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
+
+  const { dormitoryName } = useDormitory()
+  const isMabolo = dormitoryName?.toLowerCase().includes("mabolo");
 
   // ── 3. modal state ────────────────────────────────────────────────────────
   const { modal, selectedDormer, openModal, closeModal } = useModal();
@@ -250,6 +257,14 @@ export function AdminDormersPage() {
     setShowBulkConfirmDialog(false);
   };
 
+  const handleImportBills = async (bills: ImportedBill[], payable: RegularCharge | null): Promise<{ successCount: number; errorCount: number; errors: string[] }> => {
+    setIsImportingBills(true);
+    const result = await importBills(bills, payable!);
+    setIsImportingBills(false);
+    setShowBulkConfirmDialog(false);
+    return result;
+  }   
+
   // ── 6. guard ──────────────────────────────────────────────────────────────
   if (loading) return <DormersPageSkeleton />;
 
@@ -367,11 +382,13 @@ export function AdminDormersPage() {
         isSubmitting={false}
       />
 
-      <PlaceholderModal
+      <ImportBillsModal
         isOpen={modal === "importBills"}
         onClose={closeModal}
-        title="Import Bills (CSV)"
-        description="Bulk bill import with conflict detection. Full ImportBillsModal port pending."
+        onImport={handleImportBills}
+        isSubmitting={isImportingBills}
+        payables={payables}
+        billingPeriods={BILLING_PERIODS}
       />
 
       {/* ── Confirm dialogs ── */}

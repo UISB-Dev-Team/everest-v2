@@ -6,10 +6,11 @@ import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
 import { deleteBillData } from "../data/supabase";
 import { sendEmail } from "@/lib/email";
-import { Dormer, DormerWithBills } from "../data";
+import { Dormer, dormersData, DormerWithBills, ImportedBill } from "../data";
 import { newBillTemplate } from "@/emails/dormers/newBill";
 import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
 import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
+import { RegularCharge } from "@/features/regular-charges/data";
 
 export function useBills() {
     const { selected: selectedPeriod } = useAcademicPeriod();
@@ -78,10 +79,46 @@ export function useBills() {
         }
     }
 
+    const importBills = async (
+        billsData: ImportedBill[],
+        payable: RegularCharge
+    ): Promise<{ successCount: number; errorCount: number; errors: string[] }> => {
+        try {
+            const parsingErrors = billsData
+            .filter((b) => b.error)
+            .map((b) => b.error!);
+
+            if (parsingErrors.length > 0) {
+                return { successCount: 0, errorCount: parsingErrors.length, errors: parsingErrors };
+            }
+
+            const errors: string[] = [];
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const billData of billsData) {
+                const mappedInput = mapBillInput(billData) as CreateBillInput;
+                const result = await createBill(mappedInput);
+                if (result) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    errors.push(`Failed to create bill for ${billData.email} - ${billData.billing_month}`);
+                }
+            }
+
+            return { successCount, errorCount, errors };
+        } catch (error) {
+            toast.error("Failed to import bills");
+            return { successCount: 0, errorCount: 0, errors: [] };
+        }
+    };
+
 
     return {
         generateBill,
         generateBillsBulk,
-        deleteBill
+        deleteBill,
+        importBills
     }
 }
