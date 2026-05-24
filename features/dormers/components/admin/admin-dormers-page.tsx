@@ -37,6 +37,12 @@ import BillsModal from "./bills-modal";
 import GenerateBillModal from "./generate-bill-modal";
 import PaymentModal from "./payments-modal";
 import type { Bill } from "@/features/payments/data";
+import ImportDormerModal from "./import-dormer-modal";
+import { CreateDormerInput, ImportedBill } from "../../data";
+import ImportBillsModal from "./import-bills-modal";
+import { RegularCharge } from "@/features/regular-charges/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { BILLING_PERIODS } from "@/lib/constants/billing-periods";
 
 export function AdminDormersPage() {
   // ── 1. data ───────────────────────────────────────────────────────────────
@@ -59,15 +65,18 @@ export function AdminDormersPage() {
   } = useDormers();
 
   // ── 2. actions ────────────────────────────────────────────────────────────
-  const { saveDormer, updateDormer, deleteDormer } = useDormerActions(
+  const { saveDormer, updateDormer, deleteDormer, importDormers } = useDormerActions(
     dormers,
     bills,
     setDormers,
     setBills
   );
   const { payables } = useRegularCharges();
-  const { generateBill, generateBillsBulk, deleteBill } = useBills();
+  const { generateBill, generateBillsBulk, deleteBill, importBills } = useBills();
   const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
+
+  const { dormitoryName } = useDormitory()
+  const isMabolo = dormitoryName?.toLowerCase().includes("mabolo");
 
   // ── 3. modal state ────────────────────────────────────────────────────────
   const { modal, selectedDormer, openModal, closeModal } = useModal();
@@ -94,7 +103,8 @@ export function AdminDormersPage() {
   const handleGenerateBill = async (billData: any) => {
     setIsBillSubmitting(true);
     try {
-      const newBill = await generateBill(billData);
+      const dormer = selectedDormer;
+      const newBill = await generateBill(billData, dormer!);
       if (!newBill) return;
       const bill = newBill as Bill;
 
@@ -129,7 +139,7 @@ export function AdminDormersPage() {
   const handleGenerateBulkBills = async (billsData: any[]) => {
     setIsBillSubmitting(true);
     try {
-      const newBills = await generateBillsBulk(billsData);
+      const newBills = await generateBillsBulk(billsData, selectedDormer!);
       if (!newBills) return;
       const bills = newBills as Bill[];
 
@@ -176,7 +186,7 @@ export function AdminDormersPage() {
 
   const handleSavePayment = async (paymentData: any) => {
     setIsBillSubmitting(true);
-    await handleRecordPayment(paymentData);
+    await handleRecordPayment(paymentData, selectedDormer!);
     setBills((prev: Bill[]) =>
       prev.map((b) => {
         if (b.id !== paymentData.bill_id) return b;
@@ -193,6 +203,11 @@ export function AdminDormersPage() {
     closeModal();
   };
 
+  const handleImportDormers = async (dormers: CreateDormerInput[]) => {
+    await importDormers(dormers);
+    closeModal();
+  }
+
   const handlePayAll = async () => {
     if (!selectedDormer) return;
 
@@ -203,7 +218,7 @@ export function AdminDormersPage() {
     );
     if (unpaidBills.length === 0) return;
 
-    await handlePayAllBills(unpaidBills);
+    await handlePayAllBills(unpaidBills, selectedDormer!)
 
     setBills((prev: Bill[]) =>
       prev.map((b) => {
@@ -227,10 +242,9 @@ export function AdminDormersPage() {
     );
   };
 
-  /** Called by the overwrite-confirm dialog after the user approves. */
   const handleConfirmCreateBill = async (billData: any) => {
     setIsBillSubmitting(true);
-    await generateBill(billData);
+    await generateBill(billData, selectedDormer!);
     setIsBillSubmitting(false);
     setShowConfirmDialog(false);
   };
@@ -238,10 +252,18 @@ export function AdminDormersPage() {
   const handleConfirmBulkOverwrite = async () => {
     setIsImportingBills(true);
     const billsData = bulkDuplicates.map((d) => d.bill);
-    await generateBillsBulk(billsData);
+    await generateBillsBulk(billsData, selectedDormer!);
     setIsImportingBills(false);
     setShowBulkConfirmDialog(false);
   };
+
+  const handleImportBills = async (bills: ImportedBill[], payable: RegularCharge | null): Promise<{ successCount: number; errorCount: number; errors: string[] }> => {
+    setIsImportingBills(true);
+    const result = await importBills(bills, payable!);
+    setIsImportingBills(false);
+    setShowBulkConfirmDialog(false);
+    return result;
+  }   
 
   // ── 6. guard ──────────────────────────────────────────────────────────────
   if (loading) return <DormersPageSkeleton />;
@@ -353,18 +375,20 @@ export function AdminDormersPage() {
         onSavePayment={handleSavePayment}
       />
 
-      <PlaceholderModal
+      <ImportDormerModal
         isOpen={modal === "import"}
         onClose={closeModal}
-        title="Import Dormers (CSV)"
-        description="CSV import flow with preview, validation, and error reporting. Full ImportDormerModal port pending."
+        onImport={handleImportDormers}
+        isSubmitting={false}
       />
 
-      <PlaceholderModal
+      <ImportBillsModal
         isOpen={modal === "importBills"}
         onClose={closeModal}
-        title="Import Bills (CSV)"
-        description="Bulk bill import with conflict detection. Full ImportBillsModal port pending."
+        onImport={handleImportBills}
+        isSubmitting={isImportingBills}
+        payables={payables}
+        billingPeriods={BILLING_PERIODS}
       />
 
       {/* ── Confirm dialogs ── */}

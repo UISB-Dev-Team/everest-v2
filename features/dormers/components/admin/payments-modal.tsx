@@ -81,6 +81,8 @@ export default function PaymentModal({
         email: dormer.email,
       },
       bill_id: bill.id,
+      billing_month: bill.billing_month,
+      total_amount_due: bill.total_amount_due,
       amount_paid: parseFloat(amount) || 0,
       payment_date: paymentDate,
       payment_method: paymentMethod,

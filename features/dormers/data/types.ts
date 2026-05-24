@@ -1,9 +1,9 @@
-import type { Tables, TablesInsert, TablesUpdate } from "@/database.types";
+import type { Enums, Tables, TablesInsert, TablesUpdate } from "@/database.types";
 
 export type DormerProfile = Tables<"profiles">;
 export type DormerEnrollment = Tables<"dormitory_enrollment">;
 export type DormerRoleWithProfile = Tables<"dormitory_roles"> & { profiles: DormerProfile };
-
+export type Role = Enums<"user_role_enum">;
 export interface Dormer extends DormerProfile {
   dormitory_id: string | null;
   room_number: string | null;
@@ -18,6 +18,7 @@ export type CreateDormerInput = Omit<TablesInsert<"profiles">, "id"> & {
   id?: string;
   dormitory_id?: string | null;
   room_number?: string | null;
+  role: Role;
 };
 
 export type UpdateDormerInput = TablesUpdate<"profiles"> & {

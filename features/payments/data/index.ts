@@ -37,7 +37,7 @@ export interface PaymentsDataAccess {
   ): Promise<PaymentWithRecorder[]>;
   listPaymentsForBill(billId: string, academicPeriodId: string): Promise<PaymentWithRecorder[]>;
   getPaymentById(id: string): Promise<Payment | null>;
-  recordPayment(input: any, academicPeriodId: string, dormitoryId: string, recordedBy: string): Promise<Payment>;
+  recordPayment(input: any, academicPeriodId: string, dormitoryId: string, recordedBy: string): Promise<Payment & { newStatus: string, newRemaining: number }>;
   updatePayment(id: string, input: UpdatePaymentInput): Promise<Payment>;
   removePayment(id: string): Promise<void>;
 

@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import type { CreateDormerInput } from "@/features/dormers/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { Role } from "../../data/types";
 
 interface AddDormerModalProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ export default function AddDormerModal({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
+  const [role, setRole] = useState("");
   const { user } = useAuth();
   const dormitory = useDormitory();
   const isMabolo = dormitory?.dormitoryName?.toLowerCase().includes("mabolo");
@@ -62,6 +64,7 @@ export default function AddDormerModal({
       room_number: roomNumber,
       dormitory_id: user?.dormitoryId ?? null,
       is_active: true,
+      role: role.toLowerCase() as Role
     });
     handleClose();
   };
@@ -158,6 +161,24 @@ export default function AddDormerModal({
           </div>
 
           <Separator />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {['Adviser', "SA", "Treasurer", "Auditor", 'Dormer'].map(
+                  (role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  )
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
             <Label htmlFor="roomNumber">Room Number</Label>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,13 +71,24 @@ export function AdminEventsPage() {
             Manage one-time payables separate from the main dorm fund
           </p>
         </div>
-        <Button
-          className="w-full sm:w-auto bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all text-xs sm:text-sm"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
-          Create New Event
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <Link href="/admin/events/all-events" className="w-full sm:w-auto">
+            <Button
+              className="w-full bg-white text-[#2E7D32] border-2 border-[#2E7D32] hover:bg-[#2E7D32] hover:text-white font-semibold transition-all text-xs sm:text-sm"
+              variant="outline"
+            >
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+              View All Dormers
+            </Button>
+          </Link>
+          <Button
+            className="w-full sm:w-auto bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all text-xs sm:text-sm"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+            Create New Event
+          </Button>
+        </div>
       </div>
 
       <AddEventModal
@@ -155,10 +166,10 @@ export function AdminEventsPage() {
                     </div>
                     <div className="py-1.5 px-1.5 sm:px-2 rounded-lg bg-yellow-50">
                       <span className="font-bold text-sm sm:text-base text-yellow-700">
-                        {event.partialCount}
+                        {event.waivedCount}
                       </span>
                       <span className="text-gray-600 block text-[10px] sm:text-xs">
-                        Partial
+                        Waived
                       </span>
                     </div>
                     <div className="py-1.5 px-1.5 sm:px-2 rounded-lg bg-red-50">

@@ -1,4 +1,4 @@
-export const welcomeAdviserEmail = (
+export const welcomeAdviser = (
   firstName: string,
   email: string,
   temporaryPassword: string,

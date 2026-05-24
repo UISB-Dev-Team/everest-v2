@@ -1,4 +1,4 @@
-export const welcomeUserTemplate = (
+export const welcomeUser = (
   firstName: string,
   email: string,
   temporaryPassword: string

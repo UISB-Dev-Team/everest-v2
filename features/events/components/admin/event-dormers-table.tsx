@@ -7,6 +7,7 @@ import {
   Clock,
   CreditCard,
   Users,
+  X,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -29,11 +30,14 @@ import {
 } from "@/components/ui/table";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { EventDormerData } from "@/features/events/data";
+import DormerFilters from "@/features/dormers/components/admin/dormer-filters";
+import { useMemo, useState } from "react";
 
 interface EventDormersTableProps {
   dormers: EventDormerData[];
   onLogPayment: (dormer: EventDormerData) => void;
   eventAmount: number;
+  onWaivePayment: (dormer: EventDormerData) => void;
 }
 
 interface StatusConfig {
@@ -69,7 +73,20 @@ export default function EventDormersTable({
   dormers,
   onLogPayment,
   eventAmount,
+  onWaivePayment
 }: EventDormersTableProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  
+  const filteredDormers = useMemo(() => {
+    return dormers.filter((dormer) => {
+      const searchStr = `${dormer.first_name ?? ""} ${dormer.last_name ?? ""}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "All" || dormer.room_number === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [dormers, searchTerm, statusFilter]);
+  
   return (
     <Card className="border-2 border-gray-100 shadow-md bg-white">
       <CardHeader className="border-b border-gray-100">
@@ -81,9 +98,21 @@ export default function EventDormersTable({
             Track individual payment progress for this event
           </p>
         </div>
+
+        <DormerFilters
+            searchTerm={searchTerm}
+            onSearchChange={(e) => {setSearchTerm(e.target.value)}}
+            statusFilter={statusFilter}
+            onStatusChange={(status) => {setStatusFilter(status)}}
+            count={filteredDormers?.length}
+            resetFilter={() => {
+              setSearchTerm("");
+              setStatusFilter("All");
+              }}
+          />
       </CardHeader>
       <CardContent>
-        {dormers.length === 0 ? (
+        {filteredDormers.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="relative mb-6 inline-block">
               <div className="absolute inset-0 bg-gray-100/50 rounded-full blur-2xl" />
@@ -123,7 +152,7 @@ export default function EventDormersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dormers.map((dormer) => {
+              {filteredDormers.map((dormer) => {
                 const statusConfig = getStatusBadge(dormer.payment_status);
                 const StatusIcon = statusConfig.icon;
                 const initials = `${dormer.first_name?.[0] ?? ""}${
@@ -216,7 +245,8 @@ export default function EventDormersTable({
                       )}
                     </TableCell>
                     <TableCell className="text-right w-[160px]">
-                      {dormer.payment_status !== "Paid" ? (
+                      {dormer.payment_status !== "Paid" && dormer.payment_status !== "Waived" ? (
+                        <div>
                         <Button
                           size="sm"
                           onClick={() => onLogPayment(dormer)}
@@ -225,6 +255,16 @@ export default function EventDormersTable({
                           <CreditCard className="h-4 w-4 mr-1" />
                           Log Payment
                         </Button>
+
+                            <Button
+                              size="sm"
+                              onClick={() => onWaivePayment(dormer)}
+                              className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Waive Payment
+                            </Button>
+                          </div>
                       ) : (
                         <Badge
                           variant="outline"

@@ -6,10 +6,15 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import { expensesData } from "@/features/expenses/data";
 import type {
   CreateExpenseInput,
+  Expense,
+  ExpenseWithRecorder,
   UpdateExpenseInput,
 } from "@/features/expenses/data";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { handleSendExpenseReport } from "@/emails/expenses/expenseReport";
+import { Dormer } from "@/features/dormers/data";
+import { listForDormitory } from "@/features/dormers/data/supabase";
 
 interface AddExpenseFormInput {
   title: string;
@@ -23,7 +28,7 @@ interface AddExpenseFormInput {
 export function useExpensesActions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const { dormitoryId } = useDormitory();
+  const { dormitoryId, dormitoryName } = useDormitory();
   const { user } = useAuth()
   const { selected: selectedPeriod } = useAcademicPeriod();
   const addExpense = async (input: AddExpenseFormInput) => {
@@ -75,12 +80,15 @@ export function useExpensesActions() {
     }
   };
 
-  const sendReport = async () => {
+  const sendReport = async (expenses: ExpenseWithRecorder[]) => {
     setIsSendingEmail(true);
     try {
-      // Email-sending is wired up by the backend dev. For now, just toast.
-      await new Promise((r) => setTimeout(r, 300));
-      toast.message("(Email report would be sent in production.)");
+      const dormers = await listForDormitory(dormitoryId!, selectedPeriod?.id!);
+      await handleSendExpenseReport(expenses, dormers, setIsSendingEmail, dormitoryName!);
+      toast.message("Email report sent successfully!");
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to send email report.");
     } finally {
       setIsSendingEmail(false);
     }

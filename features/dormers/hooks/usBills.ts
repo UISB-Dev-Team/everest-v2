@@ -5,6 +5,12 @@ import { createBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
 import { deleteBillData } from "../data/supabase";
+import { sendEmail } from "@/lib/email";
+import { Dormer, dormersData, DormerWithBills, ImportedBill } from "../data";
+import { newBillTemplate } from "@/emails/dormers/newBill";
+import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
+import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
+import { RegularCharge } from "@/features/regular-charges/data";
 
 export function useBills() {
     const { selected: selectedPeriod } = useAcademicPeriod();
@@ -27,26 +33,37 @@ export function useBills() {
         } as CreateBillInput;
     };
 
-    const generateBill = async (billData: any) => {
+    const generateBill = async (billData: any, dormer: DormerWithBills) => {
         try {
             const mappedInput = mapBillInput(billData) as CreateBillInput;
             const result = await createBill(mappedInput);
             toast.success("Bill generated successfully");
+            
+            await sendEmail({
+                to: dormer?.email!,
+                subject: `New Bill for ${billData.billingPeriod}`,
+                html: newBillTemplate(
+                    dormer?.first_name!,
+                    billData.billingPeriod,
+                    billData.totalAmountDue
+                )
+            })
+            console.log("Bill email sent successfully!");
             return result;
         } catch (error) {
             toast.error("Failed to generate bill");
         }
     }
 
-    const generateBillsBulk = async (billsData: any[]) => {
+    const generateBillsBulk = async (billsData: any[], dormer: DormerWithBills) => {
         try {
             const bills: Bill[] = [];
             for (const billData of billsData) {
                 const mappedInput = mapBillInput(billData) as CreateBillInput;
-                const result = await createBill(mappedInput);
+                const result = await generateBill(mappedInput, dormer);
                 bills.push(result as Bill);
             }
-            toast.success("Bills generated successfully");
+             
             return bills
         } catch (error) {
             toast.error("Failed to generate bills");
@@ -62,10 +79,46 @@ export function useBills() {
         }
     }
 
+    const importBills = async (
+        billsData: ImportedBill[],
+        payable: RegularCharge
+    ): Promise<{ successCount: number; errorCount: number; errors: string[] }> => {
+        try {
+            const parsingErrors = billsData
+            .filter((b) => b.error)
+            .map((b) => b.error!);
+
+            if (parsingErrors.length > 0) {
+                return { successCount: 0, errorCount: parsingErrors.length, errors: parsingErrors };
+            }
+
+            const errors: string[] = [];
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const billData of billsData) {
+                const mappedInput = mapBillInput(billData) as CreateBillInput;
+                const result = await createBill(mappedInput);
+                if (result) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    errors.push(`Failed to create bill for ${billData.email} - ${billData.billing_month}`);
+                }
+            }
+
+            return { successCount, errorCount, errors };
+        } catch (error) {
+            toast.error("Failed to import bills");
+            return { successCount: 0, errorCount: 0, errors: [] };
+        }
+    };
+
 
     return {
         generateBill,
         generateBillsBulk,
-        deleteBill
+        deleteBill,
+        importBills
     }
 }

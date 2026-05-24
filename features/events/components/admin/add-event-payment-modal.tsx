@@ -72,25 +72,18 @@ export default function AddEventPaymentModal({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if (!paymentAmount || !paymentMethod || !paymentDate || !event || !dormer) {
+      if (!paymentMethod || !paymentDate || !event || !dormer) {
         toast.error("Please fill in all required fields.");
         setIsSubmitting(false);
         return;
       }
       const amount = Number.parseFloat(paymentAmount);
-      if (isNaN(amount) || amount <= 0 || amount > event.amount_due) {
-        toast.error(
-          `Payment amount must be between ₱0.01 and ${formatAmount(event.amount_due)}`
-        );
-        setIsSubmitting(false);
-        return;
-      }
       await onSave({
         event_id: event.id,
         dormer_id: dormer.id,
         dormitory_id: event.dormitory_id,
         academic_period_id: event.academic_period_id,
-        amount,
+        amount: event.amount_due,
         payment_method: paymentMethod,
         payment_date: paymentDate,
         notes: paymentNotes || null,
@@ -163,9 +156,9 @@ export default function AddEventPaymentModal({
                   max={event.amount_due}
                   placeholder="0.00"
                   className="pl-8"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  value={event.amount_due}
                   required
+                  disabled={true}
                 />
               </div>
             </div>

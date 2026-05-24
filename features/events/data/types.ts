@@ -24,3 +24,9 @@ export interface EventDormerData extends Dormer {
   recorded_by_full_name: string | null;
   recorded_by_email: string | null;
 }
+
+export interface EventPayable extends Dormer {
+  pending_payable_amount: number;
+  pending_payable_events: Event[];
+  event_payments: EventPayment[];
+}

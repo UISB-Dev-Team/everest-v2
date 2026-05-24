@@ -478,7 +478,7 @@ export async function recordPayment(
   academicPeriodId: string,
   dormitoryId: string,
   recordedBy: string
-): Promise<Payment> {
+): Promise<Payment & { newStatus: string, newRemaining: number }> {
   const mappedInput = mapPayment(input, academicPeriodId, dormitoryId, recordedBy);
   console.log("mappedInput ", mappedInput)
   const { data: payment, error: paymentError } = await supabase
@@ -512,7 +512,7 @@ export async function recordPayment(
 
   if (updateError) throw updateError;
 
-  return payment;
+  return { ...payment, newStatus: status, newRemaining: remaining };
 }
 
 
