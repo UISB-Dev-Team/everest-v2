@@ -12,13 +12,15 @@ import ExpensesTable from "@/features/expenses/components/admin/expenses-table";
 import { ExpensesPageSkeleton } from "@/features/expenses/components/admin/expenses-page-skeleton";
 import AddExpenseModal from "@/features/expenses/components/admin/add-expense-modal";
 import ViewEditExpenseModal from "@/features/expenses/components/admin/view-edit-expense-modal";
-import type { ExpenseWithRecorder } from "@/features/expenses/data";
+import { expensesData, type ExpenseWithRecorder } from "@/features/expenses/data";
+import { listForDormitory } from "@/features/dormers/data/supabase";
 
 type ModalType = "add" | "view" | null;
 
 export function AdminExpensesPage() {
   // ── 1. data ───────────────────────────────────────────────────────────────
   const {
+    expenses,
     paginatedExpenses,
     filteredExpenses,
     summary,
@@ -80,6 +82,10 @@ export function AdminExpensesPage() {
     refresh();
   };
 
+  const handleSendExpenses = async () => {
+    await sendReport(expenses);
+  };
+
   // ── 5. guard ──────────────────────────────────────────────────────────────
   if (loading) return <ExpensesPageSkeleton />;
 
@@ -89,7 +95,7 @@ export function AdminExpensesPage() {
       <ExpensesHeader
         onAdd={handleOpenAdd}
         onExport={() => handleExport(filteredExpenses)}
-        onEmailReport={sendReport}
+        onEmailReport={handleSendExpenses}
         isSendingEmail={isSendingEmail}
       />
 

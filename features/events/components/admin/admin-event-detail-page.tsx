@@ -26,12 +26,13 @@ export function AdminEventDetailPage() {
   const eventId = params?.id ?? null;
 
   const { event, dormers, loading, refresh } = useEventDetail(eventId);
-  const { recordEventPayment, waiveEventPayable } = useEventsActions();
+  const { recordEventPayment, waiveEventPayable, remindAllDormers } = useEventsActions();
 
   const [selectedDormer, setSelectedDormer] = useState<EventDormerData | null>(
     null
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const handleWaivePayment = async (dormer: Dormer) => {
     console.log(dormer)
@@ -39,6 +40,13 @@ export function AdminEventDetailPage() {
     toast.success(`${dormer?.first_name} ${dormer?.last_name}'s event payable has been waived.`)  
     refresh()
   }
+  
+  const handleRemindDormers = async () => {
+    setIsSendingEmail(true);
+    await remindAllDormers(eventId!);
+    setIsSendingEmail(false);  
+  }
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -83,11 +91,19 @@ export function AdminEventDetailPage() {
       </Link>
 
       <Card className="border-2 border-gray-100 shadow-md bg-white">
-        <CardHeader>
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-[#12372A]">
-            {event.name}
-          </CardTitle>
-          <p className="text-sm text-gray-600">{event.description}</p>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl sm:text-3xl font-bold text-[#12372A]">
+              {event.name}
+            </CardTitle>
+            <p className="text-sm text-gray-600">{event.description}</p>
+          </div>
+          <Button
+            onClick={handleRemindDormers}
+            disabled={isSendingEmail}
+          >
+            {isSendingEmail ? "Sending..." : "Remind Dormers"}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

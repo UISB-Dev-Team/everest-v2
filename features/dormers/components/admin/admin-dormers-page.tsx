@@ -37,6 +37,8 @@ import BillsModal from "./bills-modal";
 import GenerateBillModal from "./generate-bill-modal";
 import PaymentModal from "./payments-modal";
 import type { Bill } from "@/features/payments/data";
+import ImportDormerModal from "./import-dormer-modal";
+import { CreateDormerInput } from "../../data";
 
 export function AdminDormersPage() {
   // ── 1. data ───────────────────────────────────────────────────────────────
@@ -59,7 +61,7 @@ export function AdminDormersPage() {
   } = useDormers();
 
   // ── 2. actions ────────────────────────────────────────────────────────────
-  const { saveDormer, updateDormer, deleteDormer } = useDormerActions(
+  const { saveDormer, updateDormer, deleteDormer, importDormers } = useDormerActions(
     dormers,
     bills,
     setDormers,
@@ -193,6 +195,11 @@ export function AdminDormersPage() {
     setIsBillSubmitting(false);
     closeModal();
   };
+
+  const handleImportDormers = async (dormers: CreateDormerInput[]) => {
+    await importDormers(dormers);
+    closeModal();
+  }
 
   const handlePayAll = async () => {
     if (!selectedDormer) return;
@@ -353,11 +360,11 @@ export function AdminDormersPage() {
         onSavePayment={handleSavePayment}
       />
 
-      <PlaceholderModal
+      <ImportDormerModal
         isOpen={modal === "import"}
         onClose={closeModal}
-        title="Import Dormers (CSV)"
-        description="CSV import flow with preview, validation, and error reporting. Full ImportDormerModal port pending."
+        onImport={handleImportDormers}
+        isSubmitting={false}
       />
 
       <PlaceholderModal

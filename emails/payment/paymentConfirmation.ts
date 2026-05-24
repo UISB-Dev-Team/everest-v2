@@ -12,7 +12,7 @@ export const paymentConfirmationEmailTemplate = (
             <p>We've received your payment of <strong>₱${amountPaid?.toFixed(
               2
             )}</strong>.</p>
-            <p>This payment has been applied to your bill for <strong>${
+            <p>This payment  has been applied to your bill for <strong>${
               billingMonth
             }</strong>.</p>
             ${

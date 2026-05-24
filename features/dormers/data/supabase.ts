@@ -8,6 +8,8 @@ import type {
   DormerWithBills,
   UpdateDormerInput,
 } from "./types";
+import { sendEmail } from "@/lib/email";
+import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
 
 
 // export interface DormersDataAccess {
@@ -213,7 +215,7 @@ export async function getById(id: string): Promise<Dormer | null> {
 }
 
 export async function create(input: CreateDormerInput) {
-  const { dormitory_id, room_number, ...profileInput } = input;
+  const { dormitory_id, room_number, role, ...profileInput } = input;
 
   if (!dormitory_id) throw new Error("dormitory_id is required to create a dormer.");
 
@@ -225,7 +227,7 @@ export async function create(input: CreateDormerInput) {
       first_name: profileInput.first_name,
       last_name: profileInput.last_name,
       full_name: `${profileInput.first_name} ${profileInput.last_name}`,
-      role: "dormer",
+      role:  role,
       dormitory_id,
     },
   });
@@ -268,11 +270,10 @@ export async function create(input: CreateDormerInput) {
     .insert({
       user_id: userId,
       dormitory_id,
-      role: "dormer",
+      role: role,
     });
 
   if (roleError) throw roleError;
-
 
   return {
     ...profile,
