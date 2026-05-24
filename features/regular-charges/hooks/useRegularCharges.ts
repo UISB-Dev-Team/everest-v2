@@ -10,9 +10,11 @@ import type {
 } from "@/features/regular-charges/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { createRegularCharge, listForDormitory, updateRegularCharge } from "../data/supabase";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function useRegularCharges() {
   const { dormitoryId } = useDormitory()
+  const { selected } = useAcademicPeriod() 
   const [payables, setPayables] = useState<RegularCharge[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +26,7 @@ export function useRegularCharges() {
     }
     setLoading(true);
     try {
-      const list = await listForDormitory(dormitoryId);
+      const list = await listForDormitory(dormitoryId, selected?.id!);
       console.log(list)
       setPayables(list);
     } finally {
@@ -36,7 +38,6 @@ export function useRegularCharges() {
 
   if (!dormitoryId) {
     setLoading(false);
-    // ❌ removed setPayables([]) — don't wipe on transient undefined
     return;
   }
   
@@ -44,7 +45,7 @@ export function useRegularCharges() {
 
   const fetchPayables = async () => {
     try {
-      const list = await listForDormitory(dormitoryId);
+      const list = await listForDormitory(dormitoryId, selected?.id!);
       if (!cancelled) setPayables(list);
     } catch (e) {
       console.error(e);
@@ -59,7 +60,7 @@ export function useRegularCharges() {
   return () => {
     cancelled = true;
   };
-}, [dormitoryId]);
+}, [dormitoryId, selected]);
 
   const savePayable = async (input: {
     id?: string;
@@ -79,16 +80,19 @@ export function useRegularCharges() {
           amount: input.amount,
           description: input.description,
         };
-        await updateRegularCharge(input.id, update);
+        const updated = await updateRegularCharge(input.id, update);
         toast.success("Payable updated!");
+        setPayables((prev) => prev.map((p) => p.id == input.id ? updated: p) )
       } else {
         const create: CreateRegularChargeInput = {
           name: input.name,
           amount: input.amount,
           description: input.description,
           dormitory_id: dormitoryId,
+          academic_period_id: selected?.id!
         };
-        await createRegularCharge(create);
+        const created = await createRegularCharge(create);
+        setPayables((prev) => [...prev, created])
         toast.success("Payable added!");
       }
       await refresh();
@@ -99,6 +103,5 @@ export function useRegularCharges() {
       setIsSubmitting(false);
     }
   };
-  console.log("payables here: ", payables)
-  return { payables, loading, isSubmitting, savePayable, refresh };
+  return { payables, loading, isSubmitting, savePayable, refresh, setPayables };
 }

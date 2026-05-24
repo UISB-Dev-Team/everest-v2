@@ -6,7 +6,7 @@ import type {
 } from "./types";
 
 export interface RegularChargesDataAccess {
-  listForDormitory(dormitoryId: string): Promise<RegularCharge[]>;
+  listForDormitory(dormitoryId: string, academicPeriodId: string): Promise<RegularCharge[]>;
   getById(id: string): Promise<RegularCharge | null>;
   createRegularCharge(input: CreateRegularChargeInput): Promise<RegularCharge>;
   updateRegularCharge(
