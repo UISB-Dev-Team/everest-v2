@@ -4,7 +4,7 @@ import { Bill, CreateBillInput } from "@/features/payments/data";
 import { createBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
-import { deleteBillData } from "../data/supabase";
+import { deleteBillData, getDormerByEmail } from "../data/supabase";
 import { sendEmail } from "@/lib/email";
 import { Dormer, dormersData, DormerWithBills, ImportedBill } from "../data";
 import { newBillTemplate } from "@/emails/dormers/newBill";
@@ -48,7 +48,6 @@ export function useBills() {
                     billData.totalAmountDue
                 )
             })
-            console.log("Bill email sent successfully!");
             return result;
         } catch (error) {
             toast.error("Failed to generate bill");
@@ -82,35 +81,59 @@ export function useBills() {
     const importBills = async (
         billsData: ImportedBill[],
         payable: RegularCharge
-    ): Promise<{ successCount: number; errorCount: number; errors: string[] }> => {
+    ): Promise<{ successCount: number; errorCount: number; errors: string[], createdBills: Bill[] }> => {
         try {
             const parsingErrors = billsData
             .filter((b) => b.error)
             .map((b) => b.error!);
-
             if (parsingErrors.length > 0) {
-                return { successCount: 0, errorCount: parsingErrors.length, errors: parsingErrors };
+                return { successCount: 0, errorCount: parsingErrors.length, errors: parsingErrors, createdBills: [] };
             }
 
             const errors: string[] = [];
+            const createdBills: Bill[] = [];
             let successCount = 0;
             let errorCount = 0;
 
             for (const billData of billsData) {
-                const mappedInput = mapBillInput(billData) as CreateBillInput;
+                const dormer = await getDormerByEmail(billData.email);
+                if (!dormer) {
+                    errorCount++;
+                    errors.push(`No dormer found for ${billData.email}`);
+                    continue;
+                }
+
+                const mappedInput = mapBillInput({
+                    ...billData, 
+                    dormerId: dormer.id, 
+                    status: "Unpaid", 
+                    totalAmountDue: payable.amount, 
+                    payableId: payable.id, 
+                    billingPeriod: billData.billing_month, 
+                    description: payable.description
+                }) as CreateBillInput;
                 const result = await createBill(mappedInput);
                 if (result) {
                     successCount++;
+                    createdBills.push(result as Bill);
+                    await sendEmail({
+                        to: dormer?.email!,
+                        subject: `New Bill for ${billData.billing_month}`,
+                        html: newBillTemplate(
+                            dormer?.first_name!,
+                            billData.billing_month,
+                            payable.amount
+                        )
+                    })
                 } else {
                     errorCount++;
                     errors.push(`Failed to create bill for ${billData.email} - ${billData.billing_month}`);
                 }
             }
-
-            return { successCount, errorCount, errors };
+            return { successCount, errorCount, errors, createdBills };
         } catch (error) {
             toast.error("Failed to import bills");
-            return { successCount: 0, errorCount: 0, errors: [] };
+            return { successCount: 0, errorCount: 0, errors: [], createdBills: [] };
         }
     };
 

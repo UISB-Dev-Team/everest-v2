@@ -40,7 +40,6 @@ export async function proxy(request: NextRequest) {
 
     const path = request.nextUrl.pathname;
 
-    // ✅ Helper that always carries refreshed cookies forward
     const redirect = (pathname: string) => {
         const url = request.nextUrl.clone();
         url.pathname = pathname;
@@ -61,6 +60,9 @@ export async function proxy(request: NextRequest) {
         return redirect("/login");
     }
 
+    const RESTRICTED_ROLES = ["treasurer", "auditor"];
+    const ALLOWED_PATHS_FOR_RESTRICTED = ["/admin/events", "/admin/clearance"];
+
     if (user) {
         if (path === "/login") {
             return redirect(getDashboardPath(role));
@@ -75,6 +77,14 @@ export async function proxy(request: NextRequest) {
         if (isSuperAdminRoute && role !== "super_admin") return redirect(getDashboardPath(role));
         if (isAdminRoute && !["adviser", "treasurer", "auditor", "sa"].includes(role || "")) return redirect(getDashboardPath(role));
         if (isDormerRoute && role && role !== "dormer") return redirect(getDashboardPath(role));
+
+        if (
+            isAdminRoute &&
+            RESTRICTED_ROLES.includes(role ?? "") &&
+            !ALLOWED_PATHS_FOR_RESTRICTED.some((p) => path === p || path.startsWith(p + "/"))
+        ) {
+            return redirect("/admin/events");
+        }
     }
 
     return supabaseResponse;

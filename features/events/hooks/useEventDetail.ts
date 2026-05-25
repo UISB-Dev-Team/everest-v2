@@ -46,7 +46,6 @@ export function useEventDetail(eventId: string | null) {
       if (cancelled) return;
       setEvent(e);
       setDormers(list);
-      console.log(dormers)
       setLoading(false);
     })();
     return () => {

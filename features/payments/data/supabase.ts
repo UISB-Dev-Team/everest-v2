@@ -480,7 +480,6 @@ export async function recordPayment(
   recordedBy: string
 ): Promise<Payment & { newStatus: string, newRemaining: number }> {
   const mappedInput = mapPayment(input, academicPeriodId, dormitoryId, recordedBy);
-  console.log("mappedInput ", mappedInput)
   const { data: payment, error: paymentError } = await supabase
     .from("payments")
     .insert(mappedInput)

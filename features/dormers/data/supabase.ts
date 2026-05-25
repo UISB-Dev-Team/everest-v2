@@ -10,6 +10,7 @@ import type {
 } from "./types";
 import { sendEmail } from "@/lib/email";
 import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
+import { Profile } from "@/features/advisers/data";
 
 
 // export interface DormersDataAccess {
@@ -99,6 +100,23 @@ export async function listForDormitory(
   })) as Dormer[];
 }
 
+export async function getDormerByEmail(email: string) : Promise<Profile> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle()
+  
+  if(!data) {
+    throw new Error("No dormers found")
+  }
+  if(error) {
+    throw new Error(error)
+  }
+
+  return data
+}
+
 export async function listForDormitoryWithBills(
   dormitoryId: string,
   academicPeriodId?: string
@@ -162,8 +180,6 @@ async function getCurrentAcademicPeriodId(): Promise<string> {
     .select("id")
     .eq("is_current", true)
     .single();
-  console.log(data)
-  console.log(error)
 
   if (error || !data) {
     throw new Error("Could not find the current active academic period.");
@@ -175,7 +191,6 @@ export async function getById(id: string): Promise<Dormer | null> {
   let periodId: string | null = null;
   try {
     periodId = await getCurrentAcademicPeriodId();
-    console.log(periodId)
   } catch (e) {
     // Ignore if no active period
   }

@@ -8,8 +8,6 @@ const supabaseClient = await createClient();
 async function mapSupabaseUser(user: User | null): Promise<AuthUser | null> {
     if (!user) return null;
 
-    console.log("[mapSupabaseUser]", user.id, "metadata:", user.user_metadata);
-
     const meta = user.user_metadata || {};
 
     // ✅ Everything from JWT — no DB call, no hanging
@@ -65,7 +63,6 @@ const loadingTimeout = setTimeout(() => {
 }, 5000);
 
 supabaseClient.auth.onAuthStateChange(async (_event, session) => {
-    console.log("[onAuthStateChange]", _event, session?.user?.id);
     try {
         const mappedUser = await mapSupabaseUser(session?.user ?? null);
         clearTimeout(loadingTimeout); 

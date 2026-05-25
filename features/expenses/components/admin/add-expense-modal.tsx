@@ -96,7 +96,6 @@ export default function AddExpenseModal({
     setIsSubmitting(true);
     try {
       const receipt_image_url = await uploadReceiptImage(receiptFile!);
-      console.log(receipt_image_url);
       await onSave({
         title: formData.title,
         description: formData.description,

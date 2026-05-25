@@ -180,7 +180,6 @@ export function useEventsActions() {
     toast.success("Digital receipt sent successfully!");
 
     } catch (e) {
-      console.log(e)
       console.error(e);
       toast.error("Failed to waive event payable.");
     } finally {

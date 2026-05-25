@@ -42,9 +42,8 @@ export default function ImportBillsModal({
   const [selectedPayable, setSelectedPayable] = useState<RegularCharge | null>(null);
   const [rowCount, setRowCount] = useState(0);
   const [billCount, setBillCount] = useState(0);
+  const [importResult, setImportResult] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const {dormitoryName} = useDormitory();
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
@@ -100,8 +99,6 @@ export default function ImportBillsModal({
       errors.push("No billing period columns found. Please include at least one billing period column.");
       return { bills, errors };
     }
-
-    const {dormitoryName} = useDormitory();
 
     for (let j = 0; j < billingPeriods.length; j++) {
         const period = billingPeriods[j].trim();
@@ -187,8 +184,8 @@ export default function ImportBillsModal({
         billing_month: "",
         rowNumber: 0,
       }));
-      await onImport(errorBills, selectedPayable);
-      handleClose();
+      const result = await onImport(errorBills, selectedPayable);
+      setImportResult(result);
       return;
     }
 
@@ -197,8 +194,8 @@ export default function ImportBillsModal({
       return;
     }
 
-    await onImport(bills, selectedPayable);
-    handleClose();
+    const result = await onImport(bills, selectedPayable);
+    setImportResult(result);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,6 +229,7 @@ export default function ImportBillsModal({
     setSelectedPayable(null);
     setRowCount(0);
     setBillCount(0);
+    setImportResult(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     onClose();
   };
@@ -247,143 +245,182 @@ export default function ImportBillsModal({
             Upload or paste CSV data to create bills for multiple dormers across different billing periods. Bills will be created using dormer emails as unique identifiers, with names as additional reference.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
-          <div className="bg-blue-50 p-4 rounded-md flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800 space-y-2">
-              <div>
-                <p className="font-semibold mb-1.5">CSV Format:</p>
-                <code className="bg-blue-100 px-2 py-1 rounded text-xs block w-fit">
-                  Email, First Name, Last Name, January 2026, February 2026, ...
-                </code>
+
+        {importResult ? (
+          <div className="py-4 space-y-4">
+            <div className={`p-4 rounded-md flex gap-3 ${importResult.successCount > 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+              <Info className={`h-5 w-5 shrink-0 mt-0.5 ${importResult.successCount > 0 ? "text-green-600" : "text-red-600"}`} />
+              <div className="text-sm">
+                <p className={`font-semibold mb-1 ${importResult.successCount > 0 ? "text-green-800" : "text-red-800"}`}>
+                  Import Complete
+                </p>
+                <div className="space-y-1">
+                  <p className="text-green-700">Successfully created: {importResult.successCount} bills</p>
+                  {importResult.errorCount > 0 && (
+                    <p className="text-red-700">Errors encountered: {importResult.errorCount}</p>
+                  )}
+                </div>
               </div>
-              
-              <div className="space-y-1 text-xs">
-                <p><strong>Empty cell:</strong> No bill for that period</p>
-                <p><strong>Cell with "1":</strong> Creates bill for that period</p>
-                <p><strong>Billing periods:</strong> Must exactly match system-defined periods (see valid periods below)</p>
-                <p><strong>Monthly date format:</strong> Month YYYY (January 2026)</p>
-                <p><strong>Best practice:</strong> Import ≤50 rows per batch for faster processing</p>
-              </div>
-              <a 
-                href="https://docs.google.com/spreadsheets/d/1J0rTGDXO44DDkFjjaajou-be3dVBTuz3cDL_x2nb2yM/edit?gid=0#gid=0" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-700 hover:text-blue-900 font-medium text-xs inline-flex items-center gap-1 underline"
-              >
-                View sample spreadsheet
-                <ExternalLink className="h-3 w-3" />
-              </a>
-              
-              <div className="mt-3 pt-3 border-t border-blue-200">
-                <p className="font-semibold mb-1.5">Valid Billing Periods (Semestral/Monthly):</p>
-                <div className="text-xs space-y-1 max-h-32 overflow-y-auto bg-blue-100 p-2 rounded">
-                  {billingPeriodLabels.map(period => (
-                    <div key={period} className="font-medium text-blue-800">
-                      {period}
-                    </div>
+            </div>
+
+            {importResult.errors.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-red-800 mb-2">Error Details:</p>
+                <div className="bg-red-50 p-3 rounded-md max-h-48 overflow-y-auto text-xs text-red-700 space-y-1 border border-red-100">
+                  {importResult.errors.map((error, idx) => (
+                    <div key={idx}>• {error}</div>
                   ))}
                 </div>
-                <p className="text-xs italic text-blue-700 mt-2">
-                  Column headers must exactly match the billing periods listed above
-                </p>
-              </div>              
-            </div>
-          </div>
-
-          {rowCount > 50 && (
-            <div className="bg-yellow-50 p-4 rounded-md flex gap-3 border border-yellow-200">
-              <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <p className="font-semibold mb-1">Large Import Detected ({rowCount} students, ~{billCount} bills)</p>
-                <p className="text-xs">
-                  Processing {rowCount} students with approximately {billCount} bills. This might take a while. Consider splitting into smaller batches (50 students each) for better reliability and easier error tracking.
-                </p>
               </div>
-            </div>
-          )}
-
-          <div>
-            <label className="text-sm font-medium">Select Payable Type</label>
-            <Select 
-              onValueChange={(value) => setSelectedPayable(payables.find(p => p.id === value) || null)}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className={undefined}>
-                <SelectValue placeholder="Choose a payable type" />
-              </SelectTrigger>
-              <SelectContent className={undefined}>
-                {payables.map((payable) => (
-                  <SelectItem key={payable.id} value={payable.id} className={undefined}>
-                    {payable.name} - ₱{payable.amount}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedPayable && (
-              <p className="text-xs text-gray-500 mt-1">
-                All imported bills will use ₱{selectedPayable.amount} as the amount due
-              </p>
             )}
           </div>
+        ) : (
+          <div className="py-4 space-y-4">
+            <div className="bg-blue-50 p-4 rounded-md flex gap-3">
+              <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="text-sm text-blue-800 space-y-2">
+                <div>
+                  <p className="font-semibold mb-1.5">CSV Format:</p>
+                  <code className="bg-blue-100 px-2 py-1 rounded text-xs block w-fit">
+                    Email, First Name, Last Name, January 2026, February 2026, ...
+                  </code>
+                </div>
+                
+                <div className="space-y-1 text-xs">
+                  <p><strong>Empty cell:</strong> No bill for that period</p>
+                  <p><strong>Cell with "1":</strong> Creates bill for that period</p>
+                  <p><strong>Billing periods:</strong> Must exactly match system-defined periods (see valid periods below)</p>
+                  <p><strong>Monthly date format:</strong> Month YYYY (January 2026)</p>
+                  <p><strong>Best practice:</strong> Import ≤50 rows per batch for faster processing</p>
+                </div>
+                <a 
+                  href="https://docs.google.com/spreadsheets/d/1J0rTGDXO44DDkFjjaajou-be3dVBTuz3cDL_x2nb2yM/edit?gid=0#gid=0" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:text-blue-900 font-medium text-xs inline-flex items-center gap-1 underline"
+                >
+                  View sample spreadsheet
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <p className="font-semibold mb-1.5">Valid Billing Periods (Semestral/Monthly):</p>
+                  <div className="text-xs space-y-1 max-h-32 overflow-y-auto bg-blue-100 p-2 rounded">
+                    {billingPeriodLabels.map(period => (
+                      <div key={period} className="font-medium text-blue-800">
+                        {period}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs italic text-blue-700 mt-2">
+                    Column headers must exactly match the billing periods listed above
+                  </p>
+                </div>              
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium">Paste CSV Data</label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-8 text-xs border-dashed"
+            {rowCount > 50 && (
+              <div className="bg-yellow-50 p-4 rounded-md flex gap-3 border border-yellow-200">
+                <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-800">
+                  <p className="font-semibold mb-1">Large Import Detected ({rowCount} students, ~{billCount} bills)</p>
+                  <p className="text-xs">
+                    Processing {rowCount} students with approximately {billCount} bills. This might take a while. Consider splitting into smaller batches (50 students each) for better reliability and easier error tracking.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium">Select Payable Type</label>
+              <Select 
+                onValueChange={(value) => setSelectedPayable(payables.find(p => p.id === value) || null)}
                 disabled={isSubmitting}
               >
-                <FileUp className="h-3 w-3 mr-2" />
-                Upload File
-              </Button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept=".csv,.txt"
-                onChange={handleFileUpload}
+                <SelectTrigger className={undefined}>
+                  <SelectValue placeholder="Choose a payable type" />
+                </SelectTrigger>
+                <SelectContent className={undefined}>
+                  {payables.map((payable) => (
+                    <SelectItem key={payable.id} value={payable.id} className={undefined}>
+                      {payable.name} - ₱{payable.amount}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedPayable && (
+                <p className="text-xs text-gray-500 mt-1">
+                  All imported bills will use ₱{selectedPayable.amount} as the amount due
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-medium">Paste CSV Data</label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-8 text-xs border-dashed"
+                  disabled={isSubmitting}
+                >
+                  <FileUp className="h-3 w-3 mr-2" />
+                  Upload File
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".csv,.txt"
+                  onChange={handleFileUpload}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <Textarea
+                placeholder="Email, First Name, Last Name, January 2026, February 2026, March 2026&#10;john.doe@email.com, John, Doe, 1, , 1&#10;jane.smith@email.com, Jane, Smith, 1, 1, 1"
+                className="min-h-[200px] font-mono text-xs"
+                value={csvText}
+                onChange={handleTextChange}
                 disabled={isSubmitting}
               />
             </div>
-            <Textarea
-              placeholder="Email, First Name, Last Name, January 2026, February 2026, March 2026&#10;john.doe@email.com, John, Doe, 1, , 1&#10;jane.smith@email.com, Jane, Smith, 1, 1, 1"
-              className="min-h-[200px] font-mono text-xs"
-              value={csvText}
-              onChange={handleTextChange}
-              disabled={isSubmitting}
-            />
           </div>
-        </div>
+        )}
 
         <DialogFooter className={undefined}>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className={undefined}
-            size={undefined}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white"
-            onClick={handleImport}
-            disabled={!csvText.trim() || !selectedPayable || isSubmitting}
-            variant={undefined}
-            size={undefined}
-          >
-            {isSubmitting 
-              ? rowCount > 50 || billCount > 100
-                ? `Creating ~${billCount} bills... This might take a while...`
-                : "Creating bills..."
-              : billCount > 0 
-                ? `Create ~${billCount} Bills` 
-                : "Create Bills"}
-          </Button>
+          {importResult ? (
+            <Button onClick={handleClose}>
+              Close
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className={undefined}
+                size={undefined}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white"
+                onClick={handleImport}
+                disabled={!csvText.trim() || !selectedPayable || isSubmitting}
+                variant={undefined}
+                size={undefined}
+              >
+                {isSubmitting 
+                  ? rowCount > 50 || billCount > 100
+                    ? `Creating ~${billCount} bills... This might take a while...`
+                    : "Creating bills..."
+                  : billCount > 0 
+                    ? `Create ~${billCount} Bills` 
+                    : "Create Bills"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
