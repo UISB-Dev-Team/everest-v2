@@ -19,15 +19,15 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useCurrentAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useDormitoryClearance } from "@/features/clearance/hooks/useClearance";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function AdminClearancePage() {
   const { user } = useAuth();
-  const { period, loading: periodLoading } = useCurrentAcademicPeriod();
+  const { selected, loading: periodLoading } = useAcademicPeriod();
   const { list, loading: listLoading } = useDormitoryClearance(
     user?.dormitoryId ?? null,
-    period?.id ?? null
+    selected?.id ?? null
   );
   const loading = periodLoading || listLoading;
 
@@ -39,8 +39,8 @@ export function AdminClearancePage() {
             Clearance
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-[#12372A] mt-1 sm:mt-1.5">
-            {period
-              ? `Clearance status for AY ${period.academic_year} · ${period.semester} semester`
+            {selected
+              ? `Clearance status for AY ${selected.academic_year} · ${selected.semester} semester`
               : "Loading current academic period…"}
           </p>
         </div>

@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type { ClearanceCertificate, ClearanceStatus } from "./types";
 
 export interface ClearanceDataAccess {
@@ -16,6 +16,6 @@ export interface ClearanceDataAccess {
   ): Promise<ClearanceCertificate>;
 }
 
-export const clearanceData: ClearanceDataAccess = mock;
+export const clearanceData: ClearanceDataAccess = supabase;
 
 export type { ClearanceCertificate, ClearanceStatus } from "./types";
