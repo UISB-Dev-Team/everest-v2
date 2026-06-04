@@ -184,7 +184,10 @@ export function AdminDormersPage() {
 
   const handleSavePayment = async (paymentData: any) => {
     setIsBillSubmitting(true);
-    await handleRecordPayment(paymentData, selectedDormer!);
+    await handleRecordPayment({
+      ...paymentData,
+      dormer_id: selectedDormer?.id
+    });
     setBills((prev: Bill[]) =>
       prev.map((b) => {
         if (b.id !== paymentData.bill_id) return b;

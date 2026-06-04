@@ -7,7 +7,7 @@ import { Bill, paymentsData, type CreatePaymentInput } from "@/features/payments
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { sendEmail } from "@/lib/email";
-import { DormerWithBills } from "@/features/dormers/data";
+import { dormersData, DormerWithBills } from "@/features/dormers/data";
 import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
 import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 import { paymentConfirmationEmailTemplate } from "@/emails/payment/paymentConfirmation";
@@ -28,9 +28,14 @@ export function usePaymentActions() {
   const { dormitoryId } = useDormitory();
   const { user } = useAuth();
 
-  const handleRecordPayment = async (input: any, dormer: DormerWithBills) => {
+  const handleRecordPayment = async (input: any) => {
     setIsSubmitting(true);
     try {
+      const dormer = await dormersData.getById(input.dormer_id)
+      if (!dormer) {
+        toast.error("Dormer not found.");
+        return;
+      }
       const { newStatus, newRemaining } = await paymentsData.recordPayment(
         input,
         selectedPeriod?.id ?? "",
