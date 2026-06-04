@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { clearanceData } from "@/features/clearance/data";
 import type { ClearanceStatus } from "@/features/clearance/data";
 
+const ITEMS_PER_PAGE = 6;
 export function useClearanceStatus(
   dormerId: string | null,
   academicPeriodId: string | null
@@ -37,6 +38,9 @@ export function useDormitoryClearance(
 ) {
   const [list, setList] = useState<ClearanceStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (!dormitoryId || !academicPeriodId) {
@@ -50,10 +54,29 @@ export function useDormitoryClearance(
       .listForDormitory(dormitoryId, academicPeriodId)
       .then((l) => !cancelled && setList(l))
       .finally(() => !cancelled && setLoading(false));
+
+    const totalItems = list.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+    setTotalPages(totalPages);
+    
+    
     return () => {
       cancelled = true;
     };
   }, [dormitoryId, academicPeriodId]);
 
-  return { list, loading };
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  return { list, loading, currentPage, totalPages, handlePreviousPage, handleNextPage };
 }

@@ -14,6 +14,7 @@ import AddExpenseModal from "@/features/expenses/components/admin/add-expense-mo
 import ViewEditExpenseModal from "@/features/expenses/components/admin/view-edit-expense-modal";
 import { expensesData, type ExpenseWithRecorder } from "@/features/expenses/data";
 import { listForDormitory } from "@/features/dormers/data/supabase";
+import { DataPagination } from "@/components/ui/shared";
 
 type ModalType = "add" | "view" | null;
 
@@ -116,31 +117,14 @@ export function AdminExpensesPage() {
         onDelete={handleDeleteExpense}
       />
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">
-        <span className="text-xs sm:text-sm text-gray-600 font-medium">
-          Page {currentPage} of {totalPages || 1}
-        </span>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1}
-            className="flex-1 sm:flex-none border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextPage}
-            disabled={currentPage >= totalPages}
-            className="flex-1 sm:flex-none border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm"
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <DataPagination
+        currentPage={currentPage}
+        totalPages={totalPages || 1}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        totalItems={filteredExpenses.length}
+        itemLabel="expense"
+      />
 
       {/* Modals */}
       <AddExpenseModal

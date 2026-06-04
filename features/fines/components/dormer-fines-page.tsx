@@ -20,6 +20,7 @@ import { formatAmount, formatDate } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useDormerFines } from "@/features/fines/hooks/useFines";
 import type { FineImpositionWithCategory } from "@/features/fines/data";
+import { StatusBadge, SummaryTile } from "@/components/ui/shared";
 
 export function DormerFinesPage() {
   const { user } = useAuth();
@@ -187,17 +188,7 @@ function FinesTable({
                   {formatAmount(balance)}
                 </TableCell>
                 <TableCell>
-                  <span
-                    className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-semibold inline-block whitespace-nowrap ${
-                      f.status === "Paid"
-                        ? "bg-[#A5D6A7] text-[#2E7D32]"
-                        : f.status === "Waived"
-                          ? "bg-gray-100 text-gray-700"
-                          : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {f.status}
-                  </span>
+                  <StatusBadge status={f.status} />
                 </TableCell>
               </TableRow>
             );
@@ -208,34 +199,3 @@ function FinesTable({
   );
 }
 
-function SummaryTile({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "neutral" | "positive" | "danger";
-}) {
-  const wrapper = {
-    neutral:
-      "bg-gradient-to-br from-gray-50 to-white border-gray-200 text-[#333333]",
-    positive:
-      "bg-gradient-to-br from-[#A5D6A7]/10 to-white border-[#A5D6A7]/30 text-[#2E7D32]",
-    danger:
-      "bg-gradient-to-br from-red-50 to-white border-red-200 text-red-600",
-  }[tone];
-  const valueColor = {
-    neutral: "text-[#333333]",
-    positive: "text-[#2E7D32]",
-    danger: "text-red-600",
-  }[tone];
-  return (
-    <div className={`p-4 rounded-xl border ${wrapper}`}>
-      <p className="text-xs sm:text-sm text-gray-600 mb-1 font-medium">
-        {label}
-      </p>
-      <p className={`text-xl sm:text-2xl font-bold ${valueColor}`}>{value}</p>
-    </div>
-  );
-}

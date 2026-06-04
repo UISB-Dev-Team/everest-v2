@@ -1,6 +1,5 @@
 "use client";
 
-import { ShieldCheck, ShieldAlert } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -21,6 +20,8 @@ import { formatAmount } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useDormitoryClearance } from "@/features/clearance/hooks/useClearance";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { DataPagination, FiltersBar, StatusBadge } from "@/components/ui/shared";
+import { useClearanceTable } from "@/features/clearance/hooks/useClearanceTable";
 
 export function AdminClearancePage() {
   const { user } = useAuth();
@@ -30,6 +31,22 @@ export function AdminClearancePage() {
     selected?.id ?? null
   );
   const loading = periodLoading || listLoading;
+
+  const {
+    searchValue, setSearchValue,
+    filterValue, setFilterValue,
+    sortValue, setSortValue,
+    currentPage,
+    filteredList,
+    paginatedList,
+    totalPages,
+    hasActiveFilters,
+    resetFilters,
+    handlePreviousPage,
+    handleNextPage,
+    sortOptions,
+    statusOptions,
+  } = useClearanceTable(list);
 
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -46,6 +63,37 @@ export function AdminClearancePage() {
         </div>
       </div>
 
+      <FiltersBar
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        searchPlaceholder="Search by dormer name…"
+        filters={[
+          {
+            value: filterValue,
+            onValueChange: setFilterValue,
+            options: statusOptions,
+            placeholder: "Status",
+            collapseOnMobile: true,
+          },
+          {
+            value: sortValue,
+            onValueChange: setSortValue as (v: string) => void,
+            options: sortOptions,
+            placeholder: "Sort by",
+            collapseOnMobile: false,
+          },
+        ]}
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        resultCount={filteredList.length}
+        resultLabel="dormer"
+        activeFilterBadges={
+          filterValue !== "all"
+            ? [{ label: statusOptions.find((o) => o.value === filterValue)?.label ?? filterValue }]
+            : []
+        }
+      />
+
       <Card className="border border-gray-200 shadow-md bg-white gap-0">
         <CardHeader className="border-b border-gray-100 md:pb-0">
           <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-[#12372A]">
@@ -58,9 +106,11 @@ export function AdminClearancePage() {
         <CardContent className="p-0">
           {loading ? (
             <Skeleton className="m-3 sm:m-6 h-64" />
-          ) : list.length === 0 ? (
+          ) : filteredList.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
-              No dormers found in this dormitory.
+              {hasActiveFilters
+                ? "No dormers match your current filters."
+                : "No dormers found in this dormitory."}
             </div>
           ) : (
             <div className="p-3 sm:p-4 md:p-6">
@@ -86,7 +136,7 @@ export function AdminClearancePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {list.map((c) => (
+                    {paginatedList.map((c) => (
                       <TableRow
                         key={c.dormerId}
                         className="hover:bg-[#f0f0f0] transition-colors"
@@ -112,20 +162,9 @@ export function AdminClearancePage() {
                           {formatAmount(c.outstandingTotal)}
                         </TableCell>
                         <TableCell>
-                          <span
-                            className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 whitespace-nowrap ${
-                              c.isCleared
-                                ? "bg-[#A5D6A7] text-[#2E7D32]"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {c.isCleared ? (
-                              <ShieldCheck className="h-3 w-3" />
-                            ) : (
-                              <ShieldAlert className="h-3 w-3" />
-                            )}
-                            {c.isCleared ? "Cleared" : "Not Cleared"}
-                          </span>
+                          <StatusBadge
+                            status={c.isCleared ? "cleared" : "not-cleared"}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -136,6 +175,14 @@ export function AdminClearancePage() {
           )}
         </CardContent>
       </Card>
+       <DataPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+          totalItems={filteredList.length}
+          itemLabel="dormer"
+        />
     </div>
   );
 }

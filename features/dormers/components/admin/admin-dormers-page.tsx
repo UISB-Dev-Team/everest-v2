@@ -43,6 +43,7 @@ import ImportBillsModal from "./import-bills-modal";
 import { RegularCharge } from "@/features/regular-charges/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { BILLING_PERIODS } from "@/lib/constants/billing-periods";
+import { DataPagination } from "@/components/ui/shared";
 
 export function AdminDormersPage() {
   // ── 1. data ───────────────────────────────────────────────────────────────
@@ -327,27 +328,14 @@ export function AdminDormersPage() {
       />
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-3 py-2">
-          <span className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1}
-            size="sm"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            size="sm"
-          >
-            Next
-          </Button>
-        </div>
+        <DataPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPreviousPage={handlePreviousPage}
+          onNextPage={handleNextPage}
+          totalItems={filteredDormers.length}
+          itemLabel="dormer"
+        />
       )}
 
       {/* ── Modals ── */}
