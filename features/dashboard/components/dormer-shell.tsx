@@ -7,8 +7,8 @@ import {
   WalletIcon,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useDormitory } from "@/features/dashboard/hooks/useDormitory";
 import { RoleShell, type NavItem } from "./role-shell";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -19,7 +19,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function DormerShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { dormitory } = useDormitory(user?.dormitoryId ?? null);
+  const { dormitoryName } = useDormitory();
 
   const initials = user?.fullName
     ? user.fullName
@@ -35,7 +35,7 @@ export function DormerShell({ children }: { children: React.ReactNode }) {
     <RoleShell
       navItems={NAV_ITEMS}
       brandLabel="DormPay"
-      brandSubLabel={dormitory?.name ?? "Dormer Portal"}
+      brandSubLabel={dormitoryName ?? "Dormer Portal"}
       userInitials={initials}
       userPrimaryLine={user?.fullName ?? null}
       userSecondaryLine={user?.email ?? null}

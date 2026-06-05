@@ -18,6 +18,7 @@ import {
   Users,
   PlusIcon,
   Mail,
+  AlertCircle,
 } from "lucide-react";
 
 import type { RegularCharge } from "@/features/regular-charges/data/types";
@@ -35,6 +36,11 @@ import { dormersData } from "@/features/dormers/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { toast } from "sonner";
+import AddFineCategoryModal from "@/features/fines/components/admin/add-fine-category-modal";
+import { useFineCategories } from "@/features/fines/hooks/useFineCategories";
+import { FineCategoryItem } from "./fine-category-item";
+import { finesData } from "@/features/fines/data";
+import type { FineCategory } from "@/features/fines/data";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,12 +58,15 @@ export function AdminDashboardPage() {
   const { selected } = useAcademicPeriod()
   const { stats, loading, error } = useDashboard();
   const { savePayable, payables: regularCharges, setPayables } = useRegularCharges()
-
+  const { categories: fineCategories, saveFineCategory, loading: finesLoading, refresh: refreshFines } = useFineCategories();
 
   // Modal state — keep here since modals are page-level concerns
   const [isAddPayableOpen, setIsAddPayableOpen] = useState(false);
   const [payableToEdit, setPayableToEdit] = useState<RegularCharge | null>(null);
   const [savingPayable, setIsSavingPayable] = useState(false)
+  const [isAddFineOpen, setIsAddFineOpen] = useState(false);
+  const [fineToEdit, setFineToEdit] = useState<FineCategory | null>(null);
+  const [isSavingFineState, setIsSavingFineState] = useState(false);
   const [ sendingEmail, setSendingEmail ] = useState(false)
 
   if (loading) return <DashboardSkeleton />;
@@ -130,6 +139,38 @@ export function AdminDashboardPage() {
     await regularChargesData.remove(payableId);
     setPayables((prev) => prev.filter((p) => p.id !== payableId))
   }
+
+  const handleAddFine = () => {
+    setFineToEdit(null);
+    setIsAddFineOpen(true);
+  };
+
+  const handleEditFine = (category: FineCategory) => {
+    setFineToEdit(category);
+    setIsAddFineOpen(true);
+  };
+
+  const handleSaveFine = async (input: any) => {
+    setIsSavingFineState(true);
+    await saveFineCategory({
+      id: input.id,
+      name: input.name,
+      amount: input.amount,
+      description: input.description,
+    });
+    setIsSavingFineState(false);
+  };
+
+  const handleDeleteFine = async (fineId: string) => {
+    try {
+      await finesData.removeCategory(fineId);
+      toast.success("Fine category removed!");
+      await refreshFines();
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to remove fine category.");
+    }
+  };
 
   const handleSendDormSummaryReport = async () => {
     setSendingEmail(true)
@@ -260,6 +301,79 @@ export function AdminDashboardPage() {
         </CardContent>
       </Card>
 
+      {/* ── Fine Categories (Fines CRUD) ── */}
+      <Card className="border border-gray-200 sm:border-2 shadow-md sm:shadow-lg bg-gradient-to-br from-white via-red-50/5 to-white overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-red-100/10 rounded-full blur-3xl -z-0" />
+
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 relative z-10">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 sm:mb-1.5">
+              <CardTitle className="text-sm sm:text-base md:text-lg font-bold text-[#12372A] truncate">
+                Fine Categories
+              </CardTitle>
+              {fineCategories.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="bg-red-50 text-red-600 text-xs px-1.5 sm:px-2 py-0.5 flex-shrink-0"
+                >
+                  {fineCategories.length}
+                </Badge>
+              )}
+            </div>
+            <CardDescription className="text-xs sm:text-sm text-gray-600 truncate">
+              Manage custom rules and fine rates
+            </CardDescription>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={handleAddFine}
+            className="gap-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white w-full sm:w-auto text-xs sm:text-sm touch-manipulation active:scale-95 flex-shrink-0"
+          >
+            <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">Add Fine</span>
+          </Button>
+        </CardHeader>
+
+        <CardContent className="relative z-10">
+          {finesLoading ? (
+            <div className="text-center py-8">Loading fine categories...</div>
+          ) : fineCategories.length === 0 ? (
+            <div className="text-center py-8 sm:py-12 px-3 sm:px-4">
+              <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-50 mb-3 sm:mb-4">
+                <AlertCircle className="h-7 w-7 sm:h-8 sm:w-8 text-red-600" />
+              </div>
+              <h3 className="text-sm sm:text-base font-semibold text-[#12372A] mb-1.5 sm:mb-2">
+                No Fines Defined Yet
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-500 mb-3 sm:mb-4">
+                Start by defining your first fine rule and amount
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddFine}
+                className="gap-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-xs sm:text-sm"
+              >
+                <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                Add First Fine
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2.5 sm:gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {fineCategories.map((cat) => (
+                <FineCategoryItem
+                  key={cat.id}
+                  category={cat}
+                  onEdit={handleEditFine}
+                  onDelete={handleDeleteFine}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* ── Recent Payments ── */}
       <Card className="border border-gray-200 shadow-md bg-gradient-to-br from-white to-gray-50">
         <CardHeader className="pb-2.5 sm:pb-3 md:pb-4 border-b border-gray-100">
@@ -313,6 +427,14 @@ export function AdminDashboardPage() {
         payable={payableToEdit}
         onSave={handleSavePayable}
       /> 
+
+      <AddFineCategoryModal
+        isOpen={isAddFineOpen}
+        isSaving={isSavingFineState}
+        onClose={() => setIsAddFineOpen(false)}
+        category={fineToEdit}
+        onSave={handleSaveFine}
+      />
     </div>
   );
 }

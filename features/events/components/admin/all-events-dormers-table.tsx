@@ -26,8 +26,9 @@ import {
 } from "@/components/ui/table";
 import { formatAmount } from "@/lib/utils/format";
 import type { EventPayable } from "@/features/events/data";
-import DormerFilters from "@/features/dormers/components/admin/dormer-filters";
+import { DataPagination, FiltersBar } from "@/components/ui/shared";
 import { useState, useMemo } from "react";
+import { useAllEventsDormersTable } from "@/features/events/hooks/useAllEventsDormersTable";
 
 interface AllEventsDormersTableProps {
   payables: EventPayable[];
@@ -38,19 +39,26 @@ export default function AllEventsDormersTable({
   payables,
   onViewPayables,
 }: AllEventsDormersTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-
-  const filteredPayables = useMemo(() => {
-    return payables.filter((payable) => {
-      const searchStr = `${payable.first_name ?? ""} ${payable.last_name ?? ""}`.toLowerCase();
-      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "All" || payable.room_number === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [payables, searchTerm, statusFilter]);
+  const {
+    searchTerm, setSearchTerm,
+    statusFilter, setStatusFilter,
+    roomFilter, setRoomFilter,
+    sortValue, setSortValue,
+    currentPage,
+    filteredPayables,
+    paginatedList,
+    totalPages,
+    hasActiveFilters,
+    resetFilters,
+    handlePreviousPage,
+    handleNextPage,
+    sortOptions,
+    statusOptions,
+    roomOptions,
+  } = useAllEventsDormersTable(payables);
 
   return (
+    <>
     <Card className="border-2 border-gray-100 shadow-md bg-white">
       <CardHeader className="border-b border-gray-100">
         <div>
@@ -62,20 +70,44 @@ export default function AllEventsDormersTable({
           </p>
         </div>
 
-        <DormerFilters
-          searchTerm={searchTerm}
-          onSearchChange={(e) => {setSearchTerm(e.target.value)}}
-          statusFilter={statusFilter}
-          onStatusChange={(status) => {setStatusFilter(status)}}
-          count={filteredPayables?.length}
-          resetFilter={() => {
-            setSearchTerm("");
-            setStatusFilter("All");
-            }}
+        <FiltersBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search by name…"
+          filters={[
+            {
+              value: statusFilter,
+              onValueChange: setStatusFilter,
+              options: statusOptions,
+              placeholder: "Status",
+              collapseOnMobile: true,
+            },
+            {
+              value: roomFilter,
+              onValueChange: setRoomFilter,
+              options: roomOptions,
+              placeholder: "Room",
+              collapseOnMobile: true,
+            },
+            {
+              value: sortValue,
+              onValueChange: setSortValue as (v: string) => void,
+              options: sortOptions,
+              placeholder: "Sort by",
+              collapseOnMobile: false,
+            },
+          ]}
+          hasActiveFilters={hasActiveFilters}
+          onReset={resetFilters}
+          resultCount={filteredPayables.length}
+          resultLabel="dormer"
+          activeFilterBadges={
+            statusFilter !== "All" ? [{ label: statusOptions.find((o) => o.value === statusFilter)?.label ?? statusFilter }] : []
+          }
         />
       </CardHeader>
       <CardContent>
-        {filteredPayables?.length === 0 ? (
+        {paginatedList.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="relative mb-6 inline-block">
               <div className="absolute inset-0 bg-gray-100/50 rounded-full blur-2xl" />
@@ -112,7 +144,7 @@ export default function AllEventsDormersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPayables.map((dormer) => {
+              {paginatedList.map((dormer) => {
                 const totalPaid = dormer.event_payments
                   .filter((p) => p.status === "Paid")
                   .reduce((sum, p) => sum + (p.amount ?? 0), 0);
@@ -198,5 +230,14 @@ export default function AllEventsDormersTable({
         )}
       </CardContent>
     </Card>
+    <DataPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        totalItems={filteredPayables.length}
+        itemLabel="dormer"
+      />
+      </>
   );
 }

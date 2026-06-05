@@ -38,7 +38,7 @@ export function useDormers() {
     setLoading(true);
     Promise.all([
       dormersData.listForDormitoryWithBills(dormitoryId, academicPeriodId),
-      regularChargesData.listForDormitory(dormitoryId),
+      regularChargesData.listForDormitory(dormitoryId, academicPeriodId),
     ])
       .then(([d, p]) => {
         if (cancelled) return;

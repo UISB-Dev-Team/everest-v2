@@ -1,34 +1,42 @@
 "use client";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useCurrentAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useFinesAdminData } from "@/features/fines/hooks/useFinesAdminData";
 import { useFinesActions } from "@/features/fines/hooks/useFinesActions";
 import { useFinesModal } from "@/features/fines/hooks/useFinesModal";
 import FinesHeader from "@/features/fines/components/admin/fines-header";
 import FinesSummary from "@/features/fines/components/admin/fines-summary";
 import FinesTable from "@/features/fines/components/admin/fines-table";
-import FinesPagination from "@/features/fines/components/admin/fines-pagination";
 import { FinesPageSkeleton } from "@/features/fines/components/admin/fines-page-skeleton";
 import FinePaymentModal from "@/features/fines/components/admin/fine-payment-modal";
 import RoomFineModal from "@/features/fines/components/admin/room-fine-modal";
 import { PlaceholderModal } from "@/features/fines/components/admin/placeholder-modal";
+import { DataPagination, FilterOption, FiltersBar } from "@/components/ui/shared";
 
 export function AdminFinesPage() {
   const { user } = useAuth();
-  const { period } = useCurrentAcademicPeriod();
+  const { selected: period } = useAcademicPeriod();
   const {
     dormers,
     statistics,
     loading,
     paginatedDormers,
     filteredDormers,
+    rooms,
     totalPages,
     currentPage,
     searchTerm,
     setSearchTerm,
     statusFilter,
     setStatusFilter,
+    roomFilter,
+    setRoomFilter,
+    sortValue,
+    setSortValue,
+    sortOptions,
+    statusOptions,
+    roomOptions,
     handleNextPage,
     handlePreviousPage,
   } = useFinesAdminData();
@@ -44,10 +52,12 @@ export function AdminFinesPage() {
 
   if (loading) return <FinesPageSkeleton />;
 
-  const hasFilters = searchTerm !== "" || statusFilter !== "All";
+  const hasFilters = searchTerm !== "" || statusFilter !== "All" || roomFilter !== "All" || sortValue !== "name-asc";
   const resetFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
+    setRoomFilter("All");
+    setSortValue("name-asc");
   };
 
   return (
@@ -65,6 +75,42 @@ export function AdminFinesPage() {
         collectibleFines={statistics.collectibleFines}
       />
 
+      <FiltersBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search dormers by name, room, or email…"
+        filters={[
+          {
+            value: statusFilter,
+            onValueChange: setStatusFilter,
+            options: statusOptions,
+            placeholder: "Filter by status",
+            collapseOnMobile: true,
+          },
+          {
+            value: roomFilter,
+            onValueChange: setRoomFilter,
+            options: roomOptions,
+            placeholder: "Filter by room",
+            collapseOnMobile: true,
+          },
+          {
+            value: sortValue,
+            onValueChange: setSortValue as (v: string) => void,
+            options: sortOptions,
+            placeholder: "Sort by name",
+            collapseOnMobile: false,
+          },
+        ]}
+        hasActiveFilters={hasFilters}
+        onReset={resetFilters}
+        resultCount={filteredDormers.length}
+        resultLabel="dormer"
+        activeFilterBadges={
+          statusFilter !== "All" ? [{ label: statusFilter }] : []
+        }
+      />
+
       <FinesTable
         dormers={paginatedDormers}
         onGenerateFines={(d) => openModal("generate", d)}
@@ -73,11 +119,13 @@ export function AdminFinesPage() {
         onResetFilters={resetFilters}
       />
 
-      <FinesPagination
+      <DataPagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
+        totalItems={filteredDormers.length}
+        itemLabel="dormer"
       />
 
       {/* Wired modals */}

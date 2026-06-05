@@ -30,8 +30,8 @@ import {
 } from "@/components/ui/table";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { EventDormerData } from "@/features/events/data";
-import DormerFilters from "@/features/dormers/components/admin/dormer-filters";
-import { useMemo, useState } from "react";
+import { DataPagination, FiltersBar } from "@/components/ui/shared";
+import { useEventDormersTable } from "@/features/events/hooks/useEventDormersTable";
 
 interface EventDormersTableProps {
   dormers: EventDormerData[];
@@ -75,19 +75,24 @@ export default function EventDormersTable({
   eventAmount,
   onWaivePayment
 }: EventDormersTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  
-  const filteredDormers = useMemo(() => {
-    return dormers.filter((dormer) => {
-      const searchStr = `${dormer.first_name ?? ""} ${dormer.last_name ?? ""}`.toLowerCase();
-      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "All" || dormer.room_number === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [dormers, searchTerm, statusFilter]);
+  const {
+    searchTerm, setSearchTerm,
+    statusFilter, setStatusFilter,
+    sortValue, setSortValue,
+    currentPage,
+    filteredDormers,
+    paginatedList,
+    totalPages,
+    hasActiveFilters,
+    resetFilters,
+    handlePreviousPage,
+    handleNextPage,
+    sortOptions,
+    statusOptions,
+  } = useEventDormersTable(dormers);
   
   return (
+    <>
     <Card className="border-2 border-gray-100 shadow-md bg-white">
       <CardHeader className="border-b border-gray-100">
         <div>
@@ -99,20 +104,37 @@ export default function EventDormersTable({
           </p>
         </div>
 
-        <DormerFilters
-            searchTerm={searchTerm}
-            onSearchChange={(e) => {setSearchTerm(e.target.value)}}
-            statusFilter={statusFilter}
-            onStatusChange={(status) => {setStatusFilter(status)}}
-            count={filteredDormers?.length}
-            resetFilter={() => {
-              setSearchTerm("");
-              setStatusFilter("All");
-              }}
-          />
+        <FiltersBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search by name…"
+          filters={[
+            {
+              value: statusFilter,
+              onValueChange: setStatusFilter,
+              options: statusOptions,
+              placeholder: "Payment status",
+              collapseOnMobile: true,
+            },
+            {
+              value: sortValue,
+              onValueChange: setSortValue as (v: string) => void,
+              options: sortOptions,
+              placeholder: "Sort by",
+              collapseOnMobile: false,
+            },
+          ]}
+          hasActiveFilters={hasActiveFilters}
+          onReset={resetFilters}
+          resultCount={filteredDormers.length}
+          resultLabel="dormer"
+          activeFilterBadges={
+            statusFilter !== "All" ? [{ label: statusFilter }] : []
+          }
+        />
       </CardHeader>
       <CardContent>
-        {filteredDormers.length === 0 ? (
+        {paginatedList.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="relative mb-6 inline-block">
               <div className="absolute inset-0 bg-gray-100/50 rounded-full blur-2xl" />
@@ -152,7 +174,7 @@ export default function EventDormersTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDormers.map((dormer) => {
+              {paginatedList.map((dormer) => {
                 const statusConfig = getStatusBadge(dormer.payment_status);
                 const StatusIcon = statusConfig.icon;
                 const initials = `${dormer.first_name?.[0] ?? ""}${
@@ -282,6 +304,16 @@ export default function EventDormersTable({
           </Table>
         )}
       </CardContent>
+      
     </Card>
+    <DataPagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        totalItems={filteredDormers.length}
+        itemLabel="dormer"
+      />
+      </>
   );
 }

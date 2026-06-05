@@ -36,6 +36,7 @@ export interface PaymentInput {
   dormer_id: string;
   dormitory_id: string;
   academic_period_id: string;
+  billing_month: string;
   amount: number;
   payment_method: string;
   notes?: string | null;
@@ -79,6 +80,7 @@ export default function PaymentModal({
         bill_id: bill.id,
         dormer_id: bill.dormer_id,
         dormitory_id: bill.dormitory_id,
+        billing_month: bill.billing_month,
         academic_period_id: bill.academic_period_id,
         amount: parseFloat(amount) || 0,
         payment_method: paymentMethod,
