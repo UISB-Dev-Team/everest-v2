@@ -15,6 +15,8 @@ import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademic
 import { unpaidFinesReminderTemplate } from "@/emails/fines/unpaidFinesReminder";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { sendEmail } from "@/lib/email";
+import { listToCSV } from "../utils/listToCsv";
+import { downloadCSV } from "../utils/downloadCSV";
 
 /**
  * Mirrors the old admin-side `useFinesAction` hook surface but routes every
@@ -167,6 +169,23 @@ export function useFinesActions() {
     setIsSubmitting(false)
   };
 
+  const handleExport = async () => {
+    setIsSubmitting(true)
+    try {
+      const list = await finesData.listImpositionsForDormitory(
+        dormitoryId!,
+        selected!.id,
+      );
+      const csv = listToCSV(list);
+      downloadCSV(csv, "fines-export.csv");
+      toast.success("Fines exported to CSV");
+    } catch (error) {
+      toast.error("Failed to export fines");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     isSubmitting,
     addFineCategory,
@@ -177,5 +196,6 @@ export function useFinesActions() {
     updateImposition,
     recordFinePayment,
     sendUnpaidReminder,
+    handleExport
   };
 }

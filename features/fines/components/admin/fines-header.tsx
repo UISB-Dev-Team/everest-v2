@@ -62,7 +62,7 @@ export default function FinesHeader({
           className="w-full sm:w-auto border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all text-xs sm:text-sm"
         >
           <FileUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
-          Import CSV
+          Record Attendance
         </Button>
         <Button
           variant="outline"
