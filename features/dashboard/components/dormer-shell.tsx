@@ -22,7 +22,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function DormerShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { dormitoryName } = useDormitory();
+  const dormitory  = useDormitory();
 
   const initials = user?.fullName
     ? user.fullName
@@ -38,11 +38,12 @@ export function DormerShell({ children }: { children: React.ReactNode }) {
     <RoleShell
       navItems={NAV_ITEMS}
       brandLabel="DormPay"
-      brandSubLabel={dormitoryName ?? "Dormer Portal"}
+      brandSubLabel={dormitory.dormitoryName ?? "Dormer Portal"}
       userInitials={initials}
       userPrimaryLine={user?.fullName ?? null}
       userSecondaryLine={user?.email ?? null}
       variant="dorm"
+      dorm_logo={dormitory?.logoUrl}
       subHeader={
         <PeriodSelector />
       }

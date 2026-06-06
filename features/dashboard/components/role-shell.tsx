@@ -27,6 +27,7 @@ interface RoleShellProps {
   /** Rendered in a sticky strip between the sidebar header and the scrollable content */
   subHeader?: ReactNode;
   children: ReactNode;
+  dorm_logo?: string | null;
 }
 
 export function RoleShell({
@@ -39,6 +40,7 @@ export function RoleShell({
   variant = "dorm",
   subHeader,
   children,
+  dorm_logo
 }: RoleShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -77,6 +79,7 @@ export function RoleShell({
           userSecondaryLine={userSecondaryLine}
           onNavigate={() => {}}
           onSignOut={handleSignOut}
+          dorm_logo={dorm_logo}
         />
       </aside>
 
@@ -193,6 +196,7 @@ interface SidebarContentProps {
   userSecondaryLine?: string | null;
   onNavigate: () => void;
   onSignOut: () => void;
+  dorm_logo?: string | null
 }
 
 function SidebarContent({
@@ -206,18 +210,19 @@ function SidebarContent({
   userSecondaryLine,
   onNavigate,
   onSignOut,
+  dorm_logo,
 }: SidebarContentProps) {
   const isSuperAdmin = variant === "super-admin";
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-6 py-6 flex-shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden">
           <Image
-            src="/profile-old.webp"
+            src={dorm_logo ? dorm_logo : "/profile-old.webp"}
             alt="DormPay logo"
-            width={32}
-            height={32}
+            fill
+            className="object-contain"
           />
         </div>
         <div className="flex flex-col">

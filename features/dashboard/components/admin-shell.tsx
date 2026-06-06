@@ -57,6 +57,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       // PeriodSelector now lives in the sticky subheader strip,
       // not inside the scrollable content area
       subHeader={<PeriodSelector />}
+      dorm_logo={dormitory?.logoUrl ?? null}
     >
       {children}
     </RoleShell>
