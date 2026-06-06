@@ -209,6 +209,7 @@ export async function getById(id: string): Promise<Dormer | null> {
         ...(data.profiles as DormerProfile),
         dormitory_id: data.dormitory_id,
         room_number: data.room_number,
+        dormer_enrollment_id: data.id,
       } as Dormer;
     }
   }

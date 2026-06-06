@@ -10,12 +10,15 @@ import type {
   UpdateFineCategoryInput,
   UpdateFineImpositionInput,
 } from "@/features/fines/data";
+import { dormersData } from "@/features/dormers/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 /**
  * Mirrors the old admin-side `useFinesAction` hook surface but routes every
  * mutation through the data-access seam. Email-sending is mocked with a toast.
  */
 export function useFinesActions() {
+  const { selected } = useAcademicPeriod();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
@@ -25,6 +28,7 @@ export function useFinesActions() {
       await finesData.createCategory({
         ...input,
         recorded_by: input.recorded_by ?? user?.id ?? null,
+        academic_period_id: selected?.id!
       });
       toast.success("Fine category added!");
     } catch (e) {
@@ -67,10 +71,12 @@ export function useFinesActions() {
   const imposeFine = async (input: CreateFineImpositionInput) => {
     setIsSubmitting(true);
     try {
+      const dormer = await dormersData.getById(input.dormer_id)
       await finesData.imposeFine({
         ...input,
         imposed_by: input.imposed_by ?? user?.id ?? null,
         recorded_by: input.recorded_by ?? user?.id ?? null,
+        dormitory_enrollment_id: dormer?.dormer_enrollment_id ?? null,
       });
       toast.success("Fine imposed successfully!");
     } catch (e) {

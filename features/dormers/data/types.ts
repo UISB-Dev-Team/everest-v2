@@ -8,6 +8,7 @@ export interface Dormer extends DormerProfile {
   dormitory_id: string | null;
   room_number: string | null;
   status: string | null;
+  dormer_enrollment_id: string | null;
 }
 
 export interface DormerWithBills extends Dormer {

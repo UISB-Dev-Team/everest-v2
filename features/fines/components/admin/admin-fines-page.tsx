@@ -12,13 +12,18 @@ import { FinesPageSkeleton } from "@/features/fines/components/admin/fines-page-
 import FinePaymentModal from "@/features/fines/components/admin/fine-payment-modal";
 import RoomFineModal from "@/features/fines/components/admin/room-fine-modal";
 import { PlaceholderModal } from "@/features/fines/components/admin/placeholder-modal";
+import FinesPaymentModal from "@/features/fines/components/admin/fines-payment-modal";
 import { DataPagination, FilterOption, FiltersBar } from "@/components/ui/shared";
+import GenerateFinesModal from "./generate-fines-modal";
+import { CreateFineImpositionInput } from "../../data";
+import { toast } from "sonner";
 
 export function AdminFinesPage() {
   const { user } = useAuth();
   const { selected: period } = useAcademicPeriod();
   const {
     dormers,
+    fines,
     statistics,
     loading,
     paginatedDormers,
@@ -43,12 +48,13 @@ export function AdminFinesPage() {
 
   const {
     imposeRoomFine,
+    imposeFine,
     recordFinePayment,
     sendUnpaidReminder,
     isSubmitting,
   } = useFinesActions();
 
-  const { modal, openModal, closeModal } = useFinesModal();
+  const { modal, openModal, closeModal, selectedDormer, selectedFineImposition } = useFinesModal();
 
   if (loading) return <FinesPageSkeleton />;
 
@@ -59,6 +65,12 @@ export function AdminFinesPage() {
     setRoomFilter("All");
     setSortValue("name-asc");
   };
+
+  const handleGenerateFine = async (input: CreateFineImpositionInput) => {
+    await imposeFine(input);
+    toast.success("Fine generated successfully");
+    closeModal();
+  }
 
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -164,18 +176,22 @@ export function AdminFinesPage() {
         }}
       />
 
-      {/* Placeholders */}
-      <PlaceholderModal
+      {/* Dormer fines management modal */}
+      <FinesPaymentModal
         isOpen={modal === "fines"}
         onClose={closeModal}
-        title="Manage Dormer Fines"
-        description="Multi-tab fine management (impose / pay / waive / history). Full FinesModal port pending."
+        dormer={selectedDormer}
+        recordFinePayment={recordFinePayment}
+        isSubmitting={isSubmitting}
       />
-      <PlaceholderModal
+
+      <GenerateFinesModal
         isOpen={modal === "generate"}
         onClose={closeModal}
-        title="Generate Fine"
-        description="Impose a fine on a single dormer. Full GenerateFinesModal port pending."
+        isSubmmitting={isSubmitting}
+        dormer={selectedDormer}
+        onGenerateFine={handleGenerateFine}
+        payables={fines}
       />
       <PlaceholderModal
         isOpen={modal === "import"}

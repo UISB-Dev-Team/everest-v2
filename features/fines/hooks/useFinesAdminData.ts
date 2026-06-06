@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { dormersData } from "@/features/dormers/data";
-import { finesData } from "@/features/fines/data";
+import { FineCategory, finesData } from "@/features/fines/data";
 import type { Dormer } from "@/features/dormers/data";
 import type {
   FineImpositionWithCategory,
@@ -27,6 +27,7 @@ export function useFinesAdminData() {
   const { dormitoryId,  dormitoryName } = useDormitory();
   const { selected } = useAcademicPeriod();
   const [dormers, setDormers] = useState<Dormer[]>([]);
+  const [fines, setFines] = useState<FineCategory[]>([])
   const [impositions, setImpositions] = useState<FineImpositionWithCategory[]>(
     []
   );
@@ -47,7 +48,7 @@ export function useFinesAdminData() {
   useEffect(() => {
     const rooms = dormitoryName?.toLowerCase().includes("mabolo") ? MaboloRoomNumber : SampaguitaRoomNumber;
     setRooms(rooms);
-    if (!dormitoryId) {
+    if (!dormitoryId || !selected?.id) {
       setLoading(false);
       return;
     }
@@ -55,14 +56,16 @@ export function useFinesAdminData() {
     setLoading(true);
     Promise.all([
       dormersData.listForDormitory(dormitoryId, selected?.id!),
-      finesData.listImpositionsForDormitory(dormitoryId),
-      finesData.statisticsForDormitory(dormitoryId),
+      finesData.listImpositionsForDormitory(dormitoryId, selected?.id!),
+      finesData.statisticsForDormitory(dormitoryId, selected?.id!),
+      finesData.listCategoriesForDormitory(dormitoryId, selected?.id!),
     ])
-      .then(([d, i, s]) => {
+      .then(([d, i, s, f]) => {
         if (cancelled) return;
         setDormers(d);
         setImpositions(i);
         setStatistics(s);
+        setFines(f);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -126,6 +129,7 @@ export function useFinesAdminData() {
 
   return {
     dormers,
+    fines,
     impositions,
     statistics,
     loading,
