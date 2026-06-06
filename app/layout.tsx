@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
-import { RoleSwitcher } from "@/features/auth/components/role-switcher";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,7 +40,6 @@ export default function RootLayout({
       >
         {children}
         <Toaster richColors position="top-right" />
-        <RoleSwitcher />
       </body>
     </html>
   );

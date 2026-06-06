@@ -1,5 +1,17 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import { LoginForm } from "@/features/auth/components/login-form";
+
+function LoginFormSkeleton() {
+  return (
+    <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl xl:max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl p-8 space-y-5 animate-pulse">
+      <div className="h-8 w-24 bg-gray-200 rounded-lg" />
+      <div className="h-10 bg-gray-100 rounded-lg" />
+      <div className="h-10 bg-gray-100 rounded-lg" />
+      <div className="h-12 bg-gray-200 rounded-lg" />
+    </div>
+  );
+}
 
 export function LoginPage() {
   return (
@@ -48,7 +60,9 @@ export function LoginPage() {
 
           {/* Right: sign-in card */}
           <div className="order-2 lg:order-2 w-full lg:w-auto flex justify-center items-start lg:flex-shrink-0">
-            <LoginForm />
+            <Suspense fallback={<LoginFormSkeleton />}>
+              <LoginForm />
+            </Suspense>
           </div>
         </div>
       </main>

@@ -7,8 +7,8 @@ import type {
 
 export interface DashboardDataAccess {
   getDormerSnapshot(dormerId: string, academicPeriodId: string): Promise<DormerDashboardSnapshot>;
- // getAdminSnapshot(dormitoryId: string, academicPeriodId: string): Promise<AdminDashboardSnapshot>;
- // getSuperAdminSnapshot(): Promise<SuperAdminDashboardSnapshot>;
+  getAdminSnapshot(dormitoryId: string, academicPeriodId: string): Promise<AdminDashboardSnapshot>;
+  getSuperAdminSnapshot(): Promise<SuperAdminDashboardSnapshot>;
 }
 
 export const dashboardData: DashboardDataAccess = supabase;

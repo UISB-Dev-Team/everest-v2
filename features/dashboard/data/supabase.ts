@@ -6,7 +6,7 @@ import type { Dormer } from "@/features/dormers/data/types";
 import type { RegularCharge } from "@/features/regular-charges/data/types";
 import { listPaymentsForDormitory, summaryForDormitory } from "@/features/payments/data/supabase";
 import { Bill, PaymentSummary, PaymentWithRecorder } from "@/features/payments/data";
-import { DormerDashboardSnapshot } from "./types";
+import { AdminDashboardSnapshot, DormerDashboardSnapshot, SuperAdminDashboardSnapshot } from "./types";
 import { dormersData } from "@/features/dormers/data";
 import { clearanceData } from "@/features/clearance/data";
 import { finesData } from "@/features/fines/data";
@@ -50,3 +50,28 @@ export async function getDormerSnapshot(dormerId: string, academicPeriodId: stri
    };
 }
 
+export async function getAdminSnapshot(dormitoryId: string, academicPeriodId: string): Promise<AdminDashboardSnapshot> {
+  return {
+    dormerCount: 0,
+    totalBilled: 0,
+    totalCollected: 0,
+    outstanding: 0,
+    totalCollectibles: 0,
+    totalExpenses: 0,
+    dormFundBalance: 0,
+    unpaidFinesTotal: 0,
+    recentBills: [],
+    recentTransactions: [],
+  }
+}
+
+export async function getSuperAdminSnapshot(): Promise<SuperAdminDashboardSnapshot> {
+  return {
+    dormitoryCount: 0,
+    dormerCount: 0,
+    totalCollected: 0,
+    outstanding: 0,
+    currentAcademicYear: "",
+    currentSemester: "",
+  };
+}
