@@ -23,7 +23,8 @@ export interface FinesDataAccess {
   getUnpaidFines(dormitoryId: string, academicPeriodId: string): any;
   // Impositions
   listImpositionsForDormer(
-    dormerId: string
+    dormerId: string,
+    academicPeriodId: string
   ): Promise<FineImpositionWithCategory[]>;
   listImpositionsForDormitory(
     dormitoryId: string, academicPeriodId: string

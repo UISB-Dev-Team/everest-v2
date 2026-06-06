@@ -57,10 +57,12 @@ export function useDormerDashboard(dormerId: string | null) {
   const [snapshot, setSnapshot] = useState<DormerDashboardSnapshot | null>(
     null
   );
+  const { selected: currentPeriod, loading: periodLoading } = useAcademicPeriod();
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
-    if (!dormerId) {
+    if (!dormerId || !currentPeriod?.id) {
       setSnapshot(null);
       setLoading(false);
       return;
@@ -68,57 +70,58 @@ export function useDormerDashboard(dormerId: string | null) {
     let cancelled = false;
     setLoading(true);
     dashboardData
-      .getDormerSnapshot(dormerId)
+      .getDormerSnapshot(dormerId, currentPeriod.id)
       .then((s) => !cancelled && setSnapshot(s))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [dormerId]);
+  }, [dormerId, currentPeriod?.id]);
 
   return { snapshot, loading };
 }
 
-export function useAdminDashboard(dormitoryId: string | null) {
-  const [snapshot, setSnapshot] = useState<AdminDashboardSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
+// export function useAdminDashboard(dormitoryId: string | null) {
+//   const [snapshot, setSnapshot] = useState<AdminDashboardSnapshot | null>(null);
+//   const [loading, setLoading] = useState(true);
+//   const { selected: currentPeriod, loading: periodLoading } = useAcademicPeriod();
 
-  useEffect(() => {
-    if (!dormitoryId) {
-      setSnapshot(null);
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    dashboardData
-      .getAdminSnapshot(dormitoryId)
-      .then((s) => !cancelled && setSnapshot(s))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [dormitoryId]);
+//   useEffect(() => {
+//     if (!dormitoryId) {
+//       setSnapshot(null);
+//       setLoading(false);
+//       return;
+//     }
+//     let cancelled = false;
+//     setLoading(true);
+//     dashboardData
+//       .getAdminSnapshot(dormitoryId, currentPeriod?.id!)
+//       .then((s) => !cancelled && setSnapshot(s))
+//       .finally(() => !cancelled && setLoading(false));
+//     return () => {
+//       cancelled = true;
+//     };
+//   }, [dormitoryId]);
 
-  return { snapshot, loading };
-}
+//   return { snapshot, loading };
+// }
 
-export function useSuperAdminDashboard() {
-  const [snapshot, setSnapshot] =
-    useState<SuperAdminDashboardSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
+// export function useSuperAdminDashboard() {
+//   const [snapshot, setSnapshot] =
+//     useState<SuperAdminDashboardSnapshot | null>(null);
+//   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    dashboardData
-      .getSuperAdminSnapshot()
-      .then((s) => !cancelled && setSnapshot(s))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+//   useEffect(() => {
+//     let cancelled = false;
+//     setLoading(true);
+//     dashboardData
+//       .getSuperAdminSnapshot()
+//       .then((s) => !cancelled && setSnapshot(s))
+//       .finally(() => !cancelled && setLoading(false));
+//     return () => {
+//       cancelled = true;
+//     };
+//   }, []);
 
-  return { snapshot, loading };
-}
+//   return { snapshot, loading };
+// }

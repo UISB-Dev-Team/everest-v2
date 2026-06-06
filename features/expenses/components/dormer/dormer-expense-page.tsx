@@ -38,6 +38,8 @@ export function DormerExpensePage() {
     refresh,
   } = useExpensesData();
 
+  console.log(paginatedExpenses)
+
   // ── 2. actions ────────────────────────────────────────────────────────────
   const {
     addExpense,

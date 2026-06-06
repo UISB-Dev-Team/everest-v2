@@ -116,7 +116,8 @@ export async function getUnpaidFines(dormitoryId: string, academicPeriodId: stri
 }
 // Impositions
 export async function listImpositionsForDormer(
-    dormerId: string
+    dormerId: string,
+    academicPeriodId: string
 ): Promise<FineImpositionWithCategory[]> {
     const { data, error } = await supabase
         .from("fine_impositions")
@@ -126,7 +127,8 @@ export async function listImpositionsForDormer(
             profiles!fine_impositions_dormer_id_fkey(first_name, last_name),
             dormitory_enrollment(room_number)
         `)
-        .eq("dormer_id", dormerId);
+        .eq("dormer_id", dormerId)
+        .eq("academic_period_id", academicPeriodId)
 
     if (error) {
         console.error("Error fetching fine impositions:", error);

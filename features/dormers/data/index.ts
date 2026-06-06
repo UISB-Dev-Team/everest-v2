@@ -1,3 +1,4 @@
+import { Bill } from "@/features/payments/data";
 import * as supabase from "./supabase";
 import type {
   CreateDormerInput,
@@ -15,6 +16,7 @@ export interface DormersDataAccess {
   getById(id: string): Promise<Dormer | null>;
   getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
   getDormerByEmail(email: string): Promise<import('./types').DormerProfile | null>;
+  getDormerBills(dormerId: string, academicPeriodId: string): Promise<Bill[]>;
   create(input: CreateDormerInput, password: string): Promise<Dormer>;
   enrollExistingDormer(
     profileId: string,

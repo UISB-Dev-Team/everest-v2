@@ -17,7 +17,7 @@ export function useDormerFines(dormerId: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!dormerId) {
+    if (!dormerId || !selected) {
       setImpositions([]);
       setSummary(null);
       setLoading(false);
@@ -26,7 +26,7 @@ export function useDormerFines(dormerId: string | null) {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      finesData.listImpositionsForDormer(dormerId),
+      finesData.listImpositionsForDormer(dormerId, selected?.id!),
       finesData.summaryForDormer(dormerId, selected?.id!),
     ])
       .then(([imps, sum]) => {

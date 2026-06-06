@@ -5,6 +5,7 @@ export interface DormerDashboardSnapshot {
   totalBilled: number;
   totalPaid: number;
   outstanding: number;
+  totalFines: number;
   recentBills: Bill[];
   recentFines: FineImpositionWithCategory[];
 }

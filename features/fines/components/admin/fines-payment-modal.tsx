@@ -45,6 +45,7 @@ import type {
   FineImpositionWithCategory,
 } from "@/features/fines/data";
 import type { Dormer } from "@/features/dormers/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,6 +84,7 @@ export default function FinesPaymentModal({
   const [impositions, setImpositions] = useState<FineImpositionWithCategory[]>(
     []
   );
+  const {selected} = useAcademicPeriod();
   const [loadingImpositions, setLoadingImpositions] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -97,7 +99,7 @@ export default function FinesPaymentModal({
   // Load impositions whenever the modal opens for a dormer
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!isOpen || !dormer?.id) {
+    if (!isOpen || !dormer?.id || !selected?.id) {
       setImpositions([]);
       setPaymentView(null);
       return;
@@ -108,7 +110,7 @@ export default function FinesPaymentModal({
     setFetchError(null);
 
     finesData
-      .listImpositionsForDormer(dormer.id)
+      .listImpositionsForDormer(dormer.id, selected?.id!)
       .then((data) => {
         if (!cancelled) setImpositions(data);
       })

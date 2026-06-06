@@ -12,6 +12,7 @@ import type {
 import { sendEmail } from "@/lib/email";
 import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
 import { Profile } from "@/features/advisers/data";
+import { Bill } from "@/features/payments/data";
 
 
 // export interface DormersDataAccess {
@@ -129,6 +130,21 @@ export async function getDormerByEmail(email: string) : Promise<Profile | null> 
   }
 
   return data ?? null
+}
+
+export async function getDormerBills(dormerId: string, academicPeriodId: string): Promise<Bill[]> {
+  const { data, error } = await supabase
+    .from("bills")
+    .select("*")
+    .eq("dormer_id", dormerId)
+    .eq("academic_period_id", academicPeriodId);
+
+  if (error) {
+    console.error("Error fetching bills:", error);
+    return [];
+  }
+
+  return data as Bill[];
 }
 
 /**

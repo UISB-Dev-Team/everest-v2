@@ -41,8 +41,7 @@ export function useDormitory(): DormitoryInfo {
         return;
     }
 
-    // ✅ Advisers/admins have dormitoryId directly in metadata — no DB query needed
-    if (user.dormitoryId && user.role !== "dormer") {
+    if (user.dormitoryId) {
         setInfo({
             dormitoryId: user.dormitoryId,
             enrollmentId: null,
