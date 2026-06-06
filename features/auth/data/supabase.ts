@@ -123,3 +123,31 @@ export async function setRole(role: AuthRole) {
         },
     })
 }
+
+/**
+ * Sends a Supabase password-reset email.
+ * The redirectTo URL must point at the app's /auth/callback route handler
+ * so it can exchange the code for a session before forwarding the user
+ * to the update-password page.
+ */
+export async function resetPasswordForEmail(
+    email: string,
+    redirectTo: string
+): Promise<{ error: string | null }> {
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo,
+    });
+    return { error: error?.message ?? null };
+}
+
+/**
+ * Updates the authenticated user's password.
+ * Only works when there is an active session (established by the callback
+ * route handler after exchangeCodeForSession).
+ */
+export async function updatePassword(
+    newPassword: string
+): Promise<{ error: string | null }> {
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    return { error: error?.message ?? null };
+}

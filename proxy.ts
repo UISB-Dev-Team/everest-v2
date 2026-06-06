@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
         return "/dashboard";
     };
 
-    if (!user && path !== "/login") {
+    if (!user && path !== "/login" && path !== "/forgot-password") {
         return redirect("/login");
     }
 

@@ -20,7 +20,8 @@ import { formatAmount, formatDate } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useDormerPayments } from "@/features/payments/hooks/usePayments";
 import type { Bill } from "@/features/payments/data";
-import { StatusBadge, SummaryTile } from "@/components/ui/shared";
+import { DataPagination, StatusBadge, SummaryTile } from "@/components/ui/shared";
+import { useEffect, useState } from "react";
 
 function calculatePaymentSummary(bills: Bill[]) {
   const totalDue = bills.reduce((sum, b) => sum + b.total_amount_due, 0);
@@ -35,6 +36,28 @@ function calculatePaymentSummary(bills: Bill[]) {
 export function DormerPaymentsPage() {
   const { user } = useAuth();
   const { bills, loading } = useDormerPayments(user?.id ?? null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginatedBills, setPaginatedBills] = useState<Bill[]>([]);
+
+  useEffect(() => {
+    if (!loading) {
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      setPaginatedBills(bills.slice(start, end));
+      setTotalPages(Math.ceil(bills.length / pageSize));
+    }
+  }, [bills, currentPage, pageSize, loading]);
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
 
   if (loading) {
     return (
@@ -124,7 +147,7 @@ export function DormerPaymentsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bills.map((bill) => {
+                    {paginatedBills.map((bill) => {
                       const remaining = Math.max(
                         0,
                         bill.total_amount_due - bill.amount_paid
@@ -208,7 +231,17 @@ export function DormerPaymentsPage() {
             </div>
           )}
         </CardContent>
+        
+        <DataPagination
+          currentPage={currentPage}
+          onNextPage={handleNextPage}
+          onPreviousPage={handlePreviousPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          className="mx-6"
+        />
       </Card>
+
     </div>
   );
 }

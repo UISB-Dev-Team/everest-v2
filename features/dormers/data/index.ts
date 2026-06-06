@@ -14,7 +14,13 @@ export interface DormersDataAccess {
   listRoomsForDormitory(dormitoryId: string): Promise<Room[]>;
   getById(id: string): Promise<Dormer | null>;
   getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
+  getDormerByEmail(email: string): Promise<import('./types').DormerProfile | null>;
   create(input: CreateDormerInput, password: string): Promise<Dormer>;
+  enrollExistingDormer(
+    profileId: string,
+    input: Pick<CreateDormerInput, "dormitory_id" | "room_number" | "role">,
+    academicPeriodId: string
+  ): Promise<void>;
   update(id: string, input: UpdateDormerInput): Promise<Dormer>;
   remove(id: string): Promise<void>;
   // importMany(inputs: CreateDormerInput[]): Promise<Dormer[]>;

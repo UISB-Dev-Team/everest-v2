@@ -117,21 +117,70 @@ export async function listRoomsForDormitory(
   return data
 }
 
-export async function getDormerByEmail(email: string) : Promise<Profile> {
+export async function getDormerByEmail(email: string) : Promise<Profile | null> {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("email", email)
     .maybeSingle()
   
-  if(!data) {
-    throw new Error("No dormers found")
-  }
   if(error) {
-    throw new Error(error)
+    throw new Error(error.message)
   }
 
-  return data
+  return data ?? null
+}
+
+/**
+ * Re-enrolls an existing profile (from a previous sem) into the given academic period.
+ * Does NOT create a new auth user or profile — only inserts a dormitory_enrollment row
+ * and upserts the dormitory role.
+ */
+export async function enrollExistingDormer(
+  profileId: string,
+  input: Pick<CreateDormerInput, "dormitory_id" | "room_number" | "role">,
+  academicPeriodId: string
+): Promise<void> {
+  const { dormitory_id, room_number, role } = input;
+
+  if (!dormitory_id) throw new Error("dormitory_id is required.");
+
+  // Check if already enrolled for this period
+  const { data: existing } = await supabase
+    .from("dormitory_enrollment")
+    .select("id")
+    .eq("dormer_id", profileId)
+    .eq("academic_period_id", academicPeriodId)
+    .maybeSingle();
+
+  if (existing) {
+    // Already enrolled — just reactivate
+    const { error } = await supabase
+      .from("dormitory_enrollment")
+      .update({ status: "active", dormitory_id, room_number: room_number ?? null })
+      .eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("dormitory_enrollment")
+      .insert({
+        dormer_id: profileId,
+        dormitory_id,
+        academic_period_id: academicPeriodId,
+        room_number: room_number ?? null,
+        status: "active",
+      });
+    if (error) throw error;
+  }
+
+  // Upsert the dormitory role
+  const { error: roleError } = await supabase
+    .from("dormitory_roles")
+    .upsert(
+      { user_id: profileId, dormitory_id, role, is_active: true },
+      { onConflict: "user_id,dormitory_id" }
+    );
+  if (roleError) throw roleError;
 }
 
 export async function listForDormitoryWithBills(

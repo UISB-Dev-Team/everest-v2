@@ -145,6 +145,7 @@ export async function listDormersForEvent(
         ? `${recorder.first_name} ${recorder.last_name}`
         : null,
       recorded_by_email: recorder?.email ?? null,
+      dormer_enrollment_id: rest.id
     } as EventDormerData;
   });
 }

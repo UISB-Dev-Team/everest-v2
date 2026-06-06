@@ -1,1 +1,1 @@
-export { AcademicPeriodsPage as default } from "@/features/academic-periods/components/academic-periods-page";
+export { PeriodSelector as default } from "@/features/academic-periods/components/academic-periods-page";

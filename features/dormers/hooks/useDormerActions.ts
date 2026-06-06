@@ -42,18 +42,72 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const { user } = useAuth();
-  const {dormitoryName} = useDormitory()
+  const { dormitoryName } = useDormitory();
+  const { current: academicPeriod } = useAcademicPeriod();
 
   const saveDormer = async (input: CreateDormerInput) => {
     setIsSubmitting(true);
     try {
-      const exists = _dormers.some((d) => d.email === input.email);
-      if (exists) {
-        toast.error("A dormer with this email already exists.");
+      // 1. Check if already enrolled in THIS academic period
+      const existsThisPeriod = _dormers.some((d) => d.email === input.email);
+      if (existsThisPeriod) {
+        toast.error("A dormer with this email is already enrolled this semester.");
         return;
       }
+
+      // 2. Check if a profile with this email exists from a previous period
+      const existingProfile = await dormersData.getDormerByEmail(input.email!);
+      if (existingProfile && academicPeriod?.id) {
+        // Profile exists but not in current period — ask user to re-enroll
+        toast(
+          `"${existingProfile.first_name} ${existingProfile.last_name}" already has an account from a previous semester. Enroll them in the current semester?`,
+          {
+            duration: 10000,
+            action: {
+              label: "Yes, enroll",
+              onClick: async () => {
+                setIsSubmitting(true);
+                try {
+                  await dormersData.enrollExistingDormer(
+                    existingProfile.id,
+                    {
+                      dormitory_id: input.dormitory_id,
+                      room_number: input.room_number,
+                      role: input.role,
+                    },
+                    academicPeriod.id
+                  );
+                  setDormers((prev) => [
+                    ...prev,
+                    {
+                      ...existingProfile,
+                      dormitory_id: input.dormitory_id ?? null,
+                      room_number: input.room_number ?? null,
+                      status: "active",
+                      dormer_enrollment_id: null,
+                      bills: [],
+                    },
+                  ]);
+                  toast.success(`${existingProfile.first_name} ${existingProfile.last_name} has been enrolled for this semester.`);
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Failed to enroll existing dormer.");
+                } finally {
+                  setIsSubmitting(false);
+                }
+              },
+            },
+            cancel: {
+              label: "Cancel",
+              onClick: () => {},
+            },
+          }
+        );
+        return;
+      }
+
+      // 3. Brand new dormer — create auth user, profile, enrollment
       const password = generateRandomPassword();
-      
       const newProfile = await dormersData.create(input, password);
       setDormers((prev) => [
         ...prev,
@@ -62,13 +116,12 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           dormitory_id: input.dormitory_id ?? null,
           room_number: input.room_number ?? null,
           status: "active",
-          bills: []
-        }
-      ])
+          bills: [],
+        },
+      ]);
       toast.success("Dormer added successfully!");
-    
-      
-      if(input.role == "adviser") {
+
+      if (input.role == "adviser") {
         await sendEmail({
           to: input?.email!,
           subject: "Adviser - Dormpay Invitation",
@@ -77,42 +130,39 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
             input?.email!,
             password,
             dormitoryName!,
-          )
-        })
-      }
-      else if(input.role == "sa") {
-          await sendEmail({
-            to: input?.email!,
-            subject: "Student Assistant - Dormpay Invitation",
-            html: welcomeSA(
-              input.first_name,
-              input?.email!,
-              password,
-            )
-          })
-        }
-      else if(input.role == "treasurer" || input.role == "auditor") {
+          ),
+        });
+      } else if (input.role == "sa") {
         await sendEmail({
-            to: input?.email!,
-            subject: "Treasurer and Auditor - Dormpay Invitation",
-            html: welcomeSA(
-              input.first_name,
-              input?.email!,
-              password,
-            )
-          })
-        }
-        else {
-          await sendEmail({
-            to: input?.email!,
-            subject: "Dormer - Dormpay Invitation",
-            html: welcomeUser(
-              input.first_name,
-              input?.email!,
-              password,
-            )
-          })
-        }
+          to: input?.email!,
+          subject: "Student Assistant - Dormpay Invitation",
+          html: welcomeSA(
+            input.first_name,
+            input?.email!,
+            password,
+          ),
+        });
+      } else if (input.role == "treasurer" || input.role == "auditor") {
+        await sendEmail({
+          to: input?.email!,
+          subject: "Treasurer and Auditor - Dormpay Invitation",
+          html: welcomeSA(
+            input.first_name,
+            input?.email!,
+            password,
+          ),
+        });
+      } else {
+        await sendEmail({
+          to: input?.email!,
+          subject: "Dormer - Dormpay Invitation",
+          html: welcomeUser(
+            input.first_name,
+            input?.email!,
+            password,
+          ),
+        });
+      }
       toast.message(`Account invitation sent to ${input.email}`);
     } catch (e) {
       console.error(e);
@@ -121,6 +171,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
       setIsSubmitting(false);
     }
   };
+
 
   const updateDormer = async (id: string, input: UpdateDormerInput) => {
     setIsSubmitting(true);

@@ -102,13 +102,13 @@ export function RoleShell({
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-3 absolute left-1/2 -translate-x-1/2">
-            <Image
-              src="/profile-old.webp"
-              alt="DormPay logo"
-              width={32}
-              height={32}
-              className="rounded-lg"
-            />
+           <img
+            src={dorm_logo ? dorm_logo : "/profile-old.webp"}
+            alt="DormPay logo"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
             <h1 className="text-xl font-bold text-white tracking-tight">
               DormPay
             </h1>
@@ -218,11 +218,12 @@ function SidebarContent({
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-6 py-6 flex-shrink-0">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden">
-          <Image
+          <img
             src={dorm_logo ? dorm_logo : "/profile-old.webp"}
             alt="DormPay logo"
-            fill
-            className="object-contain"
+            width={32}
+            height={32}
+            className="rounded-lg"
           />
         </div>
         <div className="flex flex-col">
