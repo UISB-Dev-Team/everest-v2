@@ -75,6 +75,45 @@ export async function removeCategory(id: string): Promise<void>{
     throw error
   }
 }
+
+export async function getUnpaidFines(dormitoryId: string, academicPeriodId: string) {
+  const { data, error } = await supabase
+    .from("fine_impositions")
+    .select(`
+      *,
+      fines!fine_impositions_fine_id_fkey(name, description),
+      profiles!fine_impositions_dormer_id_fkey(*),
+      dormitory_enrollment(room_number)
+    `)
+    .eq("dormitory_id", dormitoryId)
+    .eq("dormitory_enrollment.academic_period_id", academicPeriodId)
+    .eq("status", "Unpaid");
+  
+  if (error) {
+    console.error("Error fetching unpaid fines:", error)
+    throw error
+  }
+  
+  if (data) {
+    return data.map((row) => {
+      const { fines, profiles, dormitory_enrollment, ...imposition } = row;
+      const enrollment = Array.isArray(dormitory_enrollment)
+        ? dormitory_enrollment[0]
+        : dormitory_enrollment;
+      return {
+        ...imposition,
+        category_name: fines?.name ?? "Unknown",
+        category_description: fines?.description ?? null,
+        dormer_first_name: profiles?.first_name ?? "",
+        dormer_last_name: profiles?.last_name ?? "",
+        dormer_room: enrollment?.room_number ?? null,
+        dormer_email: profiles?.email,
+      };
+    });
+  }
+  
+  return []
+}
 // Impositions
 export async function listImpositionsForDormer(
     dormerId: string

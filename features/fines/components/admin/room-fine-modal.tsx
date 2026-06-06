@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Dormer } from "@/features/dormers/data";
+import { FineCategory } from "../../data";
 
 interface RoomFineModalProps {
   isOpen: boolean;
@@ -30,9 +31,11 @@ interface RoomFineModalProps {
     roomNumber: string,
     amount: number,
     reason: string,
-    dateImposed: Date
+    dateImposed: Date,
+    fineCategorySelected: FineCategory
   ) => Promise<void>;
   dormers: Dormer[];
+  fines: FineCategory[];
   isSubmitting: boolean;
 }
 
@@ -41,6 +44,7 @@ export default function RoomFineModal({
   onClose,
   onApply,
   dormers,
+  fines,
   isSubmitting,
 }: RoomFineModalProps) {
   const [roomNumber, setRoomNumber] = useState("");
@@ -50,10 +54,15 @@ export default function RoomFineModal({
     new Date().toISOString().split("T")[0]
   );
   const [roomDormers, setRoomDormers] = useState<Dormer[]>([]);
+  const [fineCategorySelected, setFineCategorySelected] = useState<string>("");
 
   const availableRooms = Array.from(
     new Set(dormers.map((d) => d.room_number).filter((room): room is string => Boolean(room)))
   ).sort();
+
+  if(!fines) {
+    return;
+  }
 
   useEffect(() => {
     if (roomNumber) {
@@ -64,10 +73,24 @@ export default function RoomFineModal({
   }, [roomNumber, dormers]);
 
   const handleSubmit = async () => {
-    if (!roomNumber || !amount || !reason || !dateImposed) return;
+    
+    if (!roomNumber || !amount || !reason || !dateImposed) {
+      console.error("All fields are required.");
+      return;
+    };
+
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) return;
-    await onApply(roomNumber, numAmount, reason, new Date(dateImposed));
+    if (isNaN(numAmount) || numAmount <= 0) {
+      console.error("Invalid amount.");
+      return;
+    };
+    
+    const fineCategory = fines.find((f) => f.id === fineCategorySelected);
+    if (!fineCategory) {
+      console.error("Invalid fine category.");
+      return;
+    }
+    await onApply(roomNumber, numAmount, reason, new Date(dateImposed), fineCategory);
     handleClose();
   };
 
@@ -76,6 +99,7 @@ export default function RoomFineModal({
     setAmount("");
     setReason("");
     setDateImposed(new Date().toISOString().split("T")[0]);
+    setFineCategorySelected("");
     setRoomDormers([]);
     onClose();
   };
@@ -137,6 +161,32 @@ export default function RoomFineModal({
           )}
 
           <div className="space-y-2">
+            <Label htmlFor="fineCategory">Fine Category *</Label>
+            <Select
+              value={fineCategorySelected}
+              onValueChange={(value) => {
+                const fineCategory = fines.find((f) => f.id === value);
+                if (fineCategory) {
+                  setAmount(fineCategory.amount.toString());
+                }
+                setFineCategorySelected(value);
+              }}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a fine category" />
+              </SelectTrigger>
+              <SelectContent>
+                {fines.map((fine) => (
+                  <SelectItem key={`fine-${fine.id}`} value={String(fine.id)}>
+                    {fine.name} - {fine.amount}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="amount">Fine Amount (₱) *</Label>
             <Input
               id="amount"
@@ -144,7 +194,7 @@ export default function RoomFineModal({
               placeholder="100.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              disabled={isSubmitting}
+              disabled={true}
               step="0.01"
               min="0"
             />

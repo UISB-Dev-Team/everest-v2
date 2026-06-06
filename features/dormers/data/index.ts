@@ -11,6 +11,7 @@ export interface DormersDataAccess {
   listForDormitory(dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
   listForDormitoryWithBills(dormitoryId: string, academicPeriodId: string): Promise<DormerWithBills[]>;
   getById(id: string): Promise<Dormer | null>;
+  getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
   create(input: CreateDormerInput): Promise<Dormer>;
   update(id: string, input: UpdateDormerInput): Promise<Dormer>;
   remove(id: string): Promise<void>;

@@ -230,6 +230,26 @@ export async function getById(id: string): Promise<Dormer | null> {
   } as Dormer;
 }
 
+export async function getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]> {
+  const { data, error } = await supabase
+    .from("dormitory_enrollment")
+    .select("*, profiles(*)")
+    .eq("room_number", roomNumber)
+    .eq("dormitory_id", dormitoryId)
+    .eq("academic_period_id", academicPeriodId)
+
+  if (error || !data) {
+    console.error("Error fetching dormers:", error);
+    return [];
+  }
+
+  return data.map((row) => ({
+    ...(row.profiles as DormerProfile),
+    dormitory_id: row.dormitory_id,
+    room_number: row.room_number,
+    dormer_enrollment_id: row.id,
+  })) as Dormer[];
+}
 export async function create(input: CreateDormerInput) {
   const { dormitory_id, room_number, role, ...profileInput } = input;
 

@@ -20,7 +20,7 @@ export interface FinesDataAccess {
     input: UpdateFineCategoryInput
   ): Promise<FineCategory | null>;
   removeCategory(id: string): Promise<void>;
-
+  getUnpaidFines(dormitoryId: string, academicPeriodId: string): any;
   // Impositions
   listImpositionsForDormer(
     dormerId: string
