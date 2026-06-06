@@ -14,10 +14,10 @@ export interface DormersDataAccess {
   listRoomsForDormitory(dormitoryId: string): Promise<Room[]>;
   getById(id: string): Promise<Dormer | null>;
   getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
-  create(input: CreateDormerInput): Promise<Dormer>;
+  create(input: CreateDormerInput, password: string): Promise<Dormer>;
   update(id: string, input: UpdateDormerInput): Promise<Dormer>;
   remove(id: string): Promise<void>;
-  importMany(inputs: CreateDormerInput[]): Promise<Dormer[]>;
+  // importMany(inputs: CreateDormerInput[]): Promise<Dormer[]>;
 }
 
 export const dormersData: DormersDataAccess = supabase;

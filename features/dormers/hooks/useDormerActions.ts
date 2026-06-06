@@ -21,6 +21,7 @@ import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
 import { welcomeSA } from "@/emails/dormers/welcomeSA";
 import { welcomeUser } from "@/emails/dormers/welcomeUser";
+import { generateRandomPassword } from "../lib/generate-random-password";
 
 interface PaymentInput {
   bill_id: string;
@@ -51,7 +52,9 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
         toast.error("A dormer with this email already exists.");
         return;
       }
-      const newProfile = await dormersData.create(input);
+      const password = generateRandomPassword();
+      
+      const newProfile = await dormersData.create(input, password);
       setDormers((prev) => [
         ...prev,
         {
@@ -63,6 +66,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
         }
       ])
       toast.success("Dormer added successfully!");
+    
       
       if(input.role == "adviser") {
         await sendEmail({
@@ -71,7 +75,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           html: welcomeAdviser(
             input.first_name,
             input?.email!,
-            "DefaultPass123!",
+            password,
             dormitoryName!,
           )
         })
@@ -83,7 +87,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
             html: welcomeSA(
               input.first_name,
               input?.email!,
-              "DefaultPass123!",
+              password,
             )
           })
         }
@@ -94,7 +98,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
             html: welcomeSA(
               input.first_name,
               input?.email!,
-              "DefaultPass123!",
+              password,
             )
           })
         }
@@ -105,7 +109,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
             html: welcomeUser(
               input.first_name,
               input?.email!,
-              "DefaultPass123!",
+              password,
             )
           })
         }
@@ -280,7 +284,8 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           errorList.push(`Dormer with email ${row.email} already exists.`);
           continue;
         }
-        const newProfile = await dormersData.create(row);
+        const password = generateRandomPassword();
+        const newProfile = await dormersData.create(row, password);
         created.push({
           ...newProfile,
           dormitory_id: row.dormitory_id ?? null,
@@ -294,7 +299,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           html: welcomeUser(
             row.first_name,
             row?.email!,
-            "DefaultPass123!",
+            password,
           )
         })
       }

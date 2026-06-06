@@ -267,14 +267,14 @@ export async function getByRoom(roomNumber: string, dormitoryId: string, academi
     dormer_enrollment_id: row.id,
   })) as Dormer[];
 }
-export async function create(input: CreateDormerInput) {
+export async function create(input: CreateDormerInput, password: string) {
   const { dormitory_id, room_number, role, ...profileInput } = input;
 
   if (!dormitory_id) throw new Error("dormitory_id is required to create a dormer.");
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email: profileInput.email,
-    password: "DefaultPass123!",
+    password,
     email_confirm: true,
     user_metadata: {
       first_name: profileInput.first_name,
@@ -437,15 +437,15 @@ export async function remove(id: string): Promise<void> {
   }
 }
 
-export async function importMany(
-  inputs: CreateDormerInput[]
-): Promise<Dormer[]> {
-  const created: Dormer[] = [];
-  for (const input of inputs) {
-    created.push(await create(input));
-  }
-  return created;
-}
+// export async function importMany(
+//   inputs: CreateDormerInput[]
+// ): Promise<Dormer[]> {
+//   const created: Dormer[] = [];
+//   for (const input of inputs) {
+//     created.push(await create(input));
+//   }
+//   return created;
+// }
 
 export async function deleteBillData(id: string): Promise<void> {
   const { error } = await supabase
