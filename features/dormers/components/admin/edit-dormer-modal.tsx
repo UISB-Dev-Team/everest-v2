@@ -21,19 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  MaboloRoomNumber,
-  SampaguitaRoomNumber,
-} from "@/lib/constants/room-numbers";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import type { Dormer, UpdateDormerInput } from "@/features/dormers/data";
-import { useDormitory } from "@/lib/hooks/useDormitory";
 
 interface EditDormerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (id: string, dormerData: UpdateDormerInput) => Promise<void> | void;
   dormerData: Dormer | null;
+  roomNumbers: string[];
 }
 
 export default function EditDormerModal({
@@ -41,15 +37,13 @@ export default function EditDormerModal({
   onClose,
   onUpdate,
   dormerData,
+  roomNumbers,
 }: EditDormerModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
-
-  const dormitory = useDormitory();
-  const isMabolo = dormitory.dormitoryName?.toLowerCase().includes("mabolo");
 
   useEffect(() => {
     if (dormerData) {
@@ -167,13 +161,11 @@ export default function EditDormerModal({
                 <SelectValue placeholder="Select room" />
               </SelectTrigger>
               <SelectContent>
-                {(isMabolo ? MaboloRoomNumber : SampaguitaRoomNumber).map(
-                  (room) => (
-                    <SelectItem key={room} value={room}>
-                      {room}
-                    </SelectItem>
-                  )
-                )}
+                {roomNumbers.map((room) => (
+                  <SelectItem key={room} value={room}>
+                    {room}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

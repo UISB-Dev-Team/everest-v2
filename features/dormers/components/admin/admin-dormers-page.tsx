@@ -42,6 +42,7 @@ import { CreateDormerInput, ImportedBill } from "../../data";
 import ImportBillsModal from "./import-bills-modal";
 import { RegularCharge } from "@/features/regular-charges/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useRooms } from "@/lib/hooks/useRooms";
 import { BILLING_PERIODS } from "@/lib/constants/billing-periods";
 import { DataPagination } from "@/components/ui/shared";
 
@@ -72,6 +73,7 @@ export function AdminDormersPage() {
     setDormers,
     setBills
   );
+  const { roomNumbers } = useRooms();
   const { payables } = useRegularCharges();
   const { generateBill, generateBillsBulk, deleteBill, importBills } = useBills();
   const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
@@ -318,6 +320,7 @@ export function AdminDormersPage() {
         onStatusChange={setStatusFilter}
         count={filteredDormers.length}
         resetFilter={handleResetFilters}
+        roomNumbers={roomNumbers}
       />
 
       <DormersTable
@@ -346,6 +349,7 @@ export function AdminDormersPage() {
         isOpen={modal === "add"}
         onClose={closeModal}
         onSave={saveDormer}
+        roomNumbers={roomNumbers}
       />
 
       <EditDormerModal
@@ -353,6 +357,7 @@ export function AdminDormersPage() {
         onClose={closeModal}
         onUpdate={updateDormer}
         dormerData={selectedDormer}
+        roomNumbers={roomNumbers}
       />
 
       <DeleteDormerModal

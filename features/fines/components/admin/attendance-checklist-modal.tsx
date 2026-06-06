@@ -22,8 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Search, Zap, Save, Users, AlertCircle } from "lucide-react";
 import { Dormer } from "@/features/dormers/data";
 import { FineCategory } from "../../data";
-import { useDormitory } from "@/lib/hooks/useDormitory";
-import { MaboloRoomNumber, SampaguitaRoomNumber } from "@/lib/constants/room-numbers";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +46,8 @@ interface AttendanceChecklistModalProps {
   dormers: Dormer[];
   /** Payable fine categories the SA can pick from */
   payableFines: FineCategory[];
+  /** Room numbers fetched from the database (via useRooms) */
+  roomNumbers: string[];
   /** Called when SA hits "Generate fines" — parent handles imposeFine loop */
   onSubmit: (payload: AttendanceSubmitPayload) => Promise<void>;
   isSubmitting: boolean;
@@ -113,11 +113,11 @@ export default function AttendanceChecklistModal({
   onClose,
   dormers,
   payableFines,
+  roomNumbers,
   onSubmit,
   isSubmitting,
   cacheKey = "default",
 }: AttendanceChecklistModalProps) {
-  const { dormitoryName } = useDormitory()
   const todayStr = new Date().toISOString().split("T")[0];
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
@@ -249,8 +249,6 @@ export default function AttendanceChecklistModal({
     onClose();
   };
 
-  const rooms = dormitoryName?.toLocaleLowerCase().includes("mabolo") ? MaboloRoomNumber : SampaguitaRoomNumber
-
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -347,7 +345,7 @@ export default function AttendanceChecklistModal({
                   <SelectValue placeholder="Select room…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {rooms.map((r) => (
+                  {roomNumbers.map((r) => (
                     <SelectItem key={r} value={r}>
                       {r}
                     </SelectItem>

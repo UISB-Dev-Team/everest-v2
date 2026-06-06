@@ -3,6 +3,7 @@ import type {
   CreateDormerInput,
   Dormer,
   DormerWithBills,
+  Room,
   UpdateDormerInput,
 } from "./types";
 
@@ -10,6 +11,7 @@ export interface DormersDataAccess {
   list(academicPeriodId?: string): Promise<Dormer[]>;
   listForDormitory(dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
   listForDormitoryWithBills(dormitoryId: string, academicPeriodId: string): Promise<DormerWithBills[]>;
+  listRoomsForDormitory(dormitoryId: string): Promise<Room[]>;
   getById(id: string): Promise<Dormer | null>;
   getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]>;
   create(input: CreateDormerInput): Promise<Dormer>;

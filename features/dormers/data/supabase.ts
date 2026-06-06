@@ -6,6 +6,7 @@ import type {
   Dormer,
   DormerProfile,
   DormerWithBills,
+  Room,
   UpdateDormerInput,
 } from "./types";
 import { sendEmail } from "@/lib/email";
@@ -98,6 +99,22 @@ export async function listForDormitory(
     dormitory_id: row.dormitory_id,
     room_number: row.room_number,
   })) as Dormer[];
+}
+
+export async function listRoomsForDormitory(
+  dormitoryId: string
+) : Promise<Room[]> {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("dormitory_id", dormitoryId)
+
+  if(error || !data) {
+    console.error("Error fetching rooms:", error);
+    return [];
+  }
+
+  return data
 }
 
 export async function getDormerByEmail(email: string) : Promise<Profile> {

@@ -4,6 +4,7 @@ export type DormerProfile = Tables<"profiles">;
 export type DormerEnrollment = Tables<"dormitory_enrollment">;
 export type DormerRoleWithProfile = Tables<"dormitory_roles"> & { profiles: DormerProfile };
 export type Role = Enums<"user_role_enum">;
+export type Room = Tables<"rooms">
 export interface Dormer extends DormerProfile {
   dormitory_id: string | null;
   room_number: string | null;

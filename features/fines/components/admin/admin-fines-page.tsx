@@ -226,6 +226,7 @@ export function AdminFinesPage() {
         onClose={closeModal}
         dormers={dormers}
         payableFines={fines}
+        roomNumbers={rooms}
         onSubmit={handleAttendanceSubmit}
         isSubmitting={isAttendanceSubmitting}
         // Scope cache per dormitory so concurrent SA sessions don't collide

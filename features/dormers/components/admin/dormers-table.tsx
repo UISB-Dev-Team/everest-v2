@@ -35,7 +35,7 @@ export default function DormersTable({
   onResetFilters,
 }: DormersTableProps) {
   return (
-    <Card className="border-2 border-gray-100 shadow-md bg-white">
+    <Card className="border border-gray-200 shadow-sm bg-white">
       <CardHeader className="border-b border-gray-100 pb-4">
         <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
           Dormer Records
@@ -81,20 +81,20 @@ export default function DormersTable({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-b border-gray-100">
-                  <TableHead className="font-semibold text-gray-700">
+                <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                  <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Resident
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
+                  <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Room
                   </TableHead>
-                  <TableHead className="hidden md:table-cell font-semibold text-gray-700">
+                  <TableHead className="hidden md:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Email
                   </TableHead>
-                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700">
+                  <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Phone
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-gray-700">
+                  <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -102,7 +102,7 @@ export default function DormersTable({
               <TableBody>
                 {dormers.map((dormer) => (
                   <TableRow
-                    className="hover:bg-gray-50 transition-colors border-b border-gray-50"
+                    className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                     key={dormer.id}
                   >
                     <TableCell className="font-medium w-[30%]">

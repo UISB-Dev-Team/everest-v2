@@ -93,7 +93,7 @@ export default function EventDormersTable({
   
   return (
     <>
-    <Card className="border-2 border-gray-100 shadow-md bg-white">
+    <Card className="border border-gray-200 shadow-sm bg-white">
       <CardHeader className="border-b border-gray-100">
         <div>
           <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
@@ -152,23 +152,23 @@ export default function EventDormersTable({
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-[#f0f0f0] hover:bg-[#f0f0f0]">
-                <TableHead className="font-bold text-[#12372A]">
+              <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Dormer
                 </TableHead>
-                <TableHead className="font-bold text-[#12372A]">
+                <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Amount Paid
                 </TableHead>
-                <TableHead className="font-bold text-[#12372A]">
+                <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Payment Status
                 </TableHead>
-                <TableHead className="hidden md:table-cell font-bold text-[#12372A]">
+                <TableHead className="hidden md:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Payment Date
                 </TableHead>
-                <TableHead className="hidden lg:table-cell font-bold text-[#12372A]">
+                <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Recorded By
                 </TableHead>
-                <TableHead className="text-right font-bold text-[#12372A]">
+                <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Actions
                 </TableHead>
               </TableRow>
@@ -185,7 +185,7 @@ export default function EventDormersTable({
                 return (
                   <TableRow
                     key={dormer.id}
-                    className="hover:bg-[#f0f0f0] transition-colors"
+                    className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                   >
                     <TableCell className="font-medium w-[200px]">
                       <div className="flex items-center gap-3">

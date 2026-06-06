@@ -63,8 +63,8 @@ export default function ExpensesTable({
 
   return (
     <>
-      <Card className="border-2 border-gray-100 shadow-md bg-white gap-0">
-        <CardHeader className="border-b border-gray-100 py-0">
+      <Card className="border border-gray-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-gray-100 pb-4 pt-6 px-6">
           <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
             Expense Records
           </CardTitle>
@@ -95,23 +95,23 @@ export default function ExpensesTable({
             <div className="overflow-x-auto px-5">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-gray-100">
-                    <TableHead className="font-semibold text-gray-700">
+                  <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Title &amp; Description
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Amount
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Expense Date
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Receipt
                     </TableHead>
-                    <TableHead className="hidden lg:table-cell font-semibold text-gray-700">
+                    <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Recorded By
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-gray-700">
+                    <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Action
                     </TableHead>
                   </TableRow>
@@ -130,7 +130,7 @@ export default function ExpensesTable({
                     return (
                       <TableRow
                         key={expense.id}
-                        className="hover:bg-gray-50 transition-colors border-b border-gray-50"
+                        className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                       >
                         <TableCell className="w-[200px]">
                           <div

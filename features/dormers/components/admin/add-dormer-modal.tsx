@@ -21,25 +21,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  MaboloRoomNumber,
-  SampaguitaRoomNumber,
-} from "@/lib/constants/room-numbers";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import type { CreateDormerInput } from "@/features/dormers/data";
-import { useDormitory } from "@/lib/hooks/useDormitory";
 import { Role } from "../../data/types";
 
 interface AddDormerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (dormerData: CreateDormerInput) => Promise<void> | void;
+  roomNumbers: string[];
 }
 
 export default function AddDormerModal({
   isOpen,
   onClose,
   onSave,
+  roomNumbers,
 }: AddDormerModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -48,8 +45,6 @@ export default function AddDormerModal({
   const [roomNumber, setRoomNumber] = useState("");
   const [role, setRole] = useState("");
   const { user } = useAuth();
-  const dormitory = useDormitory();
-  const isMabolo = dormitory?.dormitoryName?.toLowerCase().includes("mabolo");
   
   const handleSave = async () => {
     if (!firstName || !lastName || !email || !roomNumber) {
@@ -187,13 +182,11 @@ export default function AddDormerModal({
                 <SelectValue placeholder="Select room" />
               </SelectTrigger>
               <SelectContent>
-                {(isMabolo ? MaboloRoomNumber : SampaguitaRoomNumber).map(
-                  (room) => (
-                    <SelectItem key={room} value={room}>
-                      {room}
-                    </SelectItem>
-                  )
-                )}
+                {roomNumbers.map((room) => (
+                  <SelectItem key={room} value={room}>
+                    {room}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
