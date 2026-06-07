@@ -125,7 +125,7 @@ export default function FinesPaymentModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, dormer?.id]);
+  }, [isOpen, dormer?.id, selected?.id]);
 
   // ---------------------------------------------------------------------------
   // Reset payment form when a new fine row is selected

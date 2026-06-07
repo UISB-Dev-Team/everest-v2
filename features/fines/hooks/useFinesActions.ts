@@ -146,27 +146,32 @@ export function useFinesActions() {
   };
 
   const sendUnpaidReminder = async () => {
-    setIsSubmitting(true)
-    const unpaidFines = await finesData.getUnpaidFines(dormitoryId!, selected!.id)
-    for(const fine of unpaidFines){
-      await sendEmail({
-        to: fine.dormer_email,
-        subject: "Unpaid Fines Reminder",
-        html: unpaidFinesReminderTemplate(
-          { firstName: fine.dormer_first_name, lastName: fine.dormer_last_name },
-        unpaidFines.filter((f:any) => f.dormer_email === fine.dormer_email).map((f:any) => ({
-          finesRemarks: f.category_name,
-          totalAmountDue: f.amount,
-          amountPaid: f.amount_paid,
-          remainingBalance: f.amount - f.amount_paid,
-          dateImposed: new Date(f.date_imposed),
-        }))
-      ),
-    });
+    try {
+      setIsSubmitting(true)
+      const unpaidFines = await finesData.getUnpaidFines(dormitoryId!, selected!.id)
+      for(const fine of unpaidFines){
+        await sendEmail({
+          to: fine.dormer_email,
+          subject: "Unpaid Fines Reminder",
+          html: unpaidFinesReminderTemplate(
+            { firstName: fine.dormer_first_name, lastName: fine.dormer_last_name },
+          unpaidFines.filter((f:any) => f.dormer_email === fine.dormer_email).map((f:any) => ({
+            finesRemarks: f.category_name,
+            totalAmountDue: f.amount,
+            amountPaid: f.amount_paid,
+            remainingBalance: f.amount - f.amount_paid,
+            dateImposed: new Date(f.date_imposed),
+          }))
+        ),
+      });
+      }
+      toast.success("Unpaid fine reminder emails already sent.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send unpaid fine reminder.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success("Unpaid fine reminder emails already sent.");
-    setIsSubmitting(false)
   };
 
   const handleExport = async () => {

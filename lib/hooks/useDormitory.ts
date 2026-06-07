@@ -54,7 +54,7 @@ export function useDormitory(): DormitoryInfo {
         // just fetch the name
         supabaseClient
             .from("dormitories")
-            .select("name")
+            .select("name, logo_url")
             .eq("id", user.dormitoryId)
             .single()
             .then(({ data }) => {
@@ -62,6 +62,7 @@ export function useDormitory(): DormitoryInfo {
                     setInfo(prev => ({
                         ...prev,
                         dormitoryName: data?.name ?? null,
+                        logoUrl: data?.logo_url ?? null,
                         loading: false,
                     }));
                 }

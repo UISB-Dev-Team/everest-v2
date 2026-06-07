@@ -43,7 +43,6 @@ export function LoginForm() {
   };
 
   const handlePasswordReset = () => {
-    toast.success("forgettinh pass")
     router.push("/forgot-password");
   };
 

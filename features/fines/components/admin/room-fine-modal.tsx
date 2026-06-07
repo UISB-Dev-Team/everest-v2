@@ -61,7 +61,7 @@ export default function RoomFineModal({
   ).sort();
 
   if(!fines) {
-    return;
+    return null;
   }
 
   useEffect(() => {

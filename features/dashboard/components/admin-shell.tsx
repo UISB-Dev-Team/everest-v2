@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RoleShell, type NavItem } from "./role-shell";
-import { PeriodSelector } from "@/features/academic-periods/components/academic-periods-page";
+import { PeriodSelector } from "@/features/academic-periods/components/period-selector";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 
 const NAV_ITEMS: NavItem[] = [

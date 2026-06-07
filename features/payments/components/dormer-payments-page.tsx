@@ -43,12 +43,13 @@ export function DormerPaymentsPage() {
   const [paginatedBills, setPaginatedBills] = useState<Bill[]>([]);
 
   useEffect(() => {
-    if (!loading) {
-      const start = (currentPage - 1) * pageSize;
-      const end = start + pageSize;
-      setPaginatedBills(bills.slice(start, end));
-      setTotalPages(Math.ceil(bills.length / pageSize));
-    }
+    if (loading) return;
+    const nextTotalPages = Math.max(1, Math.ceil(bills.length / pageSize));
+    const nextPage = Math.min(currentPage, nextTotalPages);
+    if (nextPage !== currentPage) setCurrentPage(nextPage);
+    const start = (nextPage - 1) * pageSize;
+    setPaginatedBills(bills.slice(start, start + pageSize));
+    setTotalPages(nextTotalPages);
   }, [bills, currentPage, pageSize, loading]);
 
   const handleNextPage = () => {

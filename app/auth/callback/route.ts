@@ -17,8 +17,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}${safeNext}`);
     }
   }
-  }
-
   // Something went wrong — redirect back to login with an error param
   return NextResponse.redirect(`${origin}/login?error=invalid_reset_link`);
 }

@@ -64,6 +64,11 @@ export function useAttendanceChecklist({
         continue;
       }
 
+      if(!dormer.dormer_enrollment_id) {
+        errors.push(`${dormer.first_name} ${dormer.last_name}: missing dormitory enrollment for this period.`)
+        continue;
+      }
+
       try {
         const input: CreateFineImpositionInput = {
           fine_id: fineId,
@@ -75,7 +80,6 @@ export function useAttendanceChecklist({
           remarks: `Absent — ${fine.name}`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          // dormitory_enrollment_id is required by your type — pull from dormer
           dormitory_enrollment_id: dormer.dormer_enrollment_id,
           notes: fine.name,
         };

@@ -20,7 +20,7 @@ export function useFineCategories() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const refresh = async () => {
-    if (!dormitoryId) {
+    if (!dormitoryId || !selected?.id!) {
       setLoading(false);
       return;
     }
@@ -35,7 +35,7 @@ export function useFineCategories() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!dormitoryId) {
+    if (!dormitoryId || !selected?.id!) {
       setLoading(false);
       return;
     }
