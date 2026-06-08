@@ -7,7 +7,7 @@ export const welcomeUser = (
   <p>Your dormer account has been created successfully.</p>
   <p>Email: <strong>${email}</strong></p>
   <p>Password: <strong>${temporaryPassword}</strong></p>
-  <p style="margin-top: 25px;">Please <a href="https://dorm-payment-system.vercel.app/" style="color: #007bff; text-decoration: none;">log in</a> and change your password as soon as possible for security reasons.</p>
+  <p style="margin-top: 25px;">Please <a href="https://dormpay-system.vercel.app/" style="color: #007bff; text-decoration: none;">log in</a> and change your password as soon as possible for security reasons.</p>
   <p>This is where you will receive your bills and payment confirmations!</p>
   <p>Please refer to the user guide attached below for detailed instructions on how to use the system.</p>
   
