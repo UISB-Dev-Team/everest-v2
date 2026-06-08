@@ -9,22 +9,24 @@ import type {
   FineCategory,
   UpdateFineCategoryInput,
 } from "@/features/fines/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function useFineCategories() {
   const { user } = useAuth();
+  const { selected } = useAcademicPeriod()
   const dormitoryId = user?.dormitoryId ?? null;
   const [categories, setCategories] = useState<FineCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const refresh = async () => {
-    if (!dormitoryId) {
+    if (!dormitoryId || !selected?.id!) {
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const list = await finesData.listCategoriesForDormitory(dormitoryId);
+      const list = await finesData.listCategoriesForDormitory(dormitoryId, selected?.id!);
       setCategories(list);
     } finally {
       setLoading(false);
@@ -33,13 +35,13 @@ export function useFineCategories() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!dormitoryId) {
+    if (!dormitoryId || !selected?.id!) {
       setLoading(false);
       return;
     }
     setLoading(true);
     finesData
-      .listCategoriesForDormitory(dormitoryId)
+      .listCategoriesForDormitory(dormitoryId, selected?.id!)
       .then((list) => {
         if (!cancelled) setCategories(list);
       })
@@ -49,7 +51,7 @@ export function useFineCategories() {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId]);
+  }, [dormitoryId, selected]);
 
   const saveFineCategory = async (input: {
     id?: string;
@@ -67,7 +69,6 @@ export function useFineCategories() {
         const update: UpdateFineCategoryInput = {
           name: input.name,
           amount: input.amount,
-          description: input.description,
         };
         await finesData.updateCategory(input.id, update);
         toast.success("Fine updated!");
@@ -78,6 +79,7 @@ export function useFineCategories() {
           description: input.description,
           dormitory_id: dormitoryId,
           recorded_by: user?.id ?? null,
+          academic_period_id: selected?.id!
         };
         await finesData.createCategory(create);
         toast.success("Fine added!");

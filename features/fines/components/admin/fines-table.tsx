@@ -12,6 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 import type { Dormer } from "@/features/dormers/data";
 
 interface FinesTableProps {
@@ -30,7 +37,7 @@ export default function FinesTable({
   onResetFilters,
 }: FinesTableProps) {
   return (
-    <Card className="border-2 border-gray-100 shadow-md bg-white">
+    <Card className="border border-gray-200 shadow-sm bg-white">
       <CardHeader className="border-b border-gray-100 pb-4">
         <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
           Dormer Records
@@ -76,20 +83,20 @@ export default function FinesTable({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-b border-gray-100">
-                  <TableHead className="font-semibold text-gray-700">
+                <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                  <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Resident
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
+                  <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Room
                   </TableHead>
-                  <TableHead className="hidden md:table-cell font-semibold text-gray-700">
+                  <TableHead className="hidden md:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Email
                   </TableHead>
-                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700">
+                  <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Phone
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-gray-700">
+                  <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -97,7 +104,7 @@ export default function FinesTable({
               <TableBody>
                 {dormers.map((dormer) => (
                   <TableRow
-                    className="hover:bg-gray-50 transition-colors border-b border-gray-50"
+                    className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                     key={dormer.id}
                   >
                     <TableCell className="font-medium w-[30%]">
@@ -135,24 +142,25 @@ export default function FinesTable({
                     <TableCell className="hidden lg:table-cell text-gray-600">
                       {dormer.phone ?? "—"}
                     </TableCell>
-                    <TableCell className="text-right w-[180px]">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onGenerateFines(dormer)}
-                          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all font-medium"
-                        >
-                          <FileText className="h-4 w-4 mr-1" /> Fine
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onViewFines(dormer)}
-                          className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all font-medium"
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
+                    <TableCell className="text-right w-[80px]">
+                      <div className="flex justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                              <MoreVertical className="h-4 w-4 text-gray-500" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1 z-50">
+                            <DropdownMenuItem onClick={() => onGenerateFines(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                              <FileText className="h-4 w-4" />
+                              <span>Fine Dormer</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onViewFines(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded cursor-pointer font-medium">
+                              <Eye className="h-4 w-4" />
+                              <span>View Fines</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>

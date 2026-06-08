@@ -29,9 +29,8 @@ import { RegularCharge } from "@/features/regular-charges/data";
 import { Bill } from "@/features/payments/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { findExistingBill, generateBillsForDormitory, isPaidBill } from "@/features/payments/data/supabase";
-import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
-import { generateMaboloBillingPeriods, generateSampaguitaBillingPeriods } from "../../utils/generateBillingPeriod";
-
+import { generateBillingPeriods } from "../../utils/generateBillingPeriod";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 // --- Type Definitions ---
 interface GenerateBillModalProps {
   isOpen: boolean;
@@ -43,7 +42,6 @@ interface GenerateBillModalProps {
   bills: Bill[];
   setShowConfirmDialog: (show: boolean) => void;
   setShowErrorModal: (show: boolean) => void;
-  setBillToCreate: (bill: any) => void;
 }
 
 type Mode = "single" | "bulk";
@@ -59,14 +57,14 @@ export default function GenerateBillModal({
   bills,
   setShowConfirmDialog,
   setShowErrorModal,
-  setBillToCreate,
 }: GenerateBillModalProps) {
   const [mode, setMode] = useState<Mode>("single");
-  const { current: currentAcademicPeriod } = useAcademicPeriod()
+  const { selected: currentAcademicPeriod } = useAcademicPeriod()
 
   // Single mode state
   const [selectedPayableId, setSelectedPayableId] = useState<string>("");
   const [totalAmount, setTotalAmount] = useState(0);
+  const [billingPeriods, setBillingPeriods] = useState<string[]>([]);
 
   // Bulk mode state
   const [selectedPayableIds, setSelectedPayableIds] = useState<Set<string>>(new Set());
@@ -75,12 +73,16 @@ export default function GenerateBillModal({
   const [billingPeriod, setBillingPeriod] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { dormitoryName } = useDormitory();
-  const billingPeriods = useMemo(() => {
-    return dormitoryName?.toLowerCase().includes("mabolo")
-        ? generateMaboloBillingPeriods(currentAcademicPeriod?.semester!)
-        : generateSampaguitaBillingPeriods(currentAcademicPeriod?.semester!);
-    }, [dormitoryName, currentAcademicPeriod]);
 
+  useEffect(() => {
+    const periods = generateBillingPeriods(currentAcademicPeriod?.semester!, currentAcademicPeriod?.academic_year!);
+    setBillingPeriods(periods);
+    if (periods.length > 0) {
+      setBillingPeriod(periods[0]);
+    }
+    console.log(periods)
+  }, [currentAcademicPeriod]);
+ 
 // Sync single mode total
 useEffect(() => {
   const selectedPayable = payables.find((p) => p.id === selectedPayableId);
@@ -100,7 +102,6 @@ useEffect(() => {
     }
   }, [isOpen, dormer]);
 
-  if (!dormer) return null;
 
   // --- Bulk checkbox helpers ---
   const togglePayable = (id: string) => {
@@ -134,7 +135,7 @@ useEffect(() => {
       toast.info("Please select a payable to generate a bill.");
       return;
     }
-    if (dormer.id === undefined || dormer.id === null) {
+    if (dormer?.id === undefined || dormer?.id === null) {
       toast.error("Dormer ID is undefined.");
       return;
     }
@@ -168,7 +169,6 @@ useEffect(() => {
     );
 
     if (existingBillId) {
-      setBillToCreate({ ...billData, id: existingBillId });
       setShowConfirmDialog(true);
     } else {
       onGenerateBill(billData);
@@ -185,7 +185,7 @@ useEffect(() => {
       toast.info("Please select at least one payable.");
       return;
     }
-    if (dormer.id === undefined || dormer.id === null) {
+    if (dormer?.id === undefined || dormer?.id === null) {
       toast.error("Dormer ID is undefined.");
       return;
     }
@@ -250,9 +250,7 @@ useEffect(() => {
   const allSelected = payables.length > 0 && selectedPayableIds.size === payables.length;
   const someSelected = selectedPayableIds.size > 0 && !allSelected;
 
-  if (!billingPeriods) return null;
-  if (!dormer) return null;
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -261,20 +259,22 @@ useEffect(() => {
       >
         {/* Header */}
         <DialogHeader className={undefined}>
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarFallback className="bg-green-100 text-green-800">
-                {dormer.first_name?.[0]}
-                {dormer.last_name?.[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <DialogTitle className={undefined}>Generate New Bill</DialogTitle>
-              <DialogDescription className={undefined}>
-                {dormer.first_name} {dormer.last_name} • Room {dormer.room_number}
-              </DialogDescription>
+          {dormer && (
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-green-100 text-green-800">
+                  {dormer.first_name?.[0]}
+                  {dormer.last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <DialogTitle className={undefined}>Generate New Bill</DialogTitle>
+                <DialogDescription className={undefined}>
+                  {dormer.first_name} {dormer.last_name} • Room {dormer.room_number}
+                </DialogDescription>
+              </div>
             </div>
-          </div>
+          )}
         </DialogHeader>
 
         <div className="py-4 space-y-4">
@@ -312,7 +312,7 @@ useEffect(() => {
                 <SelectValue placeholder="Select a period" />
               </SelectTrigger>
               <SelectContent className={undefined}>
-                {billingPeriods.map((period) => (
+                {billingPeriods?.map((period) => (
                   <SelectItem key={period} value={period} className={undefined}>
                     {period}
                   </SelectItem>

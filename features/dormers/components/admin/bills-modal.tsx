@@ -20,9 +20,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { CreditCard, Trash } from "lucide-react";
+import { CreditCard, Trash, MoreVertical, CheckCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dormer, DormerWithBills } from "../../data/types";
 import { getBillDescription } from "../../hooks/useBillDescription";
@@ -52,7 +58,18 @@ export default function BillsModal({
   payables,
   onDeleteBill
 }: BillsModalProps) {
-  const { ConfirmDialog } = useConfirmDialog();
+  const { ConfirmDialog, confirm } = useConfirmDialog();
+  const handleDeleteClick = async (billId: string) => {
+    const ok = await confirm({
+      title: "Delete Bill",
+      description: "Are you sure you want to delete this bill? This action cannot be undone.",
+      confirmText: "Delete",
+      variant: "destructive",
+    });
+    if (ok) {
+      onDeleteBill(billId);
+    }
+  };
   const [showPayAllConfirm, setShowPayAllConfirm] = useState(false);
   const [isPayingAll, setIsPayingAll] = useState(false);
   const [billsData, setBillsData] = useState<Bill[]>([]);
@@ -62,8 +79,6 @@ export default function BillsModal({
       setBillsData([...dormer.bills]);
     }
   }, [dormer?.bills]);
-
-  if (!dormer) return null;
 
   const unpaidBills = billsData.filter(
     (b) => b.status === "Unpaid" || b.status === "Partial"
@@ -76,14 +91,14 @@ export default function BillsModal({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
           className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
           onInteractOutside={(e) => {
             e.preventDefault();
           }}
         >
-          <DialogHeader className={undefined}>
+          {dormer && <><DialogHeader className={undefined}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
@@ -178,34 +193,36 @@ export default function BillsModal({
                               <span className="truncate">{bill.status}</span>
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right w-full flex flex-col gap-2">
-                            <div className="flex gap-2 justify-end">
-                              {(bill.status === "Unpaid" ||
-                                bill.status === "Partial") && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => onRecordPayment(bill)}
-                                  className="h-8 bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
-                                  variant={undefined}
-                                  disabled={isPayingAll}
-                                >
-                                  <CreditCard className="h-4 w-4 mr-1" /> Pay
-                                </Button>
-                              )}
-                            </div>
-                            <div>
-                              {bill.status === "Unpaid" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => onDeleteBill(bill.id)}
-                                  className="h-8 bg-red-600 hover:bg-red-700 text-white whitespace-nowrap"
-                                  variant={undefined}
-                                disabled={isPayingAll}
-                              >
-                                <Trash className="h-4 w-4 mr-1" /> Delete
-                              </Button>
-                              )}
-                            </div>
+                          <TableCell className="text-right w-[80px]">
+                            {bill.status !== "Paid" ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full" disabled={isPayingAll}>
+                                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1 z-50">
+                                  {(bill.status === "Unpaid" || bill.status === "Partial") && (
+                                    <DropdownMenuItem onClick={() => onRecordPayment(bill)} className="flex items-center gap-2 px-3 py-2 text-sm text-[#2E7D32] hover:bg-gray-50 rounded cursor-pointer">
+                                      <CreditCard className="h-4 w-4" />
+                                      <span>Pay Bill</span>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {bill.status === "Unpaid" && (
+                                    <DropdownMenuItem onClick={() => handleDeleteClick(bill.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">                                      <Trash className="h-4 w-4" />
+                                      <span>Delete Bill</span>
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <div className="flex justify-end pr-2">
+                                <Badge variant="outline" className="text-[#2E7D32] border-[#A5D6A7] bg-[#A5D6A7]/10 font-semibold whitespace-nowrap">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Paid
+                                </Badge>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
@@ -278,6 +295,8 @@ export default function BillsModal({
             </Tabs>
           </div>
           <ConfirmDialog />
+          </>
+          }
         </DialogContent>
       </Dialog>
 
@@ -288,7 +307,7 @@ export default function BillsModal({
             <DialogTitle className={undefined}>Confirm Pay All</DialogTitle>
             <DialogDescription className={undefined}>
               Are you sure you want to mark all unpaid bills for{" "}
-              {dormer.first_name} {dormer.last_name} as paid? This action cannot
+              {dormer?.first_name} {dormer?.last_name} as paid? This action cannot
               be undone.
             </DialogDescription>
           </DialogHeader>

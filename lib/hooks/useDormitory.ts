@@ -10,6 +10,7 @@ interface DormitoryInfo {
     roomNumber: string | null;
     dormitoryName: string | null;
     loading: boolean;
+    logoUrl: string | null;
 }
 
 const supabaseClient = createClient();
@@ -21,6 +22,7 @@ export function useDormitory(): DormitoryInfo {
         enrollmentId: null,
         roomNumber: null,
         dormitoryName: null,
+        logoUrl: null,
         loading: true,
     });
 
@@ -33,25 +35,26 @@ export function useDormitory(): DormitoryInfo {
             enrollmentId: null,
             roomNumber: null,
             dormitoryName: null,
+            logoUrl: null,
             loading: false,
         });
         return;
     }
 
-    // ✅ Advisers/admins have dormitoryId directly in metadata — no DB query needed
-    if (user.dormitoryId && user.role !== "dormer") {
+    if (user.dormitoryId) {
         setInfo({
             dormitoryId: user.dormitoryId,
             enrollmentId: null,
             roomNumber: null,
             dormitoryName: null,
+            logoUrl: null,
             loading: true, // still loading name
         });
 
         // just fetch the name
         supabaseClient
             .from("dormitories")
-            .select("name")
+            .select("name, logo_url")
             .eq("id", user.dormitoryId)
             .single()
             .then(({ data }) => {
@@ -59,6 +62,7 @@ export function useDormitory(): DormitoryInfo {
                     setInfo(prev => ({
                         ...prev,
                         dormitoryName: data?.name ?? null,
+                        logoUrl: data?.logo_url ?? null,
                         loading: false,
                     }));
                 }
@@ -74,7 +78,7 @@ export function useDormitory(): DormitoryInfo {
         try {
             const { data, error } = await supabaseClient
                 .from("dormitory_enrollment")
-                .select("id, dormitory_id, room_number, dormitory_id(name)")
+                .select("id, dormitory_id, room_number, dormitory_id(name, logo_url)")
                 .eq("dormer_id", user.id)
                 .limit(1)
                 .single();
@@ -87,6 +91,7 @@ export function useDormitory(): DormitoryInfo {
                 enrollmentId: data.id,
                 roomNumber: data.room_number,
                 dormitoryName: data.dormitory_id?.name ?? null,
+                logoUrl: data.dormitory_id?.logo_url ?? null,
                 loading: false,
             });
         } catch (e) {
@@ -97,6 +102,7 @@ export function useDormitory(): DormitoryInfo {
                     enrollmentId: null,
                     roomNumber: null,
                     dormitoryName: null,
+                    logoUrl: null,
                     loading: false,
                 });
             }

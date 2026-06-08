@@ -42,8 +42,10 @@ import { CreateDormerInput, ImportedBill } from "../../data";
 import ImportBillsModal from "./import-bills-modal";
 import { RegularCharge } from "@/features/regular-charges/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useRooms } from "@/lib/hooks/useRooms";
 import { BILLING_PERIODS } from "@/lib/constants/billing-periods";
 import { DataPagination } from "@/components/ui/shared";
+import { toast } from "sonner";
 
 export function AdminDormersPage() {
   // ── 1. data ───────────────────────────────────────────────────────────────
@@ -66,12 +68,13 @@ export function AdminDormersPage() {
   } = useDormers();
 
   // ── 2. actions ────────────────────────────────────────────────────────────
-  const { saveDormer, updateDormer, deleteDormer, importDormers } = useDormerActions(
+  const { saveDormer, updateDormer, deleteDormer, importDormers, enrollExisting } = useDormerActions(
     dormers,
     bills,
     setDormers,
     setBills
   );
+  const { roomNumbers } = useRooms();
   const { payables } = useRegularCharges();
   const { generateBill, generateBillsBulk, deleteBill, importBills } = useBills();
   const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
@@ -79,20 +82,25 @@ export function AdminDormersPage() {
   // ── 3. modal state ────────────────────────────────────────────────────────
   const { modal, selectedDormer, openModal, closeModal } = useModal();
 
-  // ── 4. ui state (confirm-dialog level only) ───────────────────────────────
-  // `pendingBill` holds bill data staged for creation/overwrite confirmation.
-  // This is intentionally separate from useModal's selectedBill, which tracks
-  // an already-existing bill for payment recording.
-  const [pendingBill, setPendingBill] = useState<Bill | null>(null);
-  const [bulkDuplicates, setBulkDuplicates] = useState<any[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showBulkConfirmDialog, setShowBulkConfirmDialog] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [isBillSubmitting, setIsBillSubmitting] = useState(false);
   const [isImportingBills, setIsImportingBills] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [reenrollProfile, setReenrollProfile] = useState<any>(null);
+  const [reenrollInput, setReenrollInput] = useState<any>(null);
+  const [showReenrollDialog, setShowReenrollDialog] = useState(false);
 
   // ── 5. handlers ───────────────────────────────────────────────────────────
+  const handleSaveDormer = async (input: CreateDormerInput) => {
+    const res = await saveDormer(input);
+    if (res && res.status === "exists_previous") {
+      setReenrollProfile(res.profile);
+      setReenrollInput(res.input);
+      setShowReenrollDialog(true);
+    }
+    return res;
+  };
   const handleResetFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
@@ -109,21 +117,21 @@ export function AdminDormersPage() {
       setDormers((prev) =>
         prev.map((d) => {
           if (d.id !== billData.dormer_id) return d;
-          const exists = d.bills.some((b) => b.id === bill.id);
+          const exists = d.bills?.some((b) => b?.id === bill?.id);
           return {
             ...d,
             bills: exists
-              ? d.bills.map((b) => (b.id === bill.id ? bill : b))
-              : [...d.bills, bill],
+              ? d.bills?.map((b) => (b?.id === bill?.id ? bill : b))
+              : [...(d.bills || []), bill],
           };
         })
       );
 
       setBills((prev: Bill[]) => {
-        const exists = prev.some((b) => b.id === bill.id);
+        const exists = prev?.some((b) => b?.id === bill?.id);
         return exists
-          ? prev.map((b) => (b.id === bill.id ? bill : b))
-          : [...prev, bill];
+          ? prev.map((b) => (b?.id === bill?.id ? bill : b))
+          : [...(prev || []), bill];
       });
 
       closeModal();
@@ -137,18 +145,24 @@ export function AdminDormersPage() {
   const handleGenerateBulkBills = async (billsData: any[]) => {
     setIsBillSubmitting(true);
     try {
-      const newBills = await generateBillsBulk(billsData, selectedDormer!);
+      if(!selectedDormer) {
+        toast.error("No dormer selected")
+        return;
+      }
+      const newBills = await generateBillsBulk(billsData, selectedDormer);
       if (!newBills) return;
-      const bills = newBills as Bill[];
+      const bills = (newBills as Bill[]).filter(Boolean);
+      if (bills.length === 0) return;
 
       setDormers((prev) =>
         prev.map((d) => {
-          const dormerBills = bills.filter((b) => b.dormer_id === d.id);
+          if (d.id !== selectedDormer?.id) return d;
+          const dormerBills = bills.filter((b) => b?.dormer_id === d?.id);
           if (dormerBills.length === 0) return d;
 
-          const updatedBills = [...d.bills];
+          const updatedBills = [...(d.bills || [])];
           for (const bill of dormerBills) {
-            const idx = updatedBills.findIndex((b) => b.id === bill.id);
+            const idx = updatedBills.findIndex((b) => b?.id === bill?.id);
             if (idx !== -1) updatedBills[idx] = bill;
             else updatedBills.push(bill);
           }
@@ -157,9 +171,9 @@ export function AdminDormersPage() {
       );
 
       setBills((prev: Bill[]) => {
-        const updated = [...prev];
+        const updated = [...(prev || [])];
         for (const bill of bills) {
-          const idx = updated.findIndex((b) => b.id === bill.id);
+          const idx = updated.findIndex((b) => b?.id === bill?.id);
           if (idx !== -1) updated[idx] = bill;
           else updated.push(bill);
         }
@@ -243,26 +257,10 @@ export function AdminDormersPage() {
     );
   };
 
-  const handleConfirmCreateBill = async (billData: any) => {
-    setIsBillSubmitting(true);
-    await generateBill(billData, selectedDormer!);
-    setIsBillSubmitting(false);
-    setShowConfirmDialog(false);
-  };
-
-  const handleConfirmBulkOverwrite = async () => {
-    setIsImportingBills(true);
-    const billsData = bulkDuplicates.map((d) => d.bill);
-    await generateBillsBulk(billsData, selectedDormer!);
-    setIsImportingBills(false);
-    setShowBulkConfirmDialog(false);
-  };
-
   const handleImportBills = async (bills: ImportedBill[], payable: RegularCharge | null) => {
     setIsImportingBills(true);
     const result = await importBills(bills, payable!);
     setIsImportingBills(false);
-    setShowBulkConfirmDialog(false);
     
     if (result.createdBills && result.createdBills.length > 0) {
       const newBills = result.createdBills;
@@ -318,6 +316,7 @@ export function AdminDormersPage() {
         onStatusChange={setStatusFilter}
         count={filteredDormers.length}
         resetFilter={handleResetFilters}
+        roomNumbers={roomNumbers}
       />
 
       <DormersTable
@@ -345,7 +344,8 @@ export function AdminDormersPage() {
       <AddDormerModal
         isOpen={modal === "add"}
         onClose={closeModal}
-        onSave={saveDormer}
+        onSave={handleSaveDormer}
+        roomNumbers={roomNumbers}
       />
 
       <EditDormerModal
@@ -353,6 +353,7 @@ export function AdminDormersPage() {
         onClose={closeModal}
         onUpdate={updateDormer}
         dormerData={selectedDormer}
+        roomNumbers={roomNumbers}
       />
 
       <DeleteDormerModal
@@ -382,7 +383,6 @@ export function AdminDormersPage() {
         bills={bills}
         setShowConfirmDialog={setShowConfirmDialog}
         setShowErrorModal={setShowErrorModal}
-        setBillToCreate={setPendingBill}
       />
 
       <PaymentModal
@@ -411,30 +411,17 @@ export function AdminDormersPage() {
 
       {/* ── Confirm dialogs ── */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="bg-red-100 text-red-800">
-          <DialogTitle className={undefined}>Overwrite Existing Bill?</DialogTitle>
-          <DialogDescription className={undefined}>
-            A bill for this dormer and billing period already exists. Do you
-            want to overwrite it with the new data?
+        <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl rounded-lg p-6">
+          <DialogTitle className="text-xl font-bold text-red-600">Bill Already Exists</DialogTitle>
+          <DialogDescription className="text-gray-600 mt-2">
+            A bill already exists for this period with that payable.
           </DialogDescription>
-          <DialogFooter className={undefined}>
+          <DialogFooter className="mt-6 flex justify-end">
             <Button
-              variant="outline"
               onClick={() => setShowConfirmDialog(false)}
-              disabled={isBillSubmitting}
-              className={undefined}
-              size={undefined}
+              className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white"
             >
-              Cancel
-            </Button>
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => handleConfirmCreateBill(pendingBill)}
-              disabled={isBillSubmitting}
-              variant={undefined}
-              size={undefined}
-            >
-              {isBillSubmitting ? "Overwriting..." : "Overwrite Bill"}
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -460,68 +447,35 @@ export function AdminDormersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showBulkConfirmDialog} onOpenChange={setShowBulkConfirmDialog}>
-        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-hidden">
-          <DialogTitle className="text-red-600">
-            Confirm Overwrite of Existing Bills
+
+
+      <Dialog open={showReenrollDialog} onOpenChange={setShowReenrollDialog}>
+        <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl rounded-lg p-6">
+          <DialogTitle className="text-xl font-bold text-[#12372A]">
+            Enroll Existing Resident?
           </DialogTitle>
-          <DialogDescription className="mb-4">
-            The following bills already exist and will be overwritten with new
-            data. This action cannot be undone.
+          <DialogDescription className="text-gray-600 mt-2">
+            <strong>{reenrollProfile?.first_name} {reenrollProfile?.last_name}</strong> already has an account from a previous semester.
+            Do you want to enroll them in the current semester for <strong>Room {reenrollInput?.room_number}</strong>?
           </DialogDescription>
-          <div className="max-h-96 overflow-y-auto border rounded-md">
-            <Table className={undefined}>
-              <TableHeader className={undefined}>
-                <TableRow className={undefined}>
-                  <TableHead className="w-16">Row</TableHead>
-                  <TableHead className={undefined}>Name</TableHead>
-                  <TableHead className={undefined}>Email</TableHead>
-                  <TableHead className={undefined}>Billing Period</TableHead>
-                  <TableHead className={undefined}>Room</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody className={undefined}>
-                {bulkDuplicates.map(({ bill }) => (
-                  <TableRow
-                    key={`${bill.email}-${bill.billingPeriod}`}
-                    className={undefined}
-                  >
-                    <TableCell className="font-medium">{bill.rowNumber}</TableCell>
-                    <TableCell className={undefined}>
-                      {bill.firstName} {bill.lastName}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">
-                      {bill.email}
-                    </TableCell>
-                    <TableCell className={undefined}>
-                      {getBillingPeriodLabel(bill.billingPeriod)}
-                    </TableCell>
-                    <TableCell className={undefined}>
-                      {dormers.find((d) => d.id === bill.dormerId)?.room_number ?? "N/A"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-6 flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setShowBulkConfirmDialog(false)}
-              disabled={isImportingBills}
-              className={undefined}
-              size={undefined}
+              onClick={() => setShowReenrollDialog(false)}
             >
               Cancel
             </Button>
             <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={handleConfirmBulkOverwrite}
-              disabled={isImportingBills}
-              variant={undefined}
-              size={undefined}
+              className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white font-semibold"
+              onClick={async () => {
+                const ok = await enrollExisting(reenrollProfile.id, reenrollInput);
+                if (ok) {
+                  setShowReenrollDialog(false);
+                  closeModal();
+                }
+              }}
             >
-              {isImportingBills ? "Overwriting..." : "Overwrite Bills"}
+              Yes, Enroll
             </Button>
           </DialogFooter>
         </DialogContent>

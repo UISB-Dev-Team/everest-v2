@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { dormersData } from "@/features/dormers/data";
-import { finesData } from "@/features/fines/data";
+import { FineCategory, finesData } from "@/features/fines/data";
 import type { Dormer } from "@/features/dormers/data";
 import type {
   FineImpositionWithCategory,
@@ -11,7 +11,7 @@ import type {
 } from "@/features/fines/data";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
-import { MaboloRoomNumber, SampaguitaRoomNumber } from "@/lib/constants/room-numbers";
+import { useRooms } from "@/lib/hooks/useRooms";
 import {
   FINES_ADMIN_SORT_OPTIONS,
   FINES_STATUS_OPTIONS,
@@ -24,9 +24,11 @@ import {
  * status filters, paginates, and provides aggregate statistics.
  */
 export function useFinesAdminData() {
-  const { dormitoryId,  dormitoryName } = useDormitory();
+  const { dormitoryId } = useDormitory();
   const { selected } = useAcademicPeriod();
+  const { roomNumbers } = useRooms();
   const [dormers, setDormers] = useState<Dormer[]>([]);
+  const [fines, setFines] = useState<FineCategory[]>([])
   const [impositions, setImpositions] = useState<FineImpositionWithCategory[]>(
     []
   );
@@ -39,15 +41,12 @@ export function useFinesAdminData() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [rooms, setRooms] = useState<string[]>();
   const [roomFilter, setRoomFilter] = useState("All");
   const [sortValue, setSortValue] = useState<"name-asc" | "name-desc">("name-asc");
   const itemsPerPage = 6;
 
   useEffect(() => {
-    const rooms = dormitoryName?.toLowerCase().includes("mabolo") ? MaboloRoomNumber : SampaguitaRoomNumber;
-    setRooms(rooms);
-    if (!dormitoryId) {
+    if (!dormitoryId || !selected?.id) {
       setLoading(false);
       return;
     }
@@ -55,14 +54,16 @@ export function useFinesAdminData() {
     setLoading(true);
     Promise.all([
       dormersData.listForDormitory(dormitoryId, selected?.id!),
-      finesData.listImpositionsForDormitory(dormitoryId),
-      finesData.statisticsForDormitory(dormitoryId),
+      finesData.listImpositionsForDormitory(dormitoryId, selected?.id!),
+      finesData.statisticsForDormitory(dormitoryId, selected?.id!),
+      finesData.listCategoriesForDormitory(dormitoryId, selected?.id!),
     ])
-      .then(([d, i, s]) => {
+      .then(([d, i, s, f]) => {
         if (cancelled) return;
         setDormers(d);
         setImpositions(i);
         setStatistics(s);
+        setFines(f);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -71,7 +72,7 @@ export function useFinesAdminData() {
       cancelled = true;
     };
 
-  }, [dormitoryId, selected?.id, dormitoryName]);
+  }, [dormitoryId, selected?.id]);
 
   const filteredDormers = useMemo(() => {
     const filtered = dormers.filter((dormer) => {
@@ -121,17 +122,18 @@ export function useFinesAdminData() {
   }, [searchTerm, statusFilter, roomFilter, sortValue]);
 
   const roomOptions = useMemo(() => {
-    return buildRoomOptions(rooms || []);
-  }, [rooms]);
+    return buildRoomOptions(roomNumbers);
+  }, [roomNumbers]);
 
   return {
     dormers,
+    fines,
     impositions,
     statistics,
     loading,
     paginatedDormers,
     filteredDormers,
-    rooms,
+    rooms: roomNumbers,
     totalPages,
     currentPage,
     setCurrentPage,

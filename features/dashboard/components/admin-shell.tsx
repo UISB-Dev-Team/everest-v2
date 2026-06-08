@@ -11,16 +11,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RoleShell, type NavItem } from "./role-shell";
-import { PeriodSelector } from "@/features/academic-periods/components/academic-periods-page";
+import { PeriodSelector } from "@/features/academic-periods/components/period-selector";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 
 const NAV_ITEMS: NavItem[] = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
-  { title: "Dormers", url: "/admin/dormers", icon: Users },
-  { title: "Payments", url: "/admin/payments", icon: CircleDollarSign },
-  { title: "Expenses", url: "/admin/expenses", icon: Receipt },
-  { title: "Events", url: "/admin/events", icon: CalendarCheck },
-  { title: "Fines", url: "/admin/fines", icon: WalletCards },
+  { title: "Dormers",   url: "/admin/dormers",   icon: Users },
+  { title: "Payments",  url: "/admin/payments",  icon: CircleDollarSign },
+  { title: "Expenses",  url: "/admin/expenses",  icon: Receipt },
+  { title: "Events",    url: "/admin/events",    icon: CalendarCheck },
+  { title: "Fines",     url: "/admin/fines",     icon: WalletCards },
   { title: "Clearance", url: "/admin/clearance", icon: ShieldCheck },
 ];
 
@@ -31,9 +31,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const dormitory = useDormitory();
   const { user } = useAuth();
 
-  const navItems = RESTRICTED_ROLES.includes(user?.role ?? "") 
+  const navItems = RESTRICTED_ROLES.includes(user?.role ?? "")
     ? NAV_ITEMS.filter((item) => RESTRICTED_URLS.includes(item.url))
-    : NAV_ITEMS
+    : NAV_ITEMS;
 
   const initials = user?.fullName
     ? user.fullName
@@ -54,8 +54,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       userPrimaryLine={user?.fullName ?? null}
       userSecondaryLine={user?.email ?? null}
       variant="dorm"
+      // PeriodSelector now lives in the sticky subheader strip,
+      // not inside the scrollable content area
+      subHeader={<PeriodSelector />}
+      dorm_logo={dormitory?.logoUrl ?? null}
     >
-      <PeriodSelector />
       {children}
     </RoleShell>
   );

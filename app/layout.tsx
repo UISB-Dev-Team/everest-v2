@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
-import { RoleSwitcher } from "@/features/auth/components/role-switcher";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,13 +28,18 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      {/*
+        Body must NOT be flex-col here.
+        The AdminShell / RoleShell owns the full-screen layout via
+        `h-screen w-screen overflow-hidden` on its root div.
+        Adding flex-col + min-h-full on body fights that and causes scroll bleed.
+      */}
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-background text-foreground"
+        className="h-full bg-background text-foreground"
       >
         {children}
         <Toaster richColors position="top-right" />
-        <RoleSwitcher />
       </body>
     </html>
   );

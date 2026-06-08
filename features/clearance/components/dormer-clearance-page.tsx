@@ -11,12 +11,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useCurrentAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useClearanceStatus } from "@/features/clearance/hooks/useClearance";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function DormerClearancePage() {
   const { user } = useAuth();
-  const { period, loading: periodLoading } = useCurrentAcademicPeriod();
+  const { selected: period, loading: periodLoading } = useAcademicPeriod();
   const { status, loading: statusLoading } = useClearanceStatus(
     user?.id ?? null,
     period?.id ?? null

@@ -94,7 +94,7 @@ export function AdminClearancePage() {
         }
       />
 
-      <Card className="border border-gray-200 shadow-md bg-white gap-0">
+      <Card className="border border-gray-200 shadow-sm bg-white gap-0">
         <CardHeader className="border-b border-gray-100 md:pb-0">
           <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-[#12372A]">
             Dormer Clearance
@@ -117,20 +117,20 @@ export function AdminClearancePage() {
               <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#f0f0f0] hover:bg-[#f0f0f0]">
-                      <TableHead className="font-bold text-[#12372A] text-xs sm:text-sm">
+                    <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                      <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                         Dormer
                       </TableHead>
-                      <TableHead className="font-bold text-[#12372A] text-xs sm:text-sm">
+                      <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                         Unpaid Bills
                       </TableHead>
-                      <TableHead className="font-bold text-[#12372A] text-xs sm:text-sm">
+                      <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                         Unpaid Fines
                       </TableHead>
-                      <TableHead className="font-bold text-[#12372A] text-xs sm:text-sm">
+                      <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                         Outstanding
                       </TableHead>
-                      <TableHead className="font-bold text-[#12372A] text-xs sm:text-sm">
+                      <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                         Status
                       </TableHead>
                     </TableRow>
@@ -139,7 +139,7 @@ export function AdminClearancePage() {
                     {paginatedList.map((c) => (
                       <TableRow
                         key={c.dormerId}
-                        className="hover:bg-[#f0f0f0] transition-colors"
+                        className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                       >
                         <TableCell className="font-semibold text-[#333333] text-xs sm:text-sm">
                           {c.dormerFullName}

@@ -24,7 +24,10 @@ interface RoleShellProps {
   userPrimaryLine?: string | null;
   userSecondaryLine?: string | null;
   variant?: "dorm" | "super-admin";
+  /** Rendered in a sticky strip between the sidebar header and the scrollable content */
+  subHeader?: ReactNode;
   children: ReactNode;
+  dorm_logo?: string | null;
 }
 
 export function RoleShell({
@@ -35,7 +38,9 @@ export function RoleShell({
   userPrimaryLine,
   userSecondaryLine,
   variant = "dorm",
+  subHeader,
   children,
+  dorm_logo
 }: RoleShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -58,14 +63,11 @@ export function RoleShell({
     : "bg-[#12372A]";
 
   return (
-    <div className="flex min-h-screen bg-[#f0f0f0]">
-      {/* Desktop sidebar */}
-      <aside
-        className={cn(
-          "hidden md:flex w-64 flex-shrink-0 flex-col",
-          sidebarBase
-        )}
-      >
+    // Full-screen, no overflow — only <main> scrolls
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f0f0f0]">
+
+      {/* ── Desktop sidebar ──────────────────────────────────────────────── */}
+      <aside className={cn("hidden md:flex w-64 flex-shrink-0 flex-col", sidebarBase)}>
         <SidebarContent
           variant={variant}
           navItems={navItems}
@@ -77,15 +79,17 @@ export function RoleShell({
           userSecondaryLine={userSecondaryLine}
           onNavigate={() => {}}
           onSignOut={handleSignOut}
+          dorm_logo={dorm_logo}
         />
       </aside>
 
-      {/* Main column */}
-      <div className="flex flex-1 flex-col">
-        {/* Mobile header */}
+      {/* ── Main column ──────────────────────────────────────────────────── */}
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
+
+        {/* Mobile topbar — sticky, never scrolls */}
         <header
           className={cn(
-            "md:hidden sticky top-0 z-30 flex h-[74px] items-center justify-between px-4 shadow-md",
+            "md:hidden flex-shrink-0 sticky top-0 z-30 flex h-[74px] items-center justify-between px-4 shadow-md",
             headerBase
           )}
         >
@@ -98,13 +102,13 @@ export function RoleShell({
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-3 absolute left-1/2 -translate-x-1/2">
-            <Image
-              src="/profile-old.webp"
-              alt="DormPay logo"
-              width={32}
-              height={32}
-              className="rounded-lg"
-            />
+           <img
+            src={dorm_logo ? dorm_logo : "/profile-old.webp"}
+            alt="DormPay logo"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
             <h1 className="text-xl font-bold text-white tracking-tight">
               DormPay
             </h1>
@@ -112,10 +116,21 @@ export function RoleShell({
           <div className="w-10" />
         </header>
 
-        <main className="flex-1 overflow-auto">{children}</main>
+        {/* Sticky subheader — rendered only when provided */}
+        {subHeader && (
+          <div className="flex-shrink-0 border-b border-black/10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 px-4 py-2.5">
+            {subHeader}
+          </div>
+        )}
+
+        {/* Scrollable page content */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+
       </div>
 
-      {/* Mobile drawer */}
+      {/* ── Mobile drawer ────────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -168,6 +183,8 @@ export function RoleShell({
   );
 }
 
+// ── SidebarContent — unchanged from original ─────────────────────────────────
+
 interface SidebarContentProps {
   variant: "dorm" | "super-admin";
   navItems: NavItem[];
@@ -179,6 +196,7 @@ interface SidebarContentProps {
   userSecondaryLine?: string | null;
   onNavigate: () => void;
   onSignOut: () => void;
+  dorm_logo?: string | null
 }
 
 function SidebarContent({
@@ -192,18 +210,20 @@ function SidebarContent({
   userSecondaryLine,
   onNavigate,
   onSignOut,
+  dorm_logo,
 }: SidebarContentProps) {
   const isSuperAdmin = variant === "super-admin";
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-6 py-6 flex-shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl">
-          <Image
-            src="/profile-old.webp"
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden">
+          <img
+            src={dorm_logo ? dorm_logo : "/profile-old.webp"}
             alt="DormPay logo"
             width={32}
             height={32}
+            className="rounded-lg"
           />
         </div>
         <div className="flex flex-col">
@@ -226,7 +246,7 @@ function SidebarContent({
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {navItems.map(({ title, url, icon: Icon }) => {
-            const active = pathname === url;
+            const active = pathname === url || pathname.startsWith(url + "/");
             return (
               <li key={url}>
                 <Link
@@ -255,12 +275,7 @@ function SidebarContent({
       <div className="flex-shrink-0 border-t border-white/10 p-4">
         {(userPrimaryLine || userSecondaryLine) && (
           <div className="mb-3 flex items-start gap-2 pb-2">
-            <Avatar
-              className={cn(
-                "h-9 w-9",
-                isSuperAdmin && "border border-white/20"
-              )}
-            >
+            <Avatar className={cn("h-9 w-9", isSuperAdmin && "border border-white/20")}>
               <AvatarFallback
                 className={cn(
                   "text-sm font-medium",
@@ -279,12 +294,7 @@ function SidebarContent({
                 </p>
               )}
               {userSecondaryLine && (
-                <p
-                  className={cn(
-                    "truncate text-xs",
-                    isSuperAdmin ? "text-white/50" : "text-gray-100"
-                  )}
-                >
+                <p className={cn("truncate text-xs", isSuperAdmin ? "text-white/50" : "text-gray-100")}>
                   {userSecondaryLine}
                 </p>
               )}

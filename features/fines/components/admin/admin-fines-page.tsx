@@ -9,16 +9,27 @@ import FinesHeader from "@/features/fines/components/admin/fines-header";
 import FinesSummary from "@/features/fines/components/admin/fines-summary";
 import FinesTable from "@/features/fines/components/admin/fines-table";
 import { FinesPageSkeleton } from "@/features/fines/components/admin/fines-page-skeleton";
-import FinePaymentModal from "@/features/fines/components/admin/fine-payment-modal";
 import RoomFineModal from "@/features/fines/components/admin/room-fine-modal";
 import { PlaceholderModal } from "@/features/fines/components/admin/placeholder-modal";
-import { DataPagination, FilterOption, FiltersBar } from "@/components/ui/shared";
+import FinesPaymentModal from "@/features/fines/components/admin/fines-payment-modal";
+import { DataPagination, FiltersBar } from "@/components/ui/shared";
+import GenerateFinesModal from "./generate-fines-modal";
+import ImportResultModal from "./import-result-modal";
+import AttendanceChecklistModal from "./attendance-checklist-modal";
+import { useAttendanceChecklist } from "@/features/fines/hooks/useAttendanceChecklist";
+import { CreateFineImpositionInput, FineCategory } from "../../data";
+import { toast } from "sonner";
+import { dormersData } from "@/features/dormers/data";
+import { sendEmail } from "@/lib/email";
+import { roomFineImposedTemplate } from "@/emails/fines/roomFineImposed";
+import { newFineImposedTemplate } from "@/emails/fines/newFineImposed";
 
 export function AdminFinesPage() {
   const { user } = useAuth();
   const { selected: period } = useAcademicPeriod();
   const {
     dormers,
+    fines,
     statistics,
     loading,
     paginatedDormers,
@@ -43,16 +54,38 @@ export function AdminFinesPage() {
 
   const {
     imposeRoomFine,
+    imposeFine,
     recordFinePayment,
     sendUnpaidReminder,
     isSubmitting,
+    handleExport,
   } = useFinesActions();
 
-  const { modal, openModal, closeModal } = useFinesModal();
+  const { modal, openModal, closeModal, selectedDormer, selectedFineImposition } =
+    useFinesModal();
+
+  // ── Attendance checklist hook ──────────────────────────────────────────────
+  const {
+    handleAttendanceSubmit,
+    isSubmitting: isAttendanceSubmitting,
+    result: attendanceResult,
+    clearResult,
+  } = useAttendanceChecklist({
+    imposeFine,
+    academicPeriodId: period?.id ?? "",
+    dormitoryId: user?.dormitoryId ?? "",
+    dormers,
+    payableFines: fines,
+  });
 
   if (loading) return <FinesPageSkeleton />;
 
-  const hasFilters = searchTerm !== "" || statusFilter !== "All" || roomFilter !== "All" || sortValue !== "name-asc";
+  const hasFilters =
+    searchTerm !== "" ||
+    statusFilter !== "All" ||
+    roomFilter !== "All" ||
+    sortValue !== "name-asc";
+
   const resetFilters = () => {
     setSearchTerm("");
     setStatusFilter("All");
@@ -60,12 +93,73 @@ export function AdminFinesPage() {
     setSortValue("name-asc");
   };
 
+  const handleGenerateFine = async (input: CreateFineImpositionInput) => {
+    await imposeFine(input);
+    const dormer = await dormersData.getById(input.dormer_id);
+    if (!dormer) return;
+    const finesPayload = [
+      {
+        finesRemarks: input.remarks || "No remarks",
+        totalAmountDue: input.amount,
+        dateImposed: new Date(input.date_imposed),
+      },
+    ];
+    await sendEmail({
+      to: dormer.email,
+      subject: "Fine Imposed",
+      html: newFineImposedTemplate(dormer.first_name, finesPayload),
+    });
+    toast.success("Fine generated successfully");
+    closeModal();
+  };
+
+  const handleRoomFines = async (
+    roomNumber: string,
+    amount: number,
+    reason: string,
+    dateImposed: Date,
+    fineCategorySelected: FineCategory
+  ) => {
+    if (!period || !user?.dormitoryId || !fineCategorySelected) return;
+    const targets = await dormersData.getByRoom(roomNumber, user.dormitoryId, period.id);
+    if (!targets || targets.length === 0) {
+      console.error("No dormer found for room number:", roomNumber);
+      return;
+    }
+    await imposeRoomFine(
+      targets.map((d) => ({
+        fine_id: fineCategorySelected.id,
+        academic_period_id: period.id,
+        dormer_id: d.id,
+        dormitory_id: user.dormitoryId!,
+        amount,
+        date_imposed: dateImposed.toISOString().split("T")[0],
+        remarks: reason,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        dormitory_enrollment_id: d.dormer_enrollment_id,
+        notes: fineCategorySelected.name,
+      }))
+    );
+
+    for (const dormer of targets) {
+      await sendEmail({
+        to: dormer.email,
+        subject: "New Room Fine Imposed",
+        html: roomFineImposedTemplate(roomNumber, amount, reason, dateImposed, targets.length),
+      });
+    }
+    toast.success("Room fine imposed successfully");
+    closeModal();
+  };
+
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
       <FinesHeader
         onImportAttendance={() => openModal("import")}
-        onExportCSV={() => openModal("export")}
+        onExportCSV={() => handleExport()}
         onSendEmailReminders={() => sendUnpaidReminder()}
+        isSubmitting={isSubmitting}
         onRoomFine={() => openModal("roomFine")}
       />
 
@@ -106,9 +200,7 @@ export function AdminFinesPage() {
         onReset={resetFilters}
         resultCount={filteredDormers.length}
         resultLabel="dormer"
-        activeFilterBadges={
-          statusFilter !== "All" ? [{ label: statusFilter }] : []
-        }
+        activeFilterBadges={statusFilter !== "All" ? [{ label: statusFilter }] : []}
       />
 
       <FinesTable
@@ -128,61 +220,57 @@ export function AdminFinesPage() {
         itemLabel="dormer"
       />
 
-      {/* Wired modals */}
+      {/* ── Attendance checklist modal (replaces PlaceholderModal for "import") */}
+      <AttendanceChecklistModal
+        isOpen={modal === "import"}
+        onClose={closeModal}
+        dormers={dormers}
+        payableFines={fines}
+        roomNumbers={rooms}
+        onSubmit={handleAttendanceSubmit}
+        isSubmitting={isAttendanceSubmitting}
+        // Scope cache per dormitory so concurrent SA sessions don't collide
+        cacheKey={user?.dormitoryId ?? "default"}
+      />
+
+      {/* Result modal — reuse your existing ImportResultModal */}
+      {attendanceResult && (
+        <ImportResultModal
+          isOpen={attendanceResult !== null}
+          onClose={clearResult}
+          successCount={attendanceResult.successCount}
+          errorCount={attendanceResult.errorCount}
+          errors={attendanceResult.errors}
+        />
+      )}
+
+      {/* ── Existing modals ──────────────────────────────────────────────── */}
       <RoomFineModal
         isOpen={modal === "roomFine"}
         onClose={closeModal}
         dormers={dormers}
+        fines={fines}
         isSubmitting={isSubmitting}
-        onApply={async (roomNumber, amount, reason, dateImposed) => {
-          if (!period || !user?.dormitoryId) return;
-          const targets = dormers.filter((d) => d.room_number === roomNumber);
-          await imposeRoomFine(
-            targets.map((d) => ({
-              fine_id: "fine-cat-1", // mock: use generic category — backend dev wires real category lookup
-              academic_period_id: period.id,
-              dormer_id: d.id,
-              dormitory_id: user.dormitoryId!,
-              amount,
-              date_imposed: dateImposed.toISOString().split("T")[0],
-              notes: reason,
-            }))
-          );
-        }}
-      />
-      <FinePaymentModal
-        isOpen={modal === "payment"}
-        onClose={closeModal}
-        fine={null}
-        onSavePayment={async (input) => {
-          await recordFinePayment(
-            input.imposition_id,
-            input.amount,
-            input.payment_method
-          );
-          closeModal();
-        }}
+        onApply={handleRoomFines}
       />
 
-      {/* Placeholders */}
-      <PlaceholderModal
+      <FinesPaymentModal
         isOpen={modal === "fines"}
         onClose={closeModal}
-        title="Manage Dormer Fines"
-        description="Multi-tab fine management (impose / pay / waive / history). Full FinesModal port pending."
+        dormer={selectedDormer}
+        recordFinePayment={recordFinePayment}
+        isSubmitting={isSubmitting}
       />
-      <PlaceholderModal
+
+      <GenerateFinesModal
         isOpen={modal === "generate"}
         onClose={closeModal}
-        title="Generate Fine"
-        description="Impose a fine on a single dormer. Full GenerateFinesModal port pending."
+        isSubmmitting={isSubmitting}
+        dormer={selectedDormer}
+        onGenerateFine={handleGenerateFine}
+        payables={fines}
       />
-      <PlaceholderModal
-        isOpen={modal === "import"}
-        onClose={closeModal}
-        title="Import Attendance CSV"
-        description="CSV import flow with preview, validation, and per-row error reporting. Full ImportAttendanceModal port pending."
-      />
+
       <PlaceholderModal
         isOpen={modal === "export"}
         onClose={closeModal}

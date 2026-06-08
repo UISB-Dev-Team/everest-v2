@@ -6,11 +6,13 @@ import type {
   Dormer,
   DormerProfile,
   DormerWithBills,
+  Room,
   UpdateDormerInput,
 } from "./types";
 import { sendEmail } from "@/lib/email";
 import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
 import { Profile } from "@/features/advisers/data";
+import { Bill } from "@/features/payments/data";
 
 
 // export interface DormersDataAccess {
@@ -96,25 +98,129 @@ export async function listForDormitory(
   return dormers.map((row) => ({
     ...(row.profiles as DormerProfile),
     dormitory_id: row.dormitory_id,
+    id: row.profiles.id,
+    dormer_enrollment_id: row.id,
     room_number: row.room_number,
   })) as Dormer[];
 }
 
-export async function getDormerByEmail(email: string) : Promise<Profile> {
+export async function listRoomsForDormitory(
+  dormitoryId: string
+) : Promise<Room[]> {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("dormitory_id", dormitoryId)
+
+  if(error || !data) {
+    console.error("Error fetching rooms:", error);
+    return [];
+  }
+
+  return data
+}
+
+export async function getDormerByEmail(email: string) : Promise<Profile | null> {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("email", email)
     .maybeSingle()
   
-  if(!data) {
-    throw new Error("No dormers found")
-  }
   if(error) {
-    throw new Error(error)
+    throw new Error(error.message)
   }
 
-  return data
+  return data ?? null
+}
+
+export async function getDormerBills(dormerId: string, academicPeriodId: string): Promise<Bill[]> {
+  const { data, error } = await supabase
+    .from("bills")
+    .select("*")
+    .eq("dormer_id", dormerId)
+    .eq("academic_period_id", academicPeriodId);
+
+  if (error) {
+    console.error("Error fetching bills:", error);
+    return [];
+  }
+
+  return data as Bill[];
+}
+
+/**
+ * Re-enrolls an existing profile (from a previous sem) into the given academic period.
+ * Does NOT create a new auth user or profile — only inserts a dormitory_enrollment row
+ * and upserts the dormitory role.
+ */
+export async function enrollExistingDormer(
+  profileId: string,
+  input: Pick<CreateDormerInput, "dormitory_id" | "room_number" | "role">,
+  academicPeriodId: string
+): Promise<void> {
+  const { dormitory_id, room_number, role } = input;
+
+  if (!dormitory_id) throw new Error("dormitory_id is required.");
+
+  // ── 1. Enrollment ──────────────────────────────────────────────────────────
+
+  const { data: existingEnrollment } = await supabase
+    .from("dormitory_enrollment")
+    .select("id")
+    .eq("dormer_id", profileId)
+    .eq("academic_period_id", academicPeriodId)
+    .maybeSingle();
+
+  if (existingEnrollment) {
+    // Already enrolled — reactivate and update room/dormitory
+    const { error } = await supabase
+      .from("dormitory_enrollment")
+      .update({
+        status: "active",
+        dormitory_id,
+        room_number: room_number ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingEnrollment.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("dormitory_enrollment")
+      .insert({
+        dormer_id: profileId,
+        dormitory_id,
+        academic_period_id: academicPeriodId,
+        room_number: room_number ?? null,
+        status: "active",
+      });
+    if (error) throw error;
+  }
+
+  // ── 2. Dormitory role — check-then-insert, no onConflict ──────────────────
+  // dormitory_roles has no unique constraint on (user_id, dormitory_id),
+  // so onConflict upsert throws 42P10. Check manually instead.
+
+  const { data: existingRole } = await supabase
+    .from("dormitory_roles")
+    .select("id")
+    .eq("user_id", profileId)
+    .eq("dormitory_id", dormitory_id)
+    .maybeSingle();
+
+  if (existingRole) {
+    // Role exists — update role type and reactivate
+    const { error } = await supabase
+      .from("dormitory_roles")
+      .update({ role, is_active: true })
+      .eq("id", existingRole.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("dormitory_roles")
+      .insert({ user_id: profileId, dormitory_id, role, is_active: true });
+    if (error) throw error;
+  }
 }
 
 export async function listForDormitoryWithBills(
@@ -209,6 +315,7 @@ export async function getById(id: string): Promise<Dormer | null> {
         ...(data.profiles as DormerProfile),
         dormitory_id: data.dormitory_id,
         room_number: data.room_number,
+        dormer_enrollment_id: data.id,
       } as Dormer;
     }
   }
@@ -229,14 +336,34 @@ export async function getById(id: string): Promise<Dormer | null> {
   } as Dormer;
 }
 
-export async function create(input: CreateDormerInput) {
+export async function getByRoom(roomNumber: string, dormitoryId: string, academicPeriodId: string): Promise<Dormer[]> {
+  const { data, error } = await supabase
+    .from("dormitory_enrollment")
+    .select("*, profiles(*)")
+    .eq("room_number", roomNumber)
+    .eq("dormitory_id", dormitoryId)
+    .eq("academic_period_id", academicPeriodId)
+
+  if (error || !data) {
+    console.error("Error fetching dormers:", error);
+    return [];
+  }
+
+  return data.map((row) => ({
+    ...(row.profiles as DormerProfile),
+    dormitory_id: row.dormitory_id,
+    room_number: row.room_number,
+    dormer_enrollment_id: row.id,
+  })) as Dormer[];
+}
+export async function create(input: CreateDormerInput, password: string) {
   const { dormitory_id, room_number, role, ...profileInput } = input;
 
   if (!dormitory_id) throw new Error("dormitory_id is required to create a dormer.");
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email: profileInput.email,
-    password: "DefaultPass123!",
+    password,
     email_confirm: true,
     user_metadata: {
       first_name: profileInput.first_name,
@@ -399,20 +526,20 @@ export async function remove(id: string): Promise<void> {
   }
 }
 
-export async function importMany(
-  inputs: CreateDormerInput[]
-): Promise<Dormer[]> {
-  const created: Dormer[] = [];
-  for (const input of inputs) {
-    created.push(await create(input));
-  }
-  return created;
-}
+// export async function importMany(
+//   inputs: CreateDormerInput[]
+// ): Promise<Dormer[]> {
+//   const created: Dormer[] = [];
+//   for (const input of inputs) {
+//     created.push(await create(input));
+//   }
+//   return created;
+// }
 
 export async function deleteBillData(id: string): Promise<void> {
   const { error } = await supabase
     .from("bills")
-    .update({ is_deleted: true })
+    .delete()
     .eq("id", id);
   if (error) throw error;
 }

@@ -56,7 +56,7 @@ export async function proxy(request: NextRequest) {
         return "/dashboard";
     };
 
-    if (!user && path !== "/login") {
+    if (!user && !["/login", "/forgot-password", "/update-password", "/auth/callback"].includes(path)) {
         return redirect("/login");
     }
 

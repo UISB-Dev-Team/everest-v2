@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   CreateFineCategoryInput,
   CreateFineImpositionInput,
@@ -13,20 +13,21 @@ import type {
 
 export interface FinesDataAccess {
   // Categories
-  listCategoriesForDormitory(dormitoryId: string): Promise<FineCategory[]>;
+  listCategoriesForDormitory(dormitoryId: string, academicPeriodId: string): Promise<FineCategory[]>;
   createCategory(input: CreateFineCategoryInput): Promise<FineCategory>;
   updateCategory(
     id: string,
     input: UpdateFineCategoryInput
-  ): Promise<FineCategory>;
+  ): Promise<FineCategory | null>;
   removeCategory(id: string): Promise<void>;
-
+  getUnpaidFines(dormitoryId: string, academicPeriodId: string): any;
   // Impositions
   listImpositionsForDormer(
-    dormerId: string
+    dormerId: string,
+    academicPeriodId: string
   ): Promise<FineImpositionWithCategory[]>;
   listImpositionsForDormitory(
-    dormitoryId: string
+    dormitoryId: string, academicPeriodId: string
   ): Promise<FineImpositionWithCategory[]>;
   imposeFine(input: CreateFineImpositionInput): Promise<FineImposition>;
   imposeRoomFine(
@@ -44,11 +45,11 @@ export interface FinesDataAccess {
   ): Promise<FineImposition>;
 
   // Aggregates
-  summaryForDormer(dormerId: string): Promise<FineSummary>;
-  statisticsForDormitory(dormitoryId: string): Promise<FineStatistics>;
+  summaryForDormer(dormerId: string, academicPeriodId: string): Promise<FineSummary>;
+  statisticsForDormitory(dormitoryId: string, academicPeriodId: string): Promise<FineStatistics>;
 }
 
-export const finesData: FinesDataAccess = mock;
+export const finesData: FinesDataAccess = supabase;
 
 export type {
   CreateFineCategoryInput,

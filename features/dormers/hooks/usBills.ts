@@ -1,7 +1,7 @@
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Bill, CreateBillInput } from "@/features/payments/data";
-import { createBill } from "@/features/payments/data/supabase";
+import { createBill, findExistingBill } from "@/features/payments/data/supabase";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { toast } from "sonner";
 import { deleteBillData, getDormerByEmail } from "../data/supabase";
@@ -11,6 +11,7 @@ import { newBillTemplate } from "@/emails/dormers/newBill";
 import { billPaymentInvoiceTemplate } from "@/emails/dormers/billPaymentInvoice";
 import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 import { RegularCharge } from "@/features/regular-charges/data";
+import { Trash } from "lucide-react";
 
 export function useBills() {
     const { selected: selectedPeriod } = useAcademicPeriod();
@@ -34,10 +35,11 @@ export function useBills() {
     };
 
     const generateBill = async (billData: any, dormer: DormerWithBills) => {
+        const toastId = toast.loading("Generating bill...");
         try {
             const mappedInput = mapBillInput(billData) as CreateBillInput;
             const result = await createBill(mappedInput);
-            toast.success("Bill generated successfully");
+            toast.loading("Bill generated! Sending email notification...", { id: toastId });
             
             await sendEmail({
                 to: dormer?.email!,
@@ -47,10 +49,11 @@ export function useBills() {
                     billData.billingPeriod,
                     billData.totalAmountDue
                 )
-            })
+            });
+            toast.success("Bill generated successfully and email sent!", { id: toastId });
             return result;
         } catch (error) {
-            toast.error("Failed to generate bill");
+            toast.error("Failed to generate bill", { id: toastId });
         }
     }
 
@@ -58,23 +61,32 @@ export function useBills() {
         try {
             const bills: Bill[] = [];
             for (const billData of billsData) {
-                const mappedInput = mapBillInput(billData) as CreateBillInput;
-                const result = await generateBill(mappedInput, dormer);
-                bills.push(result as Bill);
+                const result = await generateBill(billData, dormer);
+                if (result) {
+                    bills.push(result as Bill);
+                }
             }
              
-            return bills
+            return bills;
         } catch (error) {
             toast.error("Failed to generate bills");
         }
     }
 
     const deleteBill = async (billId: string) => {
+        const toastId = toast.loading("Deleting bill...");
         try {
             await deleteBillData(billId);
-            toast.success("Bill deleted successfully");
+            toast.success("Bill deleted successfully", {
+                id: toastId,
+                style: {
+                    backgroundColor: '#FEF2F2',
+                    color: '#991B1B',
+                    border: '1px solid #FCA5A5'
+                },
+            });
         } catch (error) {
-            toast.error("Failed to delete bill");
+            toast.error("Failed to delete bill", { id: toastId });
         }
     }
 
@@ -100,6 +112,13 @@ export function useBills() {
                 if (!dormer) {
                     errorCount++;
                     errors.push(`No dormer found for ${billData.email}`);
+                    continue;
+                }
+
+                const existingBillId = await findExistingBill(dormer.id, billData.billing_month, payable.id);
+                if (existingBillId) {
+                    errorCount++;
+                    errors.push(`Bill already exists for ${billData.email} in ${billData.billing_month}`);
                     continue;
                 }
 

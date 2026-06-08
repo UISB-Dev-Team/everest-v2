@@ -14,10 +14,13 @@ import type { Event, EventDormerData } from "@/features/events/data";
 import { EventPayable } from "../../data/types";
 import { Dormer } from "@/features/dormers/data";
 import { toast } from "sonner";
+import { formatAmount } from "@/lib/utils/format";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 export function AdminAllEventsPage() {
   const { payables, loading, refresh } = useAllEventPayables();
   const { recordEventPayment, waiveEventPayable } = useEventsActions();
+  const { ConfirmDialog, confirm } = useConfirmDialog();
 
   const [selectedDormer, setSelectedDormer] = useState<EventPayable | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -67,11 +70,26 @@ export function AdminAllEventsPage() {
       toast.error("Missing dormer or event");
       return;
     };
-    await waiveEventPayable(dormer.id, event.id)
-    await refresh();
-    toast.success(
-      `Waved event payable for ${dormer.first_name} ${dormer.last_name} for the specific event`,
-    )
+    
+    const ok = await confirm({
+      title: "Waive Event Payment",
+      description: `Are you sure you want to waive the event payment of ${formatAmount(event.amount_due)} for ${dormer.first_name} ${dormer.last_name}?`,
+      confirmText: "Waive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+
+    const toastId = toast.loading("Waiving payment...");
+    try {
+      await waiveEventPayable(dormer.id, event.id);
+      await refresh();
+      toast.success(
+        `Waved event payable for ${dormer.first_name} ${dormer.last_name}`,
+        { id: toastId }
+      );
+    } catch (e) {
+      toast.error("Failed to waive event payable.", { id: toastId });
+    }
   }
 
   return (
@@ -80,8 +98,7 @@ export function AdminAllEventsPage() {
         <Link href="/admin/events">
           <Button
             variant="outline"
-            size="sm"
-            className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all font-semibold shadow-sm"
           >
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to Events
           </Button>
@@ -123,6 +140,7 @@ export function AdminAllEventsPage() {
         event={selectedEvent}
         onSave={handleLogPayment}
       />
+      <ConfirmDialog />
     </div>
   );
 }

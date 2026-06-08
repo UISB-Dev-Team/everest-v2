@@ -6,8 +6,10 @@ import type {
   FineImpositionWithCategory,
   FineSummary,
 } from "@/features/fines/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function useDormerFines(dormerId: string | null) {
+  const { selected } = useAcademicPeriod()
   const [impositions, setImpositions] = useState<FineImpositionWithCategory[]>(
     []
   );
@@ -15,7 +17,7 @@ export function useDormerFines(dormerId: string | null) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!dormerId) {
+    if (!dormerId || !selected) {
       setImpositions([]);
       setSummary(null);
       setLoading(false);
@@ -24,8 +26,8 @@ export function useDormerFines(dormerId: string | null) {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      finesData.listImpositionsForDormer(dormerId),
-      finesData.summaryForDormer(dormerId),
+      finesData.listImpositionsForDormer(dormerId, selected?.id!),
+      finesData.summaryForDormer(dormerId, selected?.id!),
     ])
       .then(([imps, sum]) => {
         if (cancelled) return;
@@ -42,6 +44,7 @@ export function useDormerFines(dormerId: string | null) {
 }
 
 export function useDormitoryFines(dormitoryId: string | null) {
+  const { selected } = useAcademicPeriod() 
   const [impositions, setImpositions] = useState<FineImpositionWithCategory[]>(
     []
   );
@@ -56,7 +59,7 @@ export function useDormitoryFines(dormitoryId: string | null) {
     let cancelled = false;
     setLoading(true);
     finesData
-      .listImpositionsForDormitory(dormitoryId)
+      .listImpositionsForDormitory(dormitoryId, selected?.id!)
       .then((imps) => {
         if (!cancelled) setImpositions(imps);
       })

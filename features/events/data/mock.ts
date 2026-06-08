@@ -57,6 +57,7 @@ export async function create(input: CreateEventInput): Promise<Event> {
     created_by: input.created_by ?? null,
     created_at: input.created_at ?? now,
     updated_at: input.updated_at ?? now,
+    is_deleted: false
   };
   events = [...events, created];
   return created;
@@ -139,6 +140,7 @@ export async function recordEventPayment(
     notes: input.notes ?? null,
     recorded_by: input.recorded_by ?? null,
     created_at: input.created_at ?? new Date().toISOString(),
+    is_deleted: false
   };
   payments = [...payments, created];
   return created;

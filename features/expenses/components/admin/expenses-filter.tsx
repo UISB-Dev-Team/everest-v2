@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,8 +33,8 @@ export default function ExpensesFilter({
   return (
     <Card className="border-gray-200">
       <CardContent className="pt-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-1 w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -64,17 +64,18 @@ export default function ExpensesFilter({
           </div>
 
           {(searchTerm || categoryFilter !== "All") && (
-            <div className="w-full md:w-auto">
-              <Button
-                onClick={() => {
-                  setSearchTerm("");
-                  setCategoryFilter("All");
-                }}
-                className="w-full mt-2 md:mt-0 bg-[#2E7D32] hover:bg-[#27632a] text-white"
-              >
-                Reset Filters
-              </Button>
-            </div>
+            <Button
+              onClick={() => {
+                setSearchTerm("");
+                setCategoryFilter("All");
+              }}
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4 border-gray-300 hover:bg-gray-50 flex-shrink-0 w-full md:w-auto mt-2 md:mt-0"
+            >
+              <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reset</span>
+            </Button>
           )}
         </div>
         <div className="mt-4 text-sm text-gray-600">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit, Eye, FileText, Search, Trash, Users } from "lucide-react";
+import { Edit, Eye, FileText, Search, Trash, Users, MoreVertical } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import type { Dormer, DormerWithBills } from "@/features/dormers/data";
 
 interface DormersTableProps {
@@ -35,7 +41,7 @@ export default function DormersTable({
   onResetFilters,
 }: DormersTableProps) {
   return (
-    <Card className="border-2 border-gray-100 shadow-md bg-white">
+    <Card className="border border-gray-200 shadow-sm bg-white">
       <CardHeader className="border-b border-gray-100 pb-4">
         <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
           Dormer Records
@@ -81,20 +87,20 @@ export default function DormersTable({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-b border-gray-100">
-                  <TableHead className="font-semibold text-gray-700">
+                <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                  <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Resident
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
+                  <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Room
                   </TableHead>
-                  <TableHead className="hidden md:table-cell font-semibold text-gray-700">
+                  <TableHead className="hidden md:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Email
                   </TableHead>
-                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700">
+                  <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Phone
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-gray-700">
+                  <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -102,7 +108,7 @@ export default function DormersTable({
               <TableBody>
                 {dormers.map((dormer) => (
                   <TableRow
-                    className="hover:bg-gray-50 transition-colors border-b border-gray-50"
+                    className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                     key={dormer.id}
                   >
                     <TableCell className="font-medium w-[30%]">
@@ -140,41 +146,32 @@ export default function DormersTable({
                     <TableCell className="hidden lg:table-cell text-gray-600">
                       {dormer.phone ?? "—"}
                     </TableCell>
-                    <TableCell className="text-right w-[180px]">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onGenerateBill(dormer)}
-                          className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all font-medium"
-                        >
-                          <FileText className="h-4 w-4 mr-1" /> Bill
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onViewBills(dormer)}
-                          className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all font-medium"
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEdit(dormer)}
-                          className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all font-medium"
-                        >
-                          <Edit className="h-4 w-4 mr-1" /> Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onDelete(dormer)}
-                          className="border-red-500 text-red-600 hover:bg-red-500 hover:text-white transition-all font-medium"
-                        >
-                          <Trash className="h-4 w-4 mr-1" /> Delete
-                        </Button>
-                      </div>
+                    <TableCell className="text-right w-[80px]">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                            <MoreVertical className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1">
+                          <DropdownMenuItem onClick={() => onGenerateBill(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-[#2E7D32] hover:bg-gray-50 rounded cursor-pointer">
+                            <FileText className="h-4 w-4" />
+                            <span>Generate Bill</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onViewBills(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-gray-50 rounded cursor-pointer">
+                            <Eye className="h-4 w-4" />
+                            <span>View Bills</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onEdit(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded cursor-pointer">
+                            <Edit className="h-4 w-4" />
+                            <span>Edit Resident</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDelete(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                            <Trash className="h-4 w-4" />
+                            <span>Delete</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
