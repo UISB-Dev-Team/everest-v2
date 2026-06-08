@@ -21,52 +21,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  MaboloRoomNumber,
-  SampaguitaRoomNumber,
-} from "@/lib/constants/room-numbers";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useDormitory } from "@/features/dashboard/hooks/useDormitory";
 import type { CreateDormerInput } from "@/features/dormers/data";
+import { Role } from "../../data/types";
 
 interface AddDormerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (dormerData: CreateDormerInput) => Promise<void> | void;
+  onSave: (dormerData: CreateDormerInput) => Promise<any> | any;
+  roomNumbers: string[];
 }
 
 export default function AddDormerModal({
   isOpen,
   onClose,
   onSave,
+  roomNumbers,
 }: AddDormerModalProps) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
+  const [role, setRole] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
-  const { dormitory } = useDormitory(user?.dormitoryId ?? null);
-  const isMabolo = dormitory?.name?.toLowerCase().includes("mabolo");
-
+  
   const handleSave = async () => {
     if (!firstName || !lastName || !email || !roomNumber) {
       toast.info("Please fill in all required fields.");
       return;
     }
-    await onSave({
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      phone: phone || null,
-      room_number: roomNumber,
-      dormitory_id: user?.dormitoryId ?? null,
-      is_active: true,
-    });
-    handleClose();
+    setIsSaving(true);
+    try {
+      const res = await onSave({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: phone || null,
+        room_number: roomNumber,
+        dormitory_id: user?.dormitoryId ?? null,
+        is_active: true,
+        role: role.toLowerCase() as Role
+      });
+      // Only close if it was a successful save or if we are not asking to re-enroll
+      if (!res || res.status !== "exists_previous") {
+        handleClose();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
+    if (isSaving) return;
     setFirstName("");
     setLastName("");
     setEmail("");
@@ -103,6 +113,7 @@ export default function AddDormerModal({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 maxLength={50}
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -118,6 +129,7 @@ export default function AddDormerModal({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 maxLength={50}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -137,6 +149,7 @@ export default function AddDormerModal({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={100}
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -153,6 +166,7 @@ export default function AddDormerModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={20}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -160,32 +174,56 @@ export default function AddDormerModal({
           <Separator />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <Label htmlFor="roomNumber">Room Number</Label>
-            <Select value={roomNumber} onValueChange={setRoomNumber}>
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={setRole} disabled={isSaving}>
               <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select room" />
+                <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
-                {(isMabolo ? MaboloRoomNumber : SampaguitaRoomNumber).map(
-                  (room) => (
-                    <SelectItem key={room} value={room}>
-                      {room}
+                {['Adviser', "SA", "Treasurer", "Auditor", 'Dormer'].map(
+                  (role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
                     </SelectItem>
                   )
                 )}
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <Label htmlFor="roomNumber">Room Number</Label>
+            <Select value={roomNumber} onValueChange={setRoomNumber} disabled={isSaving}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select room" />
+              </SelectTrigger>
+              <SelectContent>
+                {roomNumbers.map((room) => (
+                  <SelectItem key={room} value={room}>
+                    {room}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
             onClick={handleSave}
+            disabled={isSaving}
           >
-            Save Dormer
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              "Save Dormer"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -40,37 +40,37 @@ export function DormerDashboardPage() {
   const totalDue = snapshot.totalBilled;
   const totalPayments = snapshot.totalPaid;
   const remainingBalance = snapshot.outstanding;
-  const totalExpenses = 0; // expenses feature deferred
+  const totalFines = snapshot.totalFines; // expenses feature deferred
   const bills = snapshot.recentBills;
 
   const statsCards: StatCard[] = [
     {
-      title: "Total Amount Due",
+      title: "Bill Amount Due",
       value: `${formatAmount(totalDue)}`,
-      description: "Amount to be Paid by Dormers",
+      description: "Total Bill Payable",
       icon: DollarSign,
       color: "text-[#12372A]",
     },
     {
-      title: "Total Amount Paid",
+      title: "Bill Amount Paid",
       value: `${formatAmount(totalPayments)}`,
-      description: "Overall Payments",
+      description: "Overall Bill Payments",
       icon: TrendingUp,
       color: "text-[#2E7D32]",
     },
     {
-      title: "Dorm Fund Balance",
-      value: `${formatAmount(remainingBalance)}`,
-      description: "Available Money",
-      icon: Wallet,
-      color: "text-red-600",
+      title: "Fines Total",
+      value: `${formatAmount(totalFines)}`,
+      description: "Overall Fines",
+      icon: DollarSign,
+      color: "text-[#C62828]",
     },
     {
-      title: "Total Dorm Expenses",
-      value: `${formatAmount(totalExpenses)}`,
-      description: "Overall Expenses",
-      icon: TrendingDown,
-      color: "text-[#2E7D32]",
+      title: "Remaining Payable",
+      value: `${formatAmount(remainingBalance)}`,
+      description: "Total Amount Due",
+      icon: Wallet,
+      color: "text-red-600",
     },
   ];
 
@@ -82,7 +82,7 @@ export function DormerDashboardPage() {
             Dashboard
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-[#12372A] mt-1 sm:mt-1.5">
-            View dormitory funds summary
+            View your overall financial summary
           </p>
         </div>
       </div>

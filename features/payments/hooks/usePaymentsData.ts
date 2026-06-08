@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { paymentsData } from "@/features/payments/data";
 import type { BillWithPayments } from "@/features/payments/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function usePaymentsData() {
-  const { user } = useAuth();
-  const dormitoryId = user?.dormitoryId ?? null;
-
+  const {dormitoryId} = useDormitory();
+  const { selected: selectedPeriod } = useAcademicPeriod();
+  const academicPeriodId = selectedPeriod?.id ?? null;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [billingPeriodFilter, setBillingPeriodFilter] = useState("All");
@@ -21,14 +23,14 @@ export function usePaymentsData() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!dormitoryId) {
+    if (!dormitoryId || !academicPeriodId) {
       setLoading(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     paymentsData
-      .listBillsForDormitoryWithPayments(dormitoryId)
+      .listBillsForDormitoryWithPayments(dormitoryId, academicPeriodId)
       .then((rows) => {
         if (!cancelled) setCombinedBillData(rows);
       })
@@ -38,7 +40,7 @@ export function usePaymentsData() {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId]);
+  }, [dormitoryId, academicPeriodId]);
 
   const uniqueBillingPeriods = useMemo(() => {
     if (!combinedBillData.length) return [];
@@ -102,6 +104,7 @@ export function usePaymentsData() {
     uniqueBillingPeriods,
     filteredBills,
     combinedBillData,
+    setCombinedBillData,
     summaryStats,
     searchTerm,
     setSearchTerm,

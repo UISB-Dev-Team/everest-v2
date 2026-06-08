@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,19 +18,50 @@ import { useEventsActions } from "@/features/events/hooks/useEventsActions";
 import EventDormersTable from "@/features/events/components/admin/event-dormers-table";
 import AddEventPaymentModal from "@/features/events/components/admin/add-event-payment-modal";
 import type { EventDormerData } from "@/features/events/data";
+import { toast } from "sonner";
+import { Dormer } from "@/features/dormers/data";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
 
 export function AdminEventDetailPage() {
   const params = useParams<{ id: string }>();
   const eventId = params?.id ?? null;
 
   const { event, dormers, loading, refresh } = useEventDetail(eventId);
-  const { recordEventPayment } = useEventsActions();
+  const { recordEventPayment, waiveEventPayable, remindAllDormers } = useEventsActions();
 
+  const { ConfirmDialog, confirm } = useConfirmDialog();
   const [selectedDormer, setSelectedDormer] = useState<EventDormerData | null>(
     null
   );
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
+  const handleWaivePayment = async (dormer: Dormer) => {
+    if (!event) return;
+    const ok = await confirm({
+      title: "Waive Event Payment",
+      description: `Are you sure you want to waive the event payment of ${formatAmount(event.amount_due)} for ${dormer.first_name} ${dormer.last_name}?`,
+      confirmText: "Waive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+
+    const toastId = toast.loading("Waiving payment...");
+    try {
+      await waiveEventPayable(dormer.id, eventId!);
+      toast.success(`${dormer?.first_name} ${dormer?.last_name}'s event payable has been waived.`, { id: toastId });
+      refresh();
+    } catch (e) {
+      toast.error("Failed to waive payment.", { id: toastId });
+    }
+  };
+  
+  const handleRemindDormers = async () => {
+    setIsSendingEmail(true);
+    await remindAllDormers(eventId!);
+    setIsSendingEmail(false);  
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -59,7 +90,7 @@ export function AdminEventDetailPage() {
   }
 
   const totalPaid = dormers.reduce((sum, d) => sum + d.amount_paid, 0);
-  const totalDue = event.amount_due * dormers.length;
+  const totalDue = event.amount_due * (dormers.length - dormers.filter((d) => d.payment_status === "Waived").length);
   const progressPercentage = totalDue > 0 ? (totalPaid / totalDue) * 100 : 0;
 
   return (
@@ -67,19 +98,37 @@ export function AdminEventDetailPage() {
       <Link href="/admin/events">
         <Button
           variant="outline"
-          size="sm"
-          className="border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all"
+          className="border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-all font-semibold shadow-sm"
         >
           <ArrowLeft className="h-4 w-4 mr-2" /> Back to Events
         </Button>
       </Link>
 
       <Card className="border-2 border-gray-100 shadow-md bg-white">
-        <CardHeader>
-          <CardTitle className="text-2xl sm:text-3xl font-bold text-[#12372A]">
-            {event.name}
-          </CardTitle>
-          <p className="text-sm text-gray-600">{event.description}</p>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl sm:text-3xl font-bold text-[#12372A]">
+              {event.name}
+            </CardTitle>
+            <p className="text-sm text-gray-600">{event.description}</p>
+          </div>
+          <Button
+            onClick={handleRemindDormers}
+            disabled={isSendingEmail}
+            className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white shadow-md hover:shadow-lg transition-all font-semibold w-full sm:w-auto"
+          >
+            {isSendingEmail ? (
+              <>
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Bell className="h-4 w-4 mr-2" />
+                Send Reminders
+              </>
+            )}
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -128,6 +177,10 @@ export function AdminEventDetailPage() {
           setSelectedDormer(d);
           setIsPaymentModalOpen(true);
         }}
+        onWaivePayment={(d) => {
+          setSelectedDormer(d);
+          handleWaivePayment(d);
+        }}
       />
 
       <AddEventPaymentModal
@@ -146,10 +199,12 @@ export function AdminEventDetailPage() {
             payment_date: input.payment_date,
             notes: input.notes,
             status: "Paid",
+            is_deleted: false
           });
           await refresh();
         }}
       />
+      <ConfirmDialog />
     </div>
   );
 }

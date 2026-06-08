@@ -7,12 +7,15 @@ import type {
   BillWithDormer,
   PaymentSummary,
 } from "@/features/payments/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function useDormerPayments(dormerId: string | null) {
   const [bills, setBills] = useState<Bill[]>([]);
   const [summary, setSummary] = useState<PaymentSummary | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const { selected: academicPeriod } = useAcademicPeriod();
+  const { dormitoryId } = useDormitory()
   useEffect(() => {
     if (!dormerId) {
       setBills([]);
@@ -23,8 +26,8 @@ export function useDormerPayments(dormerId: string | null) {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      paymentsData.listBillsForDormer(dormerId),
-      paymentsData.summaryForDormer(dormerId),
+      paymentsData.listBillsForDormer(dormerId, academicPeriod?.id ?? ""),
+      paymentsData.summaryForDormer(dormerId, academicPeriod?.id ?? ""),
     ])
       .then(([b, s]) => {
         if (cancelled) return;
@@ -35,14 +38,16 @@ export function useDormerPayments(dormerId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [dormerId]);
+  }, [dormerId, academicPeriod]);
 
   return { bills, summary, loading };
 }
 
-export function useDormitoryBills(dormitoryId: string | null) {
+export function useDormitoryBills() {
   const [bills, setBills] = useState<BillWithDormer[]>([]);
   const [loading, setLoading] = useState(true);
+  const { selected: academicPeriod } = useAcademicPeriod();
+  const { dormitoryId } = useDormitory()
 
   useEffect(() => {
     if (!dormitoryId) {
@@ -53,7 +58,7 @@ export function useDormitoryBills(dormitoryId: string | null) {
     let cancelled = false;
     setLoading(true);
     paymentsData
-      .listBillsForDormitory(dormitoryId)
+      .listBillsForDormitory(dormitoryId, academicPeriod?.id!)
       .then((b) => {
         if (!cancelled) setBills(b);
       })
@@ -61,7 +66,7 @@ export function useDormitoryBills(dormitoryId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId]);
+  }, [dormitoryId, academicPeriod]);
 
   return { bills, loading };
 }

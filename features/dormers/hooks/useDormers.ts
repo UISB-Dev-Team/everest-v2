@@ -8,16 +8,19 @@ import { regularChargesData } from "@/features/regular-charges/data";
 import type { Dormer, DormerWithBills } from "@/features/dormers/data";
 import type { Bill } from "@/features/payments/data";
 import type { RegularCharge } from "@/features/regular-charges/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { useDormitory } from "@/lib/hooks/useDormitory";
 
 /**
  * Mirrors the old `useDormers` hook surface: pulls dormers + bills + regular
  * charges for the active dormitory, applies search/filter, paginates.
  */
 export function useDormers() {
-  const { user } = useAuth();
-  const dormitoryId = user?.dormitoryId ?? null;
+  const {dormitoryId} = useDormitory()
+  const { selected: selectedPeriod } = useAcademicPeriod();
+  const academicPeriodId = selectedPeriod?.id ?? null;
 
-  const [dormers, setDormers] = useState<Dormer[]>([]);
+  const [dormers, setDormers] = useState<DormerWithBills[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [payables, setPayables] = useState<RegularCharge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,21 +30,22 @@ export function useDormers() {
   const itemsPerPage = 6;
 
   useEffect(() => {
-    if (!dormitoryId) {
+    if (!dormitoryId || !academicPeriodId) {
       setLoading(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      dormersData.listForDormitory(dormitoryId),
-      paymentsData.listBillsForDormitory(dormitoryId),
-      regularChargesData.listForDormitory(dormitoryId),
+      dormersData.listForDormitoryWithBills(dormitoryId, academicPeriodId),
+      regularChargesData.listForDormitory(dormitoryId, academicPeriodId),
     ])
-      .then(([d, b, p]) => {
+      .then(([d, p]) => {
         if (cancelled) return;
         setDormers(d);
-        setBills(b);
+        // Extract bills from the combined response
+        const allBills = d.flatMap((dormer) => dormer.bills ?? []);
+        setBills(allBills);
         setPayables(p);
       })
       .finally(() => {
@@ -50,7 +54,7 @@ export function useDormers() {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId]);
+  }, [dormitoryId, academicPeriodId]);
 
   const dormersWithBills: DormerWithBills[] = useMemo(() => {
     if (!dormers.length) return [];
@@ -100,7 +104,9 @@ export function useDormers() {
 
   return {
     dormers,
+    setDormers,
     bills,
+    setBills,
     payables,
     loading,
     paginatedDormers,

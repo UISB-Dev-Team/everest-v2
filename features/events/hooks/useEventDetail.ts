@@ -6,8 +6,12 @@ import type {
   Event,
   EventDormerData,
 } from "@/features/events/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function useEventDetail(eventId: string | null) {
+  const { dormitoryId } = useDormitory();
+  const { selected: academicPeriod } = useAcademicPeriod();
   const [event, setEvent] = useState<Event | null>(null);
   const [dormers, setDormers] = useState<EventDormerData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +22,7 @@ export function useEventDetail(eventId: string | null) {
     try {
       const [e, list] = await Promise.all([
         eventsData.getById(eventId),
-        eventsData.listDormersForEvent(eventId),
+        eventsData.listDormersForEvent(eventId, academicPeriod?.id ?? ""),
       ]);
       setEvent(e);
       setDormers(list);
@@ -37,7 +41,7 @@ export function useEventDetail(eventId: string | null) {
     (async () => {
       const [e, list] = await Promise.all([
         eventsData.getById(eventId),
-        eventsData.listDormersForEvent(eventId),
+        eventsData.listDormersForEvent(eventId, academicPeriod?.id ?? ""),
       ]);
       if (cancelled) return;
       setEvent(e);
@@ -47,7 +51,7 @@ export function useEventDetail(eventId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [eventId]);
+  }, [eventId, academicPeriod]);
 
   return { event, dormers, loading, refresh };
 }

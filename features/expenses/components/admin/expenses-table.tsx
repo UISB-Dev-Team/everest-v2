@@ -6,7 +6,9 @@ import {
   Calendar,
   Eye,
   ImageIcon,
+  Trash,
   TrendingDown,
+  MoreVertical,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -26,17 +28,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { ExpenseWithRecorder } from "@/features/expenses/data";
 
 interface ExpensesTableProps {
   expenses: ExpenseWithRecorder[];
   onViewDetails: (expense: ExpenseWithRecorder) => void;
+  onDelete: (expenseId: string) => void
 }
 
 export default function ExpensesTable({
   expenses,
   onViewDetails,
+  onDelete,
 }: ExpensesTableProps) {
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] =
@@ -60,8 +70,8 @@ export default function ExpensesTable({
 
   return (
     <>
-      <Card className="border-2 border-gray-100 shadow-md bg-white gap-0">
-        <CardHeader className="border-b border-gray-100 py-0">
+      <Card className="border border-gray-200 shadow-sm bg-white">
+          <CardHeader className="border-b border-gray-100 pb-4 pt-6 px-6">
           <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
             Expense Records
           </CardTitle>
@@ -92,31 +102,31 @@ export default function ExpensesTable({
             <div className="overflow-x-auto px-5">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-gray-100">
-                    <TableHead className="font-semibold text-gray-700">
+                  <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Title &amp; Description
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Amount
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Expense Date
                     </TableHead>
-                    <TableHead className="font-semibold text-gray-700">
+                    <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Receipt
                     </TableHead>
-                    <TableHead className="hidden lg:table-cell font-semibold text-gray-700">
+                    <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Recorded By
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-gray-700">
-                      Details
+                    <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
+                      Action
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {expenses.map((expense) => {
                     const recorderName =
-                      expense.recorded_by_full_name ?? "Unknown";
+                      expense.recordedByFullName ?? "Unknown";
                     const recorderInitials = recorderName
                       .split(" ")
                       .map((n) => n[0])
@@ -127,7 +137,7 @@ export default function ExpensesTable({
                     return (
                       <TableRow
                         key={expense.id}
-                        className="hover:bg-gray-50 transition-colors border-b border-gray-50"
+                        className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                       >
                         <TableCell className="w-[200px]">
                           <div
@@ -188,22 +198,31 @@ export default function ExpensesTable({
                               </div>
                               <div
                                 className="text-xs text-gray-500 max-w-[200px] truncate"
-                                title={expense.recorded_by_email ?? ""}
+                                title={expense.recordedByEmail ?? ""}
                               >
-                                {expense.recorded_by_email ?? "—"}
+                                {expense.recordedByEmail ?? "—"}
                               </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right w-[140px]">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onViewDetails(expense)}
-                            className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all font-medium whitespace-nowrap"
-                          >
-                            <Eye className="h-4 w-4 mr-1" /> View Details
-                          </Button>
+                        <TableCell className="text-right w-[80px]">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                                <MoreVertical className="h-4 w-4 text-gray-500" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1">
+                              <DropdownMenuItem onClick={() => onViewDetails(expense)} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-gray-50 rounded cursor-pointer">
+                                <Eye className="h-4 w-4" />
+                                <span>View Details</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onDelete(expense.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                                <Trash className="h-4 w-4" />
+                                <span>Delete</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
@@ -235,7 +254,7 @@ export default function ExpensesTable({
               </div>
               <div className="border rounded-lg overflow-hidden">
                 {selectedReceipt.receipt_image_url ? (
-                  <Image
+                  <img
                     src={selectedReceipt.receipt_image_url}
                     alt="Receipt"
                     width={500}

@@ -7,7 +7,9 @@ import {
   Clock,
   CreditCard,
   Users,
+  X,
   XCircle,
+  MoreVertical,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,13 +29,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { EventDormerData } from "@/features/events/data";
+import { DataPagination, FiltersBar } from "@/components/ui/shared";
+import { useEventDormersTable } from "@/features/events/hooks/useEventDormersTable";
 
 interface EventDormersTableProps {
   dormers: EventDormerData[];
   onLogPayment: (dormer: EventDormerData) => void;
   eventAmount: number;
+  onWaivePayment: (dormer: EventDormerData) => void;
 }
 
 interface StatusConfig {
@@ -69,9 +80,27 @@ export default function EventDormersTable({
   dormers,
   onLogPayment,
   eventAmount,
+  onWaivePayment
 }: EventDormersTableProps) {
+  const {
+    searchTerm, setSearchTerm,
+    statusFilter, setStatusFilter,
+    sortValue, setSortValue,
+    currentPage,
+    filteredDormers,
+    paginatedList,
+    totalPages,
+    hasActiveFilters,
+    resetFilters,
+    handlePreviousPage,
+    handleNextPage,
+    sortOptions,
+    statusOptions,
+  } = useEventDormersTable(dormers);
+  
   return (
-    <Card className="border-2 border-gray-100 shadow-md bg-white">
+    <>
+    <Card className="border border-gray-200 shadow-sm bg-white">
       <CardHeader className="border-b border-gray-100">
         <div>
           <CardTitle className="text-xl md:text-2xl font-bold text-[#12372A]">
@@ -81,9 +110,38 @@ export default function EventDormersTable({
             Track individual payment progress for this event
           </p>
         </div>
+
+        <FiltersBar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search by name…"
+          filters={[
+            {
+              value: statusFilter,
+              onValueChange: setStatusFilter,
+              options: statusOptions,
+              placeholder: "Payment status",
+              collapseOnMobile: true,
+            },
+            {
+              value: sortValue,
+              onValueChange: setSortValue as (v: string) => void,
+              options: sortOptions,
+              placeholder: "Sort by",
+              collapseOnMobile: false,
+            },
+          ]}
+          hasActiveFilters={hasActiveFilters}
+          onReset={resetFilters}
+          resultCount={filteredDormers.length}
+          resultLabel="dormer"
+          activeFilterBadges={
+            statusFilter !== "All" ? [{ label: statusFilter }] : []
+          }
+        />
       </CardHeader>
       <CardContent>
-        {dormers.length === 0 ? (
+        {paginatedList.length === 0 ? (
           <div className="text-center py-16 px-4">
             <div className="relative mb-6 inline-block">
               <div className="absolute inset-0 bg-gray-100/50 rounded-full blur-2xl" />
@@ -101,29 +159,29 @@ export default function EventDormersTable({
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-[#f0f0f0] hover:bg-[#f0f0f0]">
-                <TableHead className="font-bold text-[#12372A]">
+              <TableRow className="bg-[#f5f5f5] hover:bg-[#f5f5f5]">
+                <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Dormer
                 </TableHead>
-                <TableHead className="font-bold text-[#12372A]">
+                <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Amount Paid
                 </TableHead>
-                <TableHead className="font-bold text-[#12372A]">
+                <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Payment Status
                 </TableHead>
-                <TableHead className="hidden md:table-cell font-bold text-[#12372A]">
+                <TableHead className="hidden md:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Payment Date
                 </TableHead>
-                <TableHead className="hidden lg:table-cell font-bold text-[#12372A]">
+                <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Recorded By
                 </TableHead>
-                <TableHead className="text-right font-bold text-[#12372A]">
+                <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                   Actions
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {dormers.map((dormer) => {
+              {paginatedList.map((dormer) => {
                 const statusConfig = getStatusBadge(dormer.payment_status);
                 const StatusIcon = statusConfig.icon;
                 const initials = `${dormer.first_name?.[0] ?? ""}${
@@ -134,7 +192,7 @@ export default function EventDormersTable({
                 return (
                   <TableRow
                     key={dormer.id}
-                    className="hover:bg-[#f0f0f0] transition-colors"
+                    className="hover:bg-[#fafafa] transition-colors border-b border-gray-100"
                   >
                     <TableCell className="font-medium w-[200px]">
                       <div className="flex items-center gap-3">
@@ -215,24 +273,35 @@ export default function EventDormersTable({
                         <span className="text-gray-400 text-sm">N/A</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right w-[160px]">
-                      {dormer.payment_status !== "Paid" ? (
-                        <Button
-                          size="sm"
-                          onClick={() => onLogPayment(dormer)}
-                          className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
-                        >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          Log Payment
-                        </Button>
+                    <TableCell className="text-right w-[80px]">
+                      {dormer.payment_status !== "Paid" && dormer.payment_status !== "Waived" ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                              <MoreVertical className="h-4 w-4 text-gray-500" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1">
+                            <DropdownMenuItem onClick={() => onLogPayment(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-[#2E7D32] hover:bg-gray-50 rounded cursor-pointer">
+                              <CreditCard className="h-4 w-4" />
+                              <span>Log Payment</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onWaivePayment(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                              <X className="h-4 w-4" />
+                              <span>Waive Payment</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-[#2E7D32] border-[#A5D6A7] bg-[#A5D6A7]/10 font-semibold whitespace-nowrap"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Completed
-                        </Badge>
+                        <div className="flex justify-end pr-2">
+                          <Badge
+                            variant="outline"
+                            className="text-[#2E7D32] border-[#A5D6A7] bg-[#A5D6A7]/10 font-semibold whitespace-nowrap"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Completed
+                          </Badge>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -242,6 +311,16 @@ export default function EventDormersTable({
           </Table>
         )}
       </CardContent>
+      
     </Card>
+    <DataPagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        totalItems={filteredDormers.length}
+        itemLabel="dormer"
+      />
+      </>
   );
 }

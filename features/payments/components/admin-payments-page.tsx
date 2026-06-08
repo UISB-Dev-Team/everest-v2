@@ -1,6 +1,5 @@
 "use client";
 
-import { FileText } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -20,10 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useDormitoryBills } from "@/features/payments/hooks/usePayments";
+import { StatusBadge } from "@/components/ui/shared";
+import { FileText } from "lucide-react";
 
 export function AdminPaymentsPage() {
-  const { user } = useAuth();
-  const { bills, loading } = useDormitoryBills(user?.dormitoryId ?? null);
+  const { bills, loading } = useDormitoryBills();
 
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
@@ -124,17 +124,7 @@ export function AdminPaymentsPage() {
                           {bill.due_date ? formatDate(bill.due_date) : "—"}
                         </TableCell>
                         <TableCell>
-                          <span
-                            className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-semibold inline-block whitespace-nowrap ${
-                              bill.status === "Paid"
-                                ? "bg-[#A5D6A7] text-[#2E7D32]"
-                                : bill.status === "Partial"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {bill.status}
-                          </span>
+                          <StatusBadge status={bill.status} />
                         </TableCell>
                       </TableRow>
                     ))}

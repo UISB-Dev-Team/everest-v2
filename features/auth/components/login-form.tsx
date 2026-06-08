@@ -1,20 +1,26 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { toast } from "sonner";
 
 type LoginRole = "admin" | "user";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    searchParams.get("error") === "invalid_reset_link"
+      ? "That reset link is invalid or has expired. Please request a new one."
+      : ""
+  );
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [selectedRole, setSelectedRole] = useState<LoginRole>("user");
@@ -37,12 +43,7 @@ export function LoginForm() {
   };
 
   const handlePasswordReset = () => {
-    if (!email) {
-      setError("Please enter your email address to reset your password.");
-      return;
-    }
-    setError("");
-    setMessage("Password reset is not wired up in this scaffold.");
+    router.push("/forgot-password");
   };
 
   return (

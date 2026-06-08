@@ -1,16 +1,15 @@
-import type { Tables, TablesInsert, TablesUpdate } from "@/database.types";
+import type { Enums, Tables, TablesInsert, TablesUpdate } from "@/database.types";
 
 export type DormerProfile = Tables<"profiles">;
 export type DormerEnrollment = Tables<"dormitory_enrollment">;
-
-/**
- * A dormer = profiles row joined with their current dormitory_enrollment.
- * Mirrors the old Firestore "dormer" shape but with snake_case Supabase fields.
- */
+export type DormerRoleWithProfile = Tables<"dormitory_roles"> & { profiles: DormerProfile };
+export type Role = Enums<"user_role_enum">;
+export type Room = Tables<"rooms">
 export interface Dormer extends DormerProfile {
   dormitory_id: string | null;
   room_number: string | null;
-  is_deleted?: boolean;
+  status: string | null;
+  dormer_enrollment_id: string | null;
 }
 
 export interface DormerWithBills extends Dormer {
@@ -21,6 +20,7 @@ export type CreateDormerInput = Omit<TablesInsert<"profiles">, "id"> & {
   id?: string;
   dormitory_id?: string | null;
   room_number?: string | null;
+  role: Role;
 };
 
 export type UpdateDormerInput = TablesUpdate<"profiles"> & {

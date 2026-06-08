@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   AdminDashboardSnapshot,
   DormerDashboardSnapshot,
@@ -6,15 +6,16 @@ import type {
 } from "./types";
 
 export interface DashboardDataAccess {
-  getDormerSnapshot(dormerId: string): Promise<DormerDashboardSnapshot>;
-  getAdminSnapshot(dormitoryId: string): Promise<AdminDashboardSnapshot>;
+  getDormerSnapshot(dormerId: string, academicPeriodId: string): Promise<DormerDashboardSnapshot>;
+  getAdminSnapshot(dormitoryId: string, academicPeriodId: string): Promise<AdminDashboardSnapshot>;
   getSuperAdminSnapshot(): Promise<SuperAdminDashboardSnapshot>;
 }
 
-export const dashboardData: DashboardDataAccess = mock;
+export const dashboardData: DashboardDataAccess = supabase;
 
 export type {
   AdminDashboardSnapshot,
   DormerDashboardSnapshot,
   SuperAdminDashboardSnapshot,
 } from "./types";
+

@@ -1,22 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import type { Dormer, ModalType } from "@/features/dormers/data";
+import type { Dormer, DormerWithBills, ModalType } from "@/features/dormers/data";
 import type { Bill } from "@/features/payments/data";
+import { getBillById } from "@/features/payments/data/supabase";
 
 export function useModal() {
   const [modal, setModal] = useState<ModalType>(null);
-  const [selectedDormer, setSelectedDormer] = useState<Dormer | null>(null);
+  const [selectedDormer, setSelectedDormer] = useState<DormerWithBills | null>(null);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
 
-  const openModal = (
+  const openModal =  (
     modalType: ModalType,
-    dormer: Dormer | null = null,
+    dormer: DormerWithBills | null = null,
     bill: Bill | null = null
   ) => {
     setModal(modalType);
-    setSelectedDormer(dormer);
-    setSelectedBill(bill);
+    if (dormer !== undefined) setSelectedDormer(dormer);  // only update if explicitly passed
+    if (bill !== undefined) setSelectedBill(bill); 
   };
 
   const closeModal = () => {

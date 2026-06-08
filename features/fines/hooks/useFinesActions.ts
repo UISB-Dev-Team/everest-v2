@@ -10,12 +10,21 @@ import type {
   UpdateFineCategoryInput,
   UpdateFineImpositionInput,
 } from "@/features/fines/data";
+import { dormersData } from "@/features/dormers/data";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+import { unpaidFinesReminderTemplate } from "@/emails/fines/unpaidFinesReminder";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { sendEmail } from "@/lib/email";
+import { listToCSV } from "../utils/listToCsv";
+import { downloadCSV } from "../utils/downloadCSV";
 
 /**
  * Mirrors the old admin-side `useFinesAction` hook surface but routes every
  * mutation through the data-access seam. Email-sending is mocked with a toast.
  */
 export function useFinesActions() {
+  const { selected } = useAcademicPeriod();
+  const { dormitoryId } = useDormitory()
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
@@ -25,6 +34,7 @@ export function useFinesActions() {
       await finesData.createCategory({
         ...input,
         recorded_by: input.recorded_by ?? user?.id ?? null,
+        academic_period_id: selected?.id!
       });
       toast.success("Fine category added!");
     } catch (e) {
@@ -67,10 +77,12 @@ export function useFinesActions() {
   const imposeFine = async (input: CreateFineImpositionInput) => {
     setIsSubmitting(true);
     try {
+      const dormer = await dormersData.getById(input.dormer_id)
       await finesData.imposeFine({
         ...input,
         imposed_by: input.imposed_by ?? user?.id ?? null,
         recorded_by: input.recorded_by ?? user?.id ?? null,
+        dormitory_enrollment_id: dormer?.dormer_enrollment_id ?? null,
       });
       toast.success("Fine imposed successfully!");
     } catch (e) {
@@ -134,7 +146,49 @@ export function useFinesActions() {
   };
 
   const sendUnpaidReminder = async () => {
-    toast.message("(Unpaid fine reminder emails would be sent in production.)");
+    try {
+      setIsSubmitting(true)
+      const unpaidFines = await finesData.getUnpaidFines(dormitoryId!, selected!.id)
+      for(const fine of unpaidFines){
+        await sendEmail({
+          to: fine.dormer_email,
+          subject: "Unpaid Fines Reminder",
+          html: unpaidFinesReminderTemplate(
+            { firstName: fine.dormer_first_name, lastName: fine.dormer_last_name },
+          unpaidFines.filter((f:any) => f.dormer_email === fine.dormer_email).map((f:any) => ({
+            finesRemarks: f.category_name,
+            totalAmountDue: f.amount,
+            amountPaid: f.amount_paid,
+            remainingBalance: f.amount - f.amount_paid,
+            dateImposed: new Date(f.date_imposed),
+          }))
+        ),
+      });
+      }
+      toast.success("Unpaid fine reminder emails already sent.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send unpaid fine reminder.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setIsSubmitting(true)
+    try {
+      const list = await finesData.listImpositionsForDormitory(
+        dormitoryId!,
+        selected!.id,
+      );
+      const csv = listToCSV(list);
+      downloadCSV(csv, "fines-export.csv");
+      toast.success("Fines exported to CSV");
+    } catch (error) {
+      toast.error("Failed to export fines");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
@@ -147,5 +201,6 @@ export function useFinesActions() {
     updateImposition,
     recordFinePayment,
     sendUnpaidReminder,
+    handleExport
   };
 }

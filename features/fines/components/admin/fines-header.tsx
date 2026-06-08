@@ -1,12 +1,13 @@
 "use client";
 
-import { FileDown, FileUp, Home, Mail } from "lucide-react";
+import { FileDown, FileUp, Home, Loader, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FinesHeaderProps {
   onImportAttendance: () => void;
   onExportCSV: () => void;
   onSendEmailReminders: () => void;
+  isSubmitting: boolean
   onRoomFine: () => void;
 }
 
@@ -14,6 +15,7 @@ export default function FinesHeader({
   onImportAttendance,
   onExportCSV,
   onSendEmailReminders,
+  isSubmitting,
   onRoomFine,
 }: FinesHeaderProps) {
   return (
@@ -38,18 +40,29 @@ export default function FinesHeader({
         <Button
           variant="outline"
           onClick={onSendEmailReminders}
+          disabled={isSubmitting}
           className="w-full sm:w-auto border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all text-xs sm:text-sm"
         >
-          <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
-          Send Email Reminders
+          {isSubmitting ? (
+            <>
+              <Loader className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+              Send Email Reminders
+            </>
+          )}
         </Button>
         <Button
           variant="outline"
           onClick={onImportAttendance}
+          disabled={isSubmitting}
           className="w-full sm:w-auto border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white transition-all text-xs sm:text-sm"
         >
           <FileUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
-          Import CSV
+          Record Attendance
         </Button>
         <Button
           variant="outline"

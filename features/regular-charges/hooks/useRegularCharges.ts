@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { regularChargesData } from "@/features/regular-charges/data";
 import type {
   CreateRegularChargeInput,
   RegularCharge,
   UpdateRegularChargeInput,
 } from "@/features/regular-charges/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { createRegularCharge, listForDormitory, updateRegularCharge } from "../data/supabase";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export function useRegularCharges() {
-  const { user } = useAuth();
-  const dormitoryId = user?.dormitoryId ?? null;
+  const { dormitoryId } = useDormitory()
+  const { selected } = useAcademicPeriod() 
   const [payables, setPayables] = useState<RegularCharge[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,32 +26,40 @@ export function useRegularCharges() {
     }
     setLoading(true);
     try {
-      const list = await regularChargesData.listForDormitory(dormitoryId);
+      const list = await listForDormitory(dormitoryId, selected?.id!);
       setPayables(list);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
-    let cancelled = false;
-    if (!dormitoryId) {
-      setLoading(false);
-      return;
+  let cancelled = false;
+
+  if (!dormitoryId) {
+    setLoading(false);
+    return;
+  }
+  
+  setLoading(true);
+
+  const fetchPayables = async () => {
+    try {
+      const list = await listForDormitory(dormitoryId, selected?.id!);
+      if (!cancelled) setPayables(list);
+    } catch (e) {
+      console.error(e);
+      if (!cancelled) toast.error("Failed to load payables.");
+    } finally {
+      if (!cancelled) setLoading(false);
     }
-    setLoading(true);
-    regularChargesData
-      .listForDormitory(dormitoryId)
-      .then((list) => {
-        if (!cancelled) setPayables(list);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [dormitoryId]);
+  };
+
+  fetchPayables();
+
+  return () => {
+    cancelled = true;
+  };
+}, [dormitoryId, selected]);
 
   const savePayable = async (input: {
     id?: string;
@@ -69,16 +79,19 @@ export function useRegularCharges() {
           amount: input.amount,
           description: input.description,
         };
-        await regularChargesData.update(input.id, update);
+        const updated = await updateRegularCharge(input.id, update);
         toast.success("Payable updated!");
+        setPayables((prev) => prev.map((p) => p.id == input.id ? updated: p) )
       } else {
         const create: CreateRegularChargeInput = {
           name: input.name,
           amount: input.amount,
           description: input.description,
           dormitory_id: dormitoryId,
+          academic_period_id: selected?.id!
         };
-        await regularChargesData.create(create);
+        const created = await createRegularCharge(create);
+        setPayables((prev) => [...prev, created])
         toast.success("Payable added!");
       }
       await refresh();
@@ -89,6 +102,5 @@ export function useRegularCharges() {
       setIsSubmitting(false);
     }
   };
-
-  return { payables, loading, isSubmitting, savePayable, refresh };
+  return { payables, loading, isSubmitting, savePayable, refresh, setPayables };
 }

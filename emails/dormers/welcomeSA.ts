@@ -1,4 +1,4 @@
-export const welcomeAdminTemplate = (
+export const welcomeSA = (
   firstName: string,
   email: string,
   temporaryPassword: string

@@ -12,12 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  MaboloRoomNumber,
-  SampaguitaRoomNumber,
-} from "@/lib/constants/room-numbers";
-import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useDormitory } from "@/features/dashboard/hooks/useDormitory";
 
 interface DormerFiltersProps {
   searchTerm: string;
@@ -26,6 +20,8 @@ interface DormerFiltersProps {
   onStatusChange: (value: string) => void;
   count: number;
   resetFilter: () => void;
+  /** Room numbers fetched from the database (via useRooms) */
+  roomNumbers: string[];
 }
 
 export default function DormerFilters({
@@ -35,12 +31,9 @@ export default function DormerFilters({
   onStatusChange,
   count,
   resetFilter,
+  roomNumbers,
 }: DormerFiltersProps) {
   const hasActiveFilters = searchTerm || statusFilter !== "All";
-  const { user } = useAuth();
-  const { dormitory } = useDormitory(user?.dormitoryId ?? null);
-
-  const isMabolo = dormitory?.name?.toLowerCase().includes("mabolo");
 
   return (
     <Card className="border-gray-200">
@@ -71,13 +64,11 @@ export default function DormerFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Rooms</SelectItem>
-                  {(isMabolo ? MaboloRoomNumber : SampaguitaRoomNumber).map(
-                    (room) => (
-                      <SelectItem key={room} value={room}>
-                        {room}
-                      </SelectItem>
-                    )
-                  )}
+                  {roomNumbers.map((room) => (
+                    <SelectItem key={room} value={room}>
+                      {room}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -6,19 +6,20 @@ import { eventsData } from "@/features/events/data";
 import { dormersData } from "@/features/dormers/data";
 import type { Event, EventPayment } from "@/features/events/data";
 import type { Dormer } from "@/features/dormers/data";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 export interface EventWithStats extends Event {
   paidCount: number;
-  partialCount: number;
+  waivedCount: number;
   unpaidCount: number;
   dormerTotal: number;
   progressPercentage: number;
 }
 
 export function useEventsData() {
-  const { user } = useAuth();
-  const dormitoryId = user?.dormitoryId ?? null;
-
+  const { dormitoryId } = useDormitory();
+  const { selected: academicPeriod } = useAcademicPeriod();
   const [events, setEvents] = useState<Event[]>([]);
   const [paymentsByEvent, setPaymentsByEvent] = useState<
     Record<string, EventPayment[]>
@@ -34,15 +35,15 @@ export function useEventsData() {
     setLoading(true);
     try {
       const [eventList, dormerList] = await Promise.all([
-        eventsData.listForDormitory(dormitoryId),
-        dormersData.listForDormitory(dormitoryId),
+        eventsData.listForDormitory(dormitoryId, academicPeriod?.id ?? ""),
+        dormersData.listForDormitory(dormitoryId, academicPeriod?.id ?? ""),
       ]);
       setEvents(eventList);
       setDormers(dormerList);
       const paymentMap: Record<string, EventPayment[]> = {};
       await Promise.all(
         eventList.map(async (event) => {
-          const payments = await eventsData.listPaymentsForEvent(event.id);
+          const payments = await eventsData.listPaymentsForEvent(event.id, academicPeriod?.id ?? "");
           paymentMap[event.id] = payments;
         })
       );
@@ -61,8 +62,8 @@ export function useEventsData() {
     setLoading(true);
     (async () => {
       const [eventList, dormerList] = await Promise.all([
-        eventsData.listForDormitory(dormitoryId),
-        dormersData.listForDormitory(dormitoryId),
+        eventsData.listForDormitory(dormitoryId, academicPeriod?.id ?? ""),
+        dormersData.listForDormitory(dormitoryId, academicPeriod?.id ?? ""),
       ]);
       if (cancelled) return;
       setEvents(eventList);
@@ -70,7 +71,7 @@ export function useEventsData() {
       const paymentMap: Record<string, EventPayment[]> = {};
       await Promise.all(
         eventList.map(async (event) => {
-          const payments = await eventsData.listPaymentsForEvent(event.id);
+          const payments = await eventsData.listPaymentsForEvent(event.id, academicPeriod?.id ?? "");
           paymentMap[event.id] = payments;
         })
       );
@@ -81,23 +82,24 @@ export function useEventsData() {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId]);
+  }, [dormitoryId, academicPeriod]);
 
   const eventsWithStats: EventWithStats[] = useMemo(() => {
     return events.map((event) => {
       const payments = paymentsByEvent[event.id] ?? [];
-      const dormerTotal = dormers.length;
       const paidCount = payments.filter((p) => p.status === "Paid").length;
-      const partialCount = payments.filter(
-        (p) => p.status === "Pending" && p.amount > 0
+      const waivedCount = payments.filter(
+        (p) => p.status === "Waived"
       ).length;
-      const unpaidCount = Math.max(0, dormerTotal - paidCount - partialCount);
+
+      const dormerTotal = dormers.length - waivedCount;
+      const unpaidCount = Math.max(0, dormerTotal - paidCount);
       const progressPercentage =
         dormerTotal > 0 ? (paidCount / dormerTotal) * 100 : 0;
       return {
         ...event,
         paidCount,
-        partialCount,
+        waivedCount,
         unpaidCount,
         dormerTotal,
         progressPercentage,

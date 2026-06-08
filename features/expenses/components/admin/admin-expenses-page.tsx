@@ -12,10 +12,16 @@ import ExpensesTable from "@/features/expenses/components/admin/expenses-table";
 import { ExpensesPageSkeleton } from "@/features/expenses/components/admin/expenses-page-skeleton";
 import AddExpenseModal from "@/features/expenses/components/admin/add-expense-modal";
 import ViewEditExpenseModal from "@/features/expenses/components/admin/view-edit-expense-modal";
-import type { ExpenseWithRecorder } from "@/features/expenses/data";
+import { expensesData, type ExpenseWithRecorder } from "@/features/expenses/data";
+import { listForDormitory } from "@/features/dormers/data/supabase";
+import { DataPagination } from "@/components/ui/shared";
+
+type ModalType = "add" | "view" | null;
 
 export function AdminExpensesPage() {
+  // ── 1. data ───────────────────────────────────────────────────────────────
   const {
+    expenses,
     paginatedExpenses,
     filteredExpenses,
     summary,
@@ -31,23 +37,66 @@ export function AdminExpensesPage() {
     refresh,
   } = useExpensesData();
 
-  const { addExpense, updateExpense, sendReport, isSendingEmail } =
-    useExpensesActions();
+  // ── 2. actions ────────────────────────────────────────────────────────────
+  const {
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    sendReport,
+    isSendingEmail,
+  } = useExpensesActions();
 
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [viewExpense, setViewExpense] = useState<ExpenseWithRecorder | null>(
-    null
-  );
-  const [isViewOpen, setIsViewOpen] = useState(false);
+  // ── 3. ui state ───────────────────────────────────────────────────────────
+  const [modal, setModal] = useState<ModalType>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseWithRecorder | null>(null);
 
+  // ── 4. handlers ───────────────────────────────────────────────────────────
+  const handleOpenAdd = () => {
+    setSelectedExpense(null);
+    setModal("add");
+  };
+
+  const handleOpenView = (expense: ExpenseWithRecorder) => {
+    setSelectedExpense(expense);
+    setModal("view");
+  };
+
+  const handleCloseModal = () => {
+    setModal(null);
+    setSelectedExpense(null);
+  };
+
+  const handleAddExpense = async (input: any) => {
+    await addExpense(input);
+    refresh();
+    handleCloseModal();
+  };
+
+  const handleUpdateExpense = async (id: string, input: any) => {
+    await updateExpense(id, input);
+    refresh();
+    handleCloseModal();
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    await deleteExpense(expenseId);
+    refresh();
+  };
+
+  const handleSendExpenses = async () => {
+    await sendReport(expenses);
+  };
+
+  // ── 5. guard ──────────────────────────────────────────────────────────────
   if (loading) return <ExpensesPageSkeleton />;
 
+  // ── 6. render ─────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f0f0f0] p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-5 md:space-y-6">
       <ExpensesHeader
-        onAdd={() => setIsAddOpen(true)}
+        onAdd={handleOpenAdd}
         onExport={() => handleExport(filteredExpenses)}
-        onEmailReport={sendReport}
+        onEmailReport={handleSendExpenses}
         isSendingEmail={isSendingEmail}
       />
 
@@ -64,55 +113,31 @@ export function AdminExpensesPage() {
 
       <ExpensesTable
         expenses={paginatedExpenses}
-        onViewDetails={(e) => {
-          setViewExpense(e);
-          setIsViewOpen(true);
-        }}
+        onViewDetails={handleOpenView}
+        onDelete={handleDeleteExpense}
       />
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">
-        <span className="text-xs sm:text-sm text-gray-600 font-medium">
-          Page {currentPage} of {totalPages || 1}
-        </span>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1}
-            className="flex-1 sm:flex-none border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm"
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextPage}
-            disabled={currentPage >= totalPages}
-            className="flex-1 sm:flex-none border-[#2E7D32] text-[#2E7D32] hover:bg-[#2E7D32] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs sm:text-sm"
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <DataPagination
+        currentPage={currentPage}
+        totalPages={totalPages || 1}
+        onPreviousPage={handlePreviousPage}
+        onNextPage={handleNextPage}
+        totalItems={filteredExpenses.length}
+        itemLabel="expense"
+      />
 
+      {/* Modals */}
       <AddExpenseModal
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        onSave={async (input) => {
-          await addExpense(input);
-          await refresh();
-        }}
+        isOpen={modal === "add"}
+        onClose={handleCloseModal}
+        onSave={handleAddExpense}
       />
 
       <ViewEditExpenseModal
-        isOpen={isViewOpen}
-        onClose={() => setIsViewOpen(false)}
-        expense={viewExpense}
-        onSave={async (id, input) => {
-          await updateExpense(id, input);
-          await refresh();
-        }}
+        isOpen={modal === "view"}
+        onClose={handleCloseModal}
+        expense={selectedExpense}
+        onSave={handleUpdateExpense}
       />
     </div>
   );

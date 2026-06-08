@@ -71,6 +71,7 @@ export async function create(
     is_deleted: false,
     created_at: input.created_at ?? now,
     updated_at: input.updated_at ?? now,
+    logo_url: ""
   };
   dormitories = [...dormitories, created];
   return created;

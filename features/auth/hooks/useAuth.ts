@@ -4,7 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import { authData } from "@/features/auth/data";
 import type { SignInInput } from "@/features/auth/data";
 
-export function useAuth() {
+export function useAuth() {  
   const state = useSyncExternalStore(
     authData.subscribe,
     authData.getSnapshot,

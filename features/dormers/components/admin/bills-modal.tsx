@@ -1,0 +1,366 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { CreditCard, Trash, MoreVertical, CheckCircle } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dormer, DormerWithBills } from "../../data/types";
+import { getBillDescription } from "../../hooks/useBillDescription";
+import { Bill } from "@/features/payments/data";
+import { getStatusBadgeInfo } from "../../lib/badge-utils";
+import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
+import { useConfirmDialog } from "@/hooks/use-confirm-dialog";
+import { RegularCharge } from "@/features/regular-charges/data";
+import { toast } from "sonner";
+
+interface BillsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  dormer: DormerWithBills | null;
+  onRecordPayment: (bill: Bill) => void;
+  onPayAll: () => Promise<void>;
+  payables: RegularCharge[];
+  onDeleteBill: (billId: string) => void;
+}
+
+export default function BillsModal({
+  isOpen,
+  onClose,
+  dormer,
+  onRecordPayment,
+  onPayAll,
+  payables,
+  onDeleteBill
+}: BillsModalProps) {
+  const { ConfirmDialog, confirm } = useConfirmDialog();
+  const handleDeleteClick = async (billId: string) => {
+    const ok = await confirm({
+      title: "Delete Bill",
+      description: "Are you sure you want to delete this bill? This action cannot be undone.",
+      confirmText: "Delete",
+      variant: "destructive",
+    });
+    if (ok) {
+      onDeleteBill(billId);
+    }
+  };
+  const [showPayAllConfirm, setShowPayAllConfirm] = useState(false);
+  const [isPayingAll, setIsPayingAll] = useState(false);
+  const [billsData, setBillsData] = useState<Bill[]>([]);
+
+  useEffect(() => {
+    if (dormer?.bills) {
+      setBillsData([...dormer.bills]);
+    }
+  }, [dormer?.bills]);
+
+  const unpaidBills = billsData.filter(
+    (b) => b.status === "Unpaid" || b.status === "Partial"
+  );
+
+  const totalUnpaidAmount = unpaidBills.reduce(
+    (sum, b) => sum + (b.total_amount_due - (b.amount_paid || 0)),
+    0
+  )
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent
+          className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
+          {dormer && <><DialogHeader className={undefined}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-green-100 text-green-800">
+                    {dormer.first_name?.[0]}
+                    {dormer.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <DialogTitle className={undefined}>
+                    {dormer.first_name} {dormer.last_name}
+                  </DialogTitle>
+                  <DialogDescription className={undefined}>
+                    Room {dormer.room_number}
+                  </DialogDescription>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {totalUnpaidAmount > 0 && (
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Total Unpaid</div>
+                    <div className="text-lg font-semibold text-red-600">
+                      ₱{totalUnpaidAmount.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+                {unpaidBills.length > 0 && (
+                  <Button
+                    onClick={() => setShowPayAllConfirm(true)}
+                    disabled={isPayingAll}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    variant={undefined}
+                    size={undefined}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" /> Pay All
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="mt-4 overflow-x-auto">
+            <Tabs defaultValue="bills" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="bills" className={undefined}>
+                  Bills
+                </TabsTrigger>
+                <TabsTrigger value="details" className={undefined}>
+                  Details
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent
+                value="bills"
+                className="py-4 max-h-[60vh] overflow-y-auto"
+              >
+                <Table className={undefined}>
+                  <TableHeader className={undefined}>
+                    <TableRow className={undefined}>
+                      <TableHead className={undefined}>Period</TableHead>
+                      <TableHead className={undefined}>Remarks</TableHead>
+                      <TableHead className={undefined}>Amount Due</TableHead>
+                      <TableHead className={undefined}>Amount Paid</TableHead>
+                      <TableHead className={undefined}>Status</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className={undefined}>
+                    {billsData.map((bill) => {
+                      const { className, Icon } = getStatusBadgeInfo(bill.status);
+                      const billDescription = getBillDescription(bill, payables);
+                      return (
+                        <TableRow key={bill.id} className={undefined}>
+                          <TableCell className="w-[150px]">
+                            <span className="truncate block" title={getBillingPeriodLabel(bill.billing_month)}>
+                              {getBillingPeriodLabel(bill.billing_month)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="w-[200px]">
+                            <span className="truncate block text-gray-600" title={billDescription}>
+                              {billDescription}
+                            </span>
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            ₱{bill.total_amount_due.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            ₱{(bill.amount_paid || 0).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="w-[140px]">
+                            <Badge className={className} variant={undefined}>
+                              {Icon && <Icon className="h-4 w-4 mr-1 flex-shrink-0" />}
+                              <span className="truncate">{bill.status}</span>
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right w-[80px]">
+                            {bill.status !== "Paid" ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full" disabled={isPayingAll}>
+                                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1 z-50">
+                                  {(bill.status === "Unpaid" || bill.status === "Partial") && (
+                                    <DropdownMenuItem onClick={() => onRecordPayment(bill)} className="flex items-center gap-2 px-3 py-2 text-sm text-[#2E7D32] hover:bg-gray-50 rounded cursor-pointer">
+                                      <CreditCard className="h-4 w-4" />
+                                      <span>Pay Bill</span>
+                                    </DropdownMenuItem>
+                                  )}
+                                  {bill.status === "Unpaid" && (
+                                    <DropdownMenuItem onClick={() => handleDeleteClick(bill.id)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">                                      <Trash className="h-4 w-4" />
+                                      <span>Delete Bill</span>
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <div className="flex justify-end pr-2">
+                                <Badge variant="outline" className="text-[#2E7D32] border-[#A5D6A7] bg-[#A5D6A7]/10 font-semibold whitespace-nowrap">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Paid
+                                </Badge>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {billsData.length === 0 && (
+                      <TableRow className={undefined}>
+                        <TableCell colSpan={6} className="text-center py-12">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <div className="text-gray-500 text-lg font-medium">No bills found</div>
+                            <div className="text-gray-400 text-sm">
+                              This dormer doesn't have any bills recorded yet.
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+
+              <TabsContent value="details" className="py-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className={undefined}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-500">
+                        Contact Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div>
+                        <Label className="text-xs text-gray-500">Email</Label>
+                        <p>{dormer.email}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Phone</Label>
+                        <p>{dormer.phone}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={undefined}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-500">
+                        Dormitory Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div>
+                        <Label className="text-xs text-gray-500">
+                          Room Number
+                        </Label>
+                        <p>{dormer.room_number}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">
+                          Date Added
+                        </Label>
+                        <p>
+                          {dormer.created_at
+                            ? new Date(
+                                dormer.created_at
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          <ConfirmDialog />
+          </>
+          }
+        </DialogContent>
+      </Dialog>
+
+      {/* Pay All Confirmation Dialog */}
+      <Dialog open={showPayAllConfirm} onOpenChange={setShowPayAllConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className={undefined}>
+            <DialogTitle className={undefined}>Confirm Pay All</DialogTitle>
+            <DialogDescription className={undefined}>
+              Are you sure you want to mark all unpaid bills for{" "}
+              {dormer?.first_name} {dormer?.last_name} as paid? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className={undefined}>
+            <Button
+              variant="outline"
+              onClick={() => setShowPayAllConfirm(false)}
+              className={undefined}
+              size={undefined}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                setIsPayingAll(true);
+                try {
+                  await onPayAll();
+                  setBillsData((prev) =>
+                    prev.map((b) =>
+                      b.status === "Unpaid" 
+                        ? {
+                            ...b,
+                            status: "Paid",
+                            amountPaid: b.total_amount_due,
+                          }
+                        : b
+                    )
+                  );
+                  setShowPayAllConfirm(false);
+                  onClose();
+                } catch (error) {
+                  setShowPayAllConfirm(false);
+                } finally {
+                  setIsPayingAll(false);
+                }
+              }}
+              disabled={isPayingAll}
+              className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              variant={undefined}
+              size={undefined}
+            >
+              {isPayingAll ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                "Confirm Pay All"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

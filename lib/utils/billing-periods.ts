@@ -1,4 +1,5 @@
 export const getBillingPeriodLabel = (billingPeriod: string): string => {
+  
   if (billingPeriod.includes("semester")) {
     const match = billingPeriod.match(/\d(?:st|nd)-semester\s*\((.*?)\)/);
     if (match) {

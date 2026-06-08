@@ -1,21 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { dashboardData } from "@/features/dashboard/data";
 import type {
   AdminDashboardSnapshot,
   DormerDashboardSnapshot,
   SuperAdminDashboardSnapshot,
 } from "@/features/dashboard/data";
+import { DashboardStats, getDashboardStats } from "../data/supabase";
+import { useDormitory } from "@/lib/hooks/useDormitory";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
+
+interface UseDashboardReturn {
+  stats: DashboardStats | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+
+export function useDashboard(): UseDashboardReturn {
+  const { dormitoryId, loading: dormitoryLoading } = useDormitory();
+  const { selected: currentPeriod, loading: periodLoading } = useAcademicPeriod();
+ 
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+ 
+  const fetch = useCallback(async () => {
+    if (!dormitoryId || !currentPeriod?.id) return;
+ 
+    setLoading(true);
+    setError(null);
+ 
+    try {
+      const data = await getDashboardStats(dormitoryId, currentPeriod.id);
+      setStats(data);
+    } catch (err) {
+      console.error("Failed to load dashboard stats:", err);
+      setError("Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [dormitoryId, currentPeriod?.id]);
+ 
+  useEffect(() => {
+    if (!dormitoryLoading && !periodLoading) {
+      fetch();
+    }
+  }, [fetch, dormitoryLoading, periodLoading]);
+ 
+  return { stats, loading: loading || dormitoryLoading || periodLoading, error, refetch: fetch };
+}
 
 export function useDormerDashboard(dormerId: string | null) {
   const [snapshot, setSnapshot] = useState<DormerDashboardSnapshot | null>(
     null
   );
+  const { selected: currentPeriod, loading: periodLoading } = useAcademicPeriod();
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
-    if (!dormerId) {
+    if (!dormerId || !currentPeriod?.id) {
       setSnapshot(null);
       setLoading(false);
       return;
@@ -23,13 +70,13 @@ export function useDormerDashboard(dormerId: string | null) {
     let cancelled = false;
     setLoading(true);
     dashboardData
-      .getDormerSnapshot(dormerId)
+      .getDormerSnapshot(dormerId, currentPeriod.id)
       .then((s) => !cancelled && setSnapshot(s))
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [dormerId]);
+  }, [dormerId, currentPeriod?.id]);
 
   return { snapshot, loading };
 }
@@ -37,6 +84,7 @@ export function useDormerDashboard(dormerId: string | null) {
 export function useAdminDashboard(dormitoryId: string | null) {
   const [snapshot, setSnapshot] = useState<AdminDashboardSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const { selected: currentPeriod, loading: periodLoading } = useAcademicPeriod();
 
   useEffect(() => {
     if (!dormitoryId) {
@@ -47,7 +95,7 @@ export function useAdminDashboard(dormitoryId: string | null) {
     let cancelled = false;
     setLoading(true);
     dashboardData
-      .getAdminSnapshot(dormitoryId)
+      .getAdminSnapshot(dormitoryId, currentPeriod?.id!)
       .then((s) => !cancelled && setSnapshot(s))
       .finally(() => !cancelled && setLoading(false));
     return () => {

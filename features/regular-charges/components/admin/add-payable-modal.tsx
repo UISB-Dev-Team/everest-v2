@@ -18,6 +18,7 @@ import type { RegularCharge } from "@/features/regular-charges/data";
 
 interface AddPayableModalProps {
   isOpen: boolean;
+  isSavingPayable: boolean;
   onClose: () => void;
   onSave: (payable: {
     id?: string;
@@ -30,6 +31,7 @@ interface AddPayableModalProps {
 
 export default function AddPayableModal({
   isOpen,
+  isSavingPayable,
   onClose,
   onSave,
   payable,
@@ -142,8 +144,10 @@ export default function AddPayableModal({
           <Button type="button" variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave}>
-            {isEditing ? "Update Payable" : "Add Payable"}
+          <Button type="button" onClick={handleSave} disabled={isSavingPayable}>
+            {isSavingPayable
+              ? isEditing ? "Updating..." : "Adding..."
+              : isEditing ? "Update Payable" : "Add Payable"}
           </Button>
         </DialogFooter>
       </DialogContent>

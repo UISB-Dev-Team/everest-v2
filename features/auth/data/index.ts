@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type { AuthRole, AuthState, SignInInput, SignInResult } from "./types";
 
 export interface AuthDataAccess {
@@ -7,11 +7,12 @@ export interface AuthDataAccess {
   getServerSnapshot(): AuthState;
   signIn(input: SignInInput): Promise<SignInResult>;
   signOut(): Promise<void>;
-  setMockRole?(role: AuthRole | "unauthenticated"): void;
+  setRole(role: AuthRole): void;
+  resetPasswordForEmail(email: string, redirectTo: string): Promise<{ error: string | null }>;
+  updatePassword(newPassword: string): Promise<{ error: string | null }>;
 }
 
-// Single switch point. Backend dev replaces this with a real impl
-// (e.g. `import * as supabase from "./supabase"; export const authData = supabase`).
-export const authData: AuthDataAccess = mock;
+export const authData: AuthDataAccess = supabase;
 
 export type { AuthRole, AuthSession, AuthState, AuthUser, SignInInput, SignInResult } from "./types";
+
