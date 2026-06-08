@@ -52,58 +52,13 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
       const existsThisPeriod = _dormers.some((d) => d.email === input.email);
       if (existsThisPeriod) {
         toast.error("A dormer with this email is already enrolled this semester.");
-        return;
+        return { status: "exists_current" };
       }
 
       // 2. Check if a profile with this email exists from a previous period
       const existingProfile = await dormersData.getDormerByEmail(input.email!);
       if (existingProfile && academicPeriod?.id) {
-        // Profile exists but not in current period — ask user to re-enroll
-        toast(
-          `"${existingProfile.first_name} ${existingProfile.last_name}" already has an account from a previous semester. Enroll them in the current semester?`,
-          {
-            duration: 10000,
-            action: {
-              label: "Yes, enroll",
-              onClick: async () => {
-                setIsSubmitting(true);
-                try {
-                  await dormersData.enrollExistingDormer(
-                    existingProfile.id,
-                    {
-                      dormitory_id: input.dormitory_id,
-                      room_number: input.room_number,
-                      role: input.role,
-                    },
-                    academicPeriod.id
-                  );
-                  setDormers((prev) => [
-                    ...prev,
-                    {
-                      ...existingProfile,
-                      dormitory_id: input.dormitory_id ?? null,
-                      room_number: input.room_number ?? null,
-                      status: "active",
-                      dormer_enrollment_id: null,
-                      bills: [],
-                    },
-                  ]);
-                  toast.success(`${existingProfile.first_name} ${existingProfile.last_name} has been enrolled for this semester.`);
-                } catch (e) {
-                  console.error(e);
-                  toast.error("Failed to enroll existing dormer.");
-                } finally {
-                  setIsSubmitting(false);
-                }
-              },
-            },
-            cancel: {
-              label: "Cancel",
-              onClick: () => {},
-            },
-          }
-        );
-        return;
+        return { status: "exists_previous", profile: existingProfile, input };
       }
 
       // 3. Brand new dormer — create auth user, profile, enrollment
@@ -163,10 +118,12 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
           ),
         });
       }
-      toast.message(`Account invitation sent to ${input.email}`);
+      toast.success(`Account invitation sent to ${input.email}`);
+      return { status: "success" };
     } catch (e) {
       console.error(e);
       toast.error("Failed to add dormer.");
+      return { status: "error" };
     } finally {
       setIsSubmitting(false);
     }
@@ -371,6 +328,45 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     }
   };
 
+  const enrollExisting = async (profileId: string, input: any) => {
+    setIsSubmitting(true);
+    try {
+      if (!academicPeriod?.id) throw new Error("No active academic period found.");
+      await dormersData.enrollExistingDormer(
+        profileId,
+        {
+          dormitory_id: input.dormitory_id,
+          room_number: input.room_number,
+          role: input.role,
+        },
+        academicPeriod.id
+      );
+      
+      const existingProfile = await dormersData.getDormerByEmail(input.email);
+      if (existingProfile) {
+        setDormers((prev) => [
+          ...prev,
+          {
+            ...existingProfile,
+            dormitory_id: input.dormitory_id ?? null,
+            room_number: input.room_number ?? null,
+            status: "active",
+            dormer_enrollment_id: null,
+            bills: [],
+          },
+        ]);
+      }
+      toast.success("Dormer enrolled successfully for this semester!");
+      return true;
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to enroll existing dormer.");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return {
     saveDormer,
     updateDormer,
@@ -379,6 +375,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     saveBill,
     payAllBills,
     importDormers,
+    enrollExisting,
     isSubmitting,
     errors,
   };

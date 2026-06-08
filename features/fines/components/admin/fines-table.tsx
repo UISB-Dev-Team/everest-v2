@@ -12,6 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 import type { Dormer } from "@/features/dormers/data";
 
 interface FinesTableProps {
@@ -135,24 +142,25 @@ export default function FinesTable({
                     <TableCell className="hidden lg:table-cell text-gray-600">
                       {dormer.phone ?? "—"}
                     </TableCell>
-                    <TableCell className="text-right w-[180px]">
-                      <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onGenerateFines(dormer)}
-                          className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all font-medium"
-                        >
-                          <FileText className="h-4 w-4 mr-1" /> Fine
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onViewFines(dormer)}
-                          className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all font-medium"
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
+                    <TableCell className="text-right w-[80px]">
+                      <div className="flex justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                              <MoreVertical className="h-4 w-4 text-gray-500" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1 z-50">
+                            <DropdownMenuItem onClick={() => onGenerateFines(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                              <FileText className="h-4 w-4" />
+                              <span>Fine Dormer</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onViewFines(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded cursor-pointer font-medium">
+                              <Eye className="h-4 w-4" />
+                              <span>View Fines</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>

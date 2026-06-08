@@ -29,11 +29,12 @@ export function usePaymentActions() {
   const { user } = useAuth();
 
   const handleRecordPayment = async (input: any) => {
+    const toastId = toast.loading("Recording payment...");
     setIsSubmitting(true);
     try {
-      const dormer = await dormersData.getById(input.dormer_id)
+      const dormer = await dormersData.getById(input.dormer_id);
       if (!dormer) {
-        toast.error("Dormer not found.");
+        toast.error("Dormer not found.", { id: toastId });
         return;
       }
       const { newStatus, newRemaining } = await paymentsData.recordPayment(
@@ -42,7 +43,7 @@ export function usePaymentActions() {
         dormitoryId ?? "",
         user?.id ?? "",
       );
-      toast.success("Payment recorded successfully!");
+      toast.loading("Payment recorded! Sending confirmation email...", { id: toastId });
       await sendEmail({
         to: dormer?.email!,
         subject: `Payment Confirmation - VSU DormPay`,
@@ -53,17 +54,18 @@ export function usePaymentActions() {
           input.amount_paid,
           newStatus,
         )
-      })
-      toast.message("Receipt email sent successfully!");
+      });
+      toast.success("Payment recorded and receipt email sent successfully!", { id: toastId });
     } catch (e) {
       console.error(e);
-      toast.error("Failed to record payment.");
+      toast.error("Failed to record payment.", { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handlePayAllBills = async (bills: Bill[], dormer:DormerWithBills) => {
+  const handlePayAllBills = async (bills: Bill[], dormer: DormerWithBills) => {
+    const toastId = toast.loading("Recording bulk payments...");
     setIsSubmitting(true);
     try {
       for (const bill of bills) {
@@ -81,38 +83,41 @@ export function usePaymentActions() {
           dormitoryId ?? "",
           user?.id ?? "",
         );
-        toast.success("Bills paid successfully!");
-        const totalAmountDue = bills.reduce((sum, b) => sum + b.total_amount_due, 0);
-        const totalPaid = bills.reduce((sum, b) => sum + b.total_amount_due, 0); // paying all
-        const totalRemaining = 0; // since all are being paid
-        toast.success("Bills generated successfully");
-        await sendEmail({
-            to: dormer?.email!,
-            subject: `Bulk Payment Confirmation - VSU DormPay`,
-            html: billPaymentInvoiceTemplate(
-                dormer?.first_name! + " " + dormer?.last_name!,
-                bills.map((bill) => ({
-                    billingPeriod: getBillingPeriodLabel(bill.billing_month),
-                    description: bill.description,
-                    totalAmountDue: bill.total_amount_due,
-                    amountPaid: bill.total_amount_due, // fully paid
-                    remainingBalance: 0,
-                    paymentDate: new Date(),
-                })),
-                `${user?.fullName}`,
-                {
-                totalBills: bills.length,
-                totalAmountDue,
-                totalPaid,
-                totalRemaining,
-                }
-            ),
-            });
-          toast.success("Payment confirmation email sent.");
       }
+      
+      toast.loading("Payments recorded! Sending bulk confirmation email...", { id: toastId });
+
+      const totalAmountDue = bills.reduce((sum, b) => sum + b.total_amount_due, 0);
+      const totalPaid = bills.reduce((sum, b) => sum + b.total_amount_due, 0); // paying all
+      const totalRemaining = 0; // since all are being paid
+
+      await sendEmail({
+        to: dormer?.email!,
+        subject: `Bulk Payment Confirmation - VSU DormPay`,
+        html: billPaymentInvoiceTemplate(
+          dormer?.first_name! + " " + dormer?.last_name!,
+          bills.map((bill) => ({
+            billingPeriod: getBillingPeriodLabel(bill.billing_month),
+            description: bill.description,
+            totalAmountDue: bill.total_amount_due,
+            amountPaid: bill.total_amount_due, // fully paid
+            remainingBalance: 0,
+            paymentDate: new Date(),
+          })),
+          `${user?.fullName}`,
+          {
+            totalBills: bills.length,
+            totalAmountDue,
+            totalPaid,
+            totalRemaining,
+          }
+        ),
+      });
+      
+      toast.success("All payments recorded and confirmation email sent!", { id: toastId });
     } catch (e) {
       console.error(e);
-      toast.error("Failed to pay bills.");
+      toast.error("Failed to pay bills.", { id: toastId });
     } finally {
       setIsSubmitting(false);
     }

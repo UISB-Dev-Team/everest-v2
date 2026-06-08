@@ -1,6 +1,6 @@
 "use client";
 
-import { CreditCard, CheckCircle, Clock, X } from "lucide-react";
+import { CreditCard, CheckCircle, Clock, X, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,6 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { EventPayable, Event } from "@/features/events/data";
 import { Dormer } from "@/features/dormers/data";
@@ -63,22 +69,23 @@ export default function EventPayablesModal({
                       <div className="font-bold text-red-600 text-lg">
                         {formatAmount(event.amount_due)}
                       </div>
-                      <Button
-                        size="sm"
-                        className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white flex-1 sm:flex-none"
-                        onClick={() => onRecordPayment(event)}
-                      >
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        Log Payment
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white flex-1 sm:flex-none"
-                        onClick={() => onWaivePayment(dormer, event)}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Waive
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                            <MoreVertical className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1 z-50">
+                          <DropdownMenuItem onClick={() => onRecordPayment(event)} className="flex items-center gap-2 px-3 py-2 text-sm text-[#2E7D32] hover:bg-gray-50 rounded cursor-pointer">
+                            <CreditCard className="h-4 w-4" />
+                            <span>Log Payment</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onWaivePayment(dormer as unknown as Dormer, event)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                            <X className="h-4 w-4" />
+                            <span>Waive Payment</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
                     </div>
                   </div>

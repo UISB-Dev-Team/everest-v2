@@ -9,6 +9,7 @@ import {
   Users,
   X,
   XCircle,
+  MoreVertical,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,6 +29,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { formatAmount, formatDate } from "@/lib/utils/format";
 import type { EventDormerData } from "@/features/events/data";
 import { DataPagination, FiltersBar } from "@/components/ui/shared";
@@ -266,35 +273,35 @@ export default function EventDormersTable({
                         <span className="text-gray-400 text-sm">N/A</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right w-[160px]">
+                    <TableCell className="text-right w-[80px]">
                       {dormer.payment_status !== "Paid" && dormer.payment_status !== "Waived" ? (
-                        <div>
-                        <Button
-                          size="sm"
-                          onClick={() => onLogPayment(dormer)}
-                          className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
-                        >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          Log Payment
-                        </Button>
-
-                            <Button
-                              size="sm"
-                              onClick={() => onWaivePayment(dormer)}
-                              className="bg-[#2E7D32] hover:bg-[#A5D6A7] text-white font-semibold transition-all shadow-sm hover:shadow-md whitespace-nowrap"
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Waive Payment
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-100 rounded-full">
+                              <MoreVertical className="h-4 w-4 text-gray-500" />
                             </Button>
-                          </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 bg-white border border-gray-200 shadow-md rounded-md p-1">
+                            <DropdownMenuItem onClick={() => onLogPayment(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-[#2E7D32] hover:bg-gray-50 rounded cursor-pointer">
+                              <CreditCard className="h-4 w-4" />
+                              <span>Log Payment</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onWaivePayment(dormer)} className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer font-medium">
+                              <X className="h-4 w-4" />
+                              <span>Waive Payment</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-[#2E7D32] border-[#A5D6A7] bg-[#A5D6A7]/10 font-semibold whitespace-nowrap"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Completed
-                        </Badge>
+                        <div className="flex justify-end pr-2">
+                          <Badge
+                            variant="outline"
+                            className="text-[#2E7D32] border-[#A5D6A7] bg-[#A5D6A7]/10 font-semibold whitespace-nowrap"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Completed
+                          </Badge>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>

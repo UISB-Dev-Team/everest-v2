@@ -27,7 +27,7 @@ import type { Dormer, UpdateDormerInput } from "@/features/dormers/data";
 interface EditDormerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (id: string, dormerData: UpdateDormerInput) => Promise<void> | void;
+  onUpdate: (id: string, dormerData: UpdateDormerInput) => Promise<any> | any;
   dormerData: Dormer | null;
   roomNumbers: string[];
 }
@@ -44,6 +44,7 @@ export default function EditDormerModal({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [roomNumber, setRoomNumber] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (dormerData) {
@@ -60,18 +61,30 @@ export default function EditDormerModal({
       toast.info("Please fill in all required fields.");
       return;
     }
-    await onUpdate(dormerData.id, {
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      phone: phone || null,
-      room_number: roomNumber,
-    });
+    setIsSaving(true);
+    try {
+      await onUpdate(dormerData.id, {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: phone || null,
+        room_number: roomNumber,
+      });
+      onClose();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (isSaving) return;
     onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
         className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => e.preventDefault()}
@@ -98,6 +111,7 @@ export default function EditDormerModal({
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 maxLength={50}
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -113,6 +127,7 @@ export default function EditDormerModal({
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 maxLength={50}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -132,6 +147,7 @@ export default function EditDormerModal({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={100}
+                disabled={isSaving}
               />
             </div>
             <div>
@@ -148,6 +164,7 @@ export default function EditDormerModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={20}
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -156,7 +173,7 @@ export default function EditDormerModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
             <Label htmlFor="roomNumber">Room Number</Label>
-            <Select value={roomNumber} onValueChange={setRoomNumber}>
+            <Select value={roomNumber} onValueChange={setRoomNumber} disabled={isSaving}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select room" />
               </SelectTrigger>
@@ -171,14 +188,22 @@ export default function EditDormerModal({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
             onClick={handleSave}
+            disabled={isSaving}
           >
-            Save Changes
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

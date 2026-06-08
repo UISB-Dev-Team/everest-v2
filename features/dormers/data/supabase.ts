@@ -98,6 +98,7 @@ export async function listForDormitory(
   return dormers.map((row) => ({
     ...(row.profiles as DormerProfile),
     dormitory_id: row.dormitory_id,
+    id: row.profiles.id,
     dormer_enrollment_id: row.id,
     room_number: row.room_number,
   })) as Dormer[];

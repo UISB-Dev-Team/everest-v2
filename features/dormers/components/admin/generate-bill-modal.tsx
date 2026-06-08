@@ -42,7 +42,6 @@ interface GenerateBillModalProps {
   bills: Bill[];
   setShowConfirmDialog: (show: boolean) => void;
   setShowErrorModal: (show: boolean) => void;
-  setBillToCreate: (bill: any) => void;
 }
 
 type Mode = "single" | "bulk";
@@ -58,7 +57,6 @@ export default function GenerateBillModal({
   bills,
   setShowConfirmDialog,
   setShowErrorModal,
-  setBillToCreate,
 }: GenerateBillModalProps) {
   const [mode, setMode] = useState<Mode>("single");
   const { selected: currentAcademicPeriod } = useAcademicPeriod()
@@ -171,7 +169,6 @@ useEffect(() => {
     );
 
     if (existingBillId) {
-      setBillToCreate({ ...billData, id: existingBillId });
       setShowConfirmDialog(true);
     } else {
       onGenerateBill(billData);

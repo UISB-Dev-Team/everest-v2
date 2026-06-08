@@ -246,7 +246,7 @@ function SidebarContent({
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="space-y-1">
           {navItems.map(({ title, url, icon: Icon }) => {
-            const active = pathname === url;
+            const active = pathname === url || pathname.startsWith(url + "/");
             return (
               <li key={url}>
                 <Link
