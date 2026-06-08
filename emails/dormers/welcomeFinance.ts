@@ -5,7 +5,7 @@ export const welcomeFinance = (
   dormitoryName: string
 ) => `
   <h1>Welcome, ${firstName}!</h1>
-  <p>As Treasuer/Auditor of the dorm, we're inviting you to be an admin of ${dormitoryName}. You can access the DormPay System <a href="https://dorm-payment-system.vercel.app/">here</a>. You can now log in with the following credentials:</p>
+  <p>As Treasuer/Auditor of the dorm, we're inviting you to be an admin of ${dormitoryName}. You can access the DormPay System <a href="https://dormpay-system.vercel.app/">here</a>. You can now log in with the following credentials:</p>
   <p>Email: <strong>${email}</strong></p>
   <p>Password: <strong>${temporaryPassword}</strong></p>
   <p style="margin-top: 25px;">Best regards,<br><strong>DormPay System</strong></p>

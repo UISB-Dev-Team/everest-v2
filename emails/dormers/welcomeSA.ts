@@ -4,7 +4,7 @@ export const welcomeSA = (
   temporaryPassword: string
 ) => `
   <h1>Welcome, ${firstName}!</h1>
-  <p>We're inviting you to be an admin of <a href="https://dorm-payment-system.vercel.app/">DormPay System</a>. You can now log in with the following credentials:</p>
+  <p>We're inviting you to be an admin of <a href="https://dormpay-system.vercel.app/">DormPay System</a>. You can now log in with the following credentials:</p>
   <p>Email: <strong>${email}</strong></p>
   <p>Password: <strong>${temporaryPassword}</strong></p>
   <p>Please refer to the admin user guide attached below for detailed instructions on how to use the system.</p>
