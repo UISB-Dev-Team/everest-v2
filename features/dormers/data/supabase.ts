@@ -98,6 +98,7 @@ export async function listForDormitory(
   return dormers.map((row) => ({
     ...(row.profiles as DormerProfile),
     dormitory_id: row.dormitory_id,
+    dormer_enrollment_id: row.id,
     room_number: row.room_number,
   })) as Dormer[];
 }
@@ -161,20 +162,26 @@ export async function enrollExistingDormer(
 
   if (!dormitory_id) throw new Error("dormitory_id is required.");
 
-  // Check if already enrolled for this period
-  const { data: existing } = await supabase
+  // ── 1. Enrollment ──────────────────────────────────────────────────────────
+
+  const { data: existingEnrollment } = await supabase
     .from("dormitory_enrollment")
     .select("id")
     .eq("dormer_id", profileId)
     .eq("academic_period_id", academicPeriodId)
     .maybeSingle();
 
-  if (existing) {
-    // Already enrolled — just reactivate
+  if (existingEnrollment) {
+    // Already enrolled — reactivate and update room/dormitory
     const { error } = await supabase
       .from("dormitory_enrollment")
-      .update({ status: "active", dormitory_id, room_number: room_number ?? null })
-      .eq("id", existing.id);
+      .update({
+        status: "active",
+        dormitory_id,
+        room_number: room_number ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingEnrollment.id);
     if (error) throw error;
   } else {
     const { error } = await supabase
@@ -189,14 +196,30 @@ export async function enrollExistingDormer(
     if (error) throw error;
   }
 
-  // Upsert the dormitory role
-  const { error: roleError } = await supabase
+  // ── 2. Dormitory role — check-then-insert, no onConflict ──────────────────
+  // dormitory_roles has no unique constraint on (user_id, dormitory_id),
+  // so onConflict upsert throws 42P10. Check manually instead.
+
+  const { data: existingRole } = await supabase
     .from("dormitory_roles")
-    .upsert(
-      { user_id: profileId, dormitory_id, role, is_active: true },
-      { onConflict: "user_id,dormitory_id" }
-    );
-  if (roleError) throw roleError;
+    .select("id")
+    .eq("user_id", profileId)
+    .eq("dormitory_id", dormitory_id)
+    .maybeSingle();
+
+  if (existingRole) {
+    // Role exists — update role type and reactivate
+    const { error } = await supabase
+      .from("dormitory_roles")
+      .update({ role, is_active: true })
+      .eq("id", existingRole.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("dormitory_roles")
+      .insert({ user_id: profileId, dormitory_id, role, is_active: true });
+    if (error) throw error;
+  }
 }
 
 export async function listForDormitoryWithBills(
@@ -515,7 +538,7 @@ export async function remove(id: string): Promise<void> {
 export async function deleteBillData(id: string): Promise<void> {
   const { error } = await supabase
     .from("bills")
-    .update({ is_deleted: true })
+    .delete()
     .eq("id", id);
   if (error) throw error;
 }

@@ -1,33 +1,32 @@
-export const generateMaboloBillingPeriods = (semester: string, ) => {
+export const generateBillingPeriods = (semester: string, academicYear: string) => {
+    if(!semester || !academicYear) return [];
+    const [startYear, endYear] = academicYear.split("-");
     if(semester === "1st"){
         return [
-            "August 2026",
-            "September 2026",
-            "October 2026",
-            "November 2026",
-            "December 2026",
+            "August " + startYear,
+            "September " + startYear,
+            "October " + startYear,
+            "November " + startYear,
+            "December " + startYear,
+            "August - December " + startYear,
         ]
     }
     if(semester === "2nd"){
         return [
-            "January 2027",
-            "February 2027",
-            "March 2027",
-            "April 2027",
-            "May 2027",
+            "January " + endYear,
+            "February " + endYear,
+            "March " + endYear,
+            "April " + endYear,
+            "May " + endYear,
+            "January - May " + endYear,
         ]
     }
-}
-
-export const generateSampaguitaBillingPeriods = (semester: string, ) => {
-    if(semester === "1st"){
+    if(semester == "Summer") {
         return [
-            "August - December 2026",
+            "June " + endYear,
+            "July " + endYear,
+            "June - July " + endYear,
         ]
     }
-    if(semester === "2nd"){
-        return [
-            "January - May 2027",
-        ]
-    }
+    return [];
 }

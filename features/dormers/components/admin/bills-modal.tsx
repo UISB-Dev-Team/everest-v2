@@ -63,8 +63,6 @@ export default function BillsModal({
     }
   }, [dormer?.bills]);
 
-  if (!dormer) return null;
-
   const unpaidBills = billsData.filter(
     (b) => b.status === "Unpaid" || b.status === "Partial"
   );
@@ -76,14 +74,14 @@ export default function BillsModal({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent
           className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
           onInteractOutside={(e) => {
             e.preventDefault();
           }}
         >
-          <DialogHeader className={undefined}>
+          {dormer && <><DialogHeader className={undefined}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
@@ -278,6 +276,8 @@ export default function BillsModal({
             </Tabs>
           </div>
           <ConfirmDialog />
+          </>
+          }
         </DialogContent>
       </Dialog>
 
@@ -288,7 +288,7 @@ export default function BillsModal({
             <DialogTitle className={undefined}>Confirm Pay All</DialogTitle>
             <DialogDescription className={undefined}>
               Are you sure you want to mark all unpaid bills for{" "}
-              {dormer.first_name} {dormer.last_name} as paid? This action cannot
+              {dormer?.first_name} {dormer?.last_name} as paid? This action cannot
               be undone.
             </DialogDescription>
           </DialogHeader>

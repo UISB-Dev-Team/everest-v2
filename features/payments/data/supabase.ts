@@ -15,7 +15,6 @@ import type {
 } from "./types";
 import type { Tables } from "@/database.types";
 import { getById } from "@/features/dormers/data/supabase";
-import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 

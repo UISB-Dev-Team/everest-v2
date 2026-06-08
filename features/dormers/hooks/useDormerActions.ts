@@ -12,7 +12,6 @@ import type {
   UpdateDormerInput,
 } from "@/features/dormers/data";
 import type { Bill, CreatePaymentInput } from "@/features/payments/data";
-import { useAcademicPeriod } from "@/lib/hooks/useAcademicPeriod";
 import { useDormitory } from "@/lib/hooks/useDormitory";
 import { sendEmail } from "@/lib/email";
 import { newBillTemplate } from "@/emails/dormers/newBill";
@@ -22,6 +21,7 @@ import { welcomeAdviser } from "@/emails/dormers/welcomeAdviser";
 import { welcomeSA } from "@/emails/dormers/welcomeSA";
 import { welcomeUser } from "@/emails/dormers/welcomeUser";
 import { generateRandomPassword } from "../lib/generate-random-password";
+import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 
 interface PaymentInput {
   bill_id: string;
@@ -43,7 +43,7 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
   const [errors, setErrors] = useState<string[]>([]);
   const { user } = useAuth();
   const { dormitoryName } = useDormitory();
-  const { current: academicPeriod } = useAcademicPeriod();
+  const { selected: academicPeriod } = useAcademicPeriod();
 
   const saveDormer = async (input: CreateDormerInput) => {
     setIsSubmitting(true);

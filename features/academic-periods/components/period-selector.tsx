@@ -8,6 +8,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useAcademicPeriod } from "../hooks/useAcademicPeriods";
+import { AcademicPeriod } from "../type";
 
 export function PeriodSelector() {
     const { all, selected, setSelected } = useAcademicPeriod();
@@ -18,7 +19,7 @@ export function PeriodSelector() {
         <Select
             value={selected?.id}
             onValueChange={(id) => {
-                const period = all.find((p) => p.id === id);
+                const period = all.find((p: AcademicPeriod) => p.id === id);
                 if (period) setSelected(period);
             }}
         >
@@ -26,7 +27,7 @@ export function PeriodSelector() {
                 <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
-                {all.map((p) => (
+                {all.map((p: AcademicPeriod) => (
                     <SelectItem key={p.id} value={p.id}>
                         {p.academic_year} — {p.semester}
                         {p.is_current ? " (Current)" : ""}
