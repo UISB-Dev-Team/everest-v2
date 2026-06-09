@@ -21,7 +21,7 @@ import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 import { useDormers } from "@/features/dormers/hooks/useDormers";
 import { useDormerActions } from "@/features/dormers/hooks/useDormerActions";
 import { useModal } from "@/features/dormers/hooks/useModal";
-import { useBills } from "@/features/dormers/hooks/usBills";
+import { useBills } from "@/features/dormers/hooks/useBills";
 import { useRegularCharges } from "@/features/regular-charges/hooks/useRegularCharges";
 import { usePaymentActions } from "@/features/payments/hooks/usePaymentActions";
 import { handleExport } from "@/features/dormers/lib/csv-export";
@@ -33,6 +33,7 @@ import EditDormerModal from "@/features/dormers/components/admin/edit-dormer-mod
 import DeleteDormerModal from "@/features/dormers/components/admin/delete-dormer-modal";
 import { DormersPageSkeleton } from "@/features/dormers/components/admin/dormers-page-skeleton";
 import { PlaceholderModal } from "@/features/dormers/components/admin/placeholder-modal";
+import { ProgressModal } from "@/components/ui/progress-modal";
 import BillsModal from "./bills-modal";
 import GenerateBillModal from "./generate-bill-modal";
 import PaymentModal from "./payments-modal";
@@ -68,15 +69,18 @@ export function AdminDormersPage() {
   } = useDormers();
 
   // ── 2. actions ────────────────────────────────────────────────────────────
-  const { saveDormer, updateDormer, deleteDormer, importDormers, enrollExisting } = useDormerActions(
-    dormers,
-    bills,
-    setDormers,
-    setBills
-  );
+  const {
+    saveDormer,
+    updateDormer,
+    deleteDormer,
+    importDormers,
+    enrollExisting,
+    isSubmitting,
+  } = useDormerActions(dormers, bills, setDormers, setBills);
   const { roomNumbers } = useRooms();
   const { payables } = useRegularCharges();
-  const { generateBill, generateBillsBulk, deleteBill, importBills } = useBills();
+  const { generateBill, generateBillsBulk, deleteBill, importBills } =
+    useBills();
   const { handleRecordPayment, handlePayAllBills } = usePaymentActions();
 
   // ── 3. modal state ────────────────────────────────────────────────────────
@@ -90,6 +94,12 @@ export function AdminDormersPage() {
   const [reenrollProfile, setReenrollProfile] = useState<any>(null);
   const [reenrollInput, setReenrollInput] = useState<any>(null);
   const [showReenrollDialog, setShowReenrollDialog] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    title: string;
+    message: string;
+    progress?: number;
+    total?: number;
+  } | null>(null);
 
   // ── 5. handlers ───────────────────────────────────────────────────────────
   const handleSaveDormer = async (input: CreateDormerInput) => {
@@ -124,7 +134,7 @@ export function AdminDormersPage() {
               ? d.bills?.map((b) => (b?.id === bill?.id ? bill : b))
               : [...(d.bills || []), bill],
           };
-        })
+        }),
       );
 
       setBills((prev: Bill[]) => {
@@ -145,8 +155,8 @@ export function AdminDormersPage() {
   const handleGenerateBulkBills = async (billsData: any[]) => {
     setIsBillSubmitting(true);
     try {
-      if(!selectedDormer) {
-        toast.error("No dormer selected")
+      if (!selectedDormer) {
+        toast.error("No dormer selected");
         return;
       }
       const newBills = await generateBillsBulk(billsData, selectedDormer);
@@ -167,7 +177,7 @@ export function AdminDormersPage() {
             else updatedBills.push(bill);
           }
           return { ...d, bills: updatedBills };
-        })
+        }),
       );
 
       setBills((prev: Bill[]) => {
@@ -200,7 +210,7 @@ export function AdminDormersPage() {
     setIsBillSubmitting(true);
     await handleRecordPayment({
       ...paymentData,
-      dormer_id: selectedDormer?.id
+      dormer_id: selectedDormer?.id,
     });
     setBills((prev: Bill[]) =>
       prev.map((b) => {
@@ -210,18 +220,22 @@ export function AdminDormersPage() {
         return {
           ...b,
           amount_paid: newAmountPaid,
-          status: remaining <= 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid",
+          status:
+            remaining <= 0 ? "Paid" : newAmountPaid > 0 ? "Partial" : "Unpaid",
         };
-      })
+      }),
     );
     setIsBillSubmitting(false);
     closeModal();
   };
 
   const handleImportDormers = async (dormers: CreateDormerInput[]) => {
-    await importDormers(dormers);
+    await importDormers(dormers, (phase, progress, total) => {
+      setImportProgress({ title: phase, message: "Creating accounts and sending invitations…", progress, total });
+    });
+    setImportProgress(null);
     closeModal();
-  }
+  };
 
   const handlePayAll = async () => {
     if (!selectedDormer) return;
@@ -229,17 +243,17 @@ export function AdminDormersPage() {
     const unpaidBills: Bill[] = bills.filter(
       (b) =>
         b.dormer_id === selectedDormer.id &&
-        (b.status === "Unpaid" || b.status === "Partial")
+        (b.status === "Unpaid" || b.status === "Partial"),
     );
     if (unpaidBills.length === 0) return;
 
-    await handlePayAllBills(unpaidBills, selectedDormer!)
+    await handlePayAllBills(unpaidBills, selectedDormer!);
 
     setBills((prev: Bill[]) =>
       prev.map((b) => {
         if (!unpaidBills.some((ub) => ub.id === b.id)) return b;
         return { ...b, amount_paid: b.total_amount_due, status: "Paid" };
-      })
+      }),
     );
 
     setDormers((prev) =>
@@ -250,21 +264,27 @@ export function AdminDormersPage() {
           bills: d.bills.map((b) =>
             unpaidBills.some((ub) => ub.id === b.id)
               ? { ...b, amount_paid: b.total_amount_due, status: "Paid" }
-              : b
+              : b,
           ),
         };
-      })
+      }),
     );
   };
 
-  const handleImportBills = async (bills: ImportedBill[], payable: RegularCharge | null) => {
+  const handleImportBills = async (
+    bills: ImportedBill[],
+    payable: RegularCharge | null,
+  ) => {
     setIsImportingBills(true);
-    const result = await importBills(bills, payable!);
+    const result = await importBills(bills, payable!, (phase, progress, total) => {
+      setImportProgress({ title: phase, message: "Please wait…", progress, total });
+    });
     setIsImportingBills(false);
-    
+    setImportProgress(null);
+
     if (result.createdBills && result.createdBills.length > 0) {
       const newBills = result.createdBills;
-      
+
       setDormers((prev) =>
         prev.map((d) => {
           const dormerBills = newBills.filter((b) => b.dormer_id === d.id);
@@ -277,7 +297,7 @@ export function AdminDormersPage() {
             else updatedBills.push(bill);
           }
           return { ...d, bills: updatedBills };
-        })
+        }),
       );
 
       setBills((prev: Bill[]) => {
@@ -292,7 +312,7 @@ export function AdminDormersPage() {
     }
 
     return result;
-  }
+  };
 
   // ── 6. guard ──────────────────────────────────────────────────────────────
   if (loading) return <DormersPageSkeleton />;
@@ -367,7 +387,10 @@ export function AdminDormersPage() {
         isOpen={modal === "bills"}
         onClose={closeModal}
         dormer={selectedDormer}
-        onRecordPayment={(b) => { openModal("payment", selectedDormer); setSelectedBill(b as Bill); }}
+        onRecordPayment={(b) => {
+          openModal("payment", selectedDormer);
+          setSelectedBill(b as Bill);
+        }}
         onPayAll={handlePayAll}
         payables={payables}
         onDeleteBill={handleDeleteBill}
@@ -397,7 +420,7 @@ export function AdminDormersPage() {
         isOpen={modal === "import"}
         onClose={closeModal}
         onImport={handleImportDormers}
-        isSubmitting={false}
+        isSubmitting={isSubmitting}
       />
 
       <ImportBillsModal
@@ -407,12 +430,23 @@ export function AdminDormersPage() {
         isSubmitting={isImportingBills}
         payables={payables}
         billingPeriods={BILLING_PERIODS}
+        dormers={dormers}
+      />
+
+      <ProgressModal
+        isOpen={importProgress !== null}
+        title={importProgress?.title}
+        message={importProgress?.message}
+        progress={importProgress?.progress}
+        total={importProgress?.total}
       />
 
       {/* ── Confirm dialogs ── */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl rounded-lg p-6">
-          <DialogTitle className="text-xl font-bold text-red-600">Bill Already Exists</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-red-600">
+            Bill Already Exists
+          </DialogTitle>
           <DialogDescription className="text-gray-600 mt-2">
             A bill already exists for this period with that payable.
           </DialogDescription>
@@ -447,16 +481,18 @@ export function AdminDormersPage() {
         </DialogContent>
       </Dialog>
 
-
-
       <Dialog open={showReenrollDialog} onOpenChange={setShowReenrollDialog}>
         <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl rounded-lg p-6">
           <DialogTitle className="text-xl font-bold text-[#12372A]">
             Enroll Existing Resident?
           </DialogTitle>
           <DialogDescription className="text-gray-600 mt-2">
-            <strong>{reenrollProfile?.first_name} {reenrollProfile?.last_name}</strong> already has an account from a previous semester.
-            Do you want to enroll them in the current semester for <strong>Room {reenrollInput?.room_number}</strong>?
+            <strong>
+              {reenrollProfile?.first_name} {reenrollProfile?.last_name}
+            </strong>{" "}
+            already has an account from a previous semester. Do you want to
+            enroll them in the current semester for{" "}
+            <strong>Room {reenrollInput?.room_number}</strong>?
           </DialogDescription>
           <DialogFooter className="mt-6 flex justify-end gap-2">
             <Button
@@ -468,7 +504,10 @@ export function AdminDormersPage() {
             <Button
               className="bg-[#2E7D32] hover:bg-[#1B5E20] text-white font-semibold"
               onClick={async () => {
-                const ok = await enrollExisting(reenrollProfile.id, reenrollInput);
+                const ok = await enrollExisting(
+                  reenrollProfile.id,
+                  reenrollInput,
+                );
                 if (ok) {
                   setShowReenrollDialog(false);
                   closeModal();
