@@ -2,179 +2,96 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { toast } from "sonner";
+import { LoginBrandPanel } from "@/features/auth/components/login-brand-panel";
+import { LoginFormPanel } from "@/features/auth/components/login-form-panel";
+import { type LoginRole } from "@/features/auth/components/login-role-pills";
 
-type LoginRole = "admin" | "user";
+const ROLE_COPY: Record<LoginRole, { headline: string; sub: string }> = {
+  user:  { headline: "Welcome back, dormer.",  sub: "Your dues, fines, and clearance — one tap away." },
+  admin: { headline: "Welcome back, dorm admin.", sub: "Manage your dormitory with a calm dashboard." },
+  super: { headline: "Welcome, super admin.",  sub: "Cross-dormitory operations and rollups." },
+};
 
-export function LoginForm() {
+export function LoginForm({ onBack }: { onBack?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signIn } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(
+
+  const [role, setRole]       = useState<LoginRole>("user");
+  const [email, setEmail]     = useState("");
+  const [password, setPass]   = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [submitting, setSub]  = useState(false);
+  const [error, setError]     = useState(
     searchParams.get("error") === "invalid_reset_link"
       ? "That reset link is invalid or has expired. Please request a new one."
       : ""
   );
-  const [message, setMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<LoginRole>("user");
-  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSignIn = async (event: FormEvent) => {
-    event.preventDefault();
+  const { headline, sub } = ROLE_COPY[role];
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError("");
-    setMessage("");
-    setSubmitting(true);
-
+    setSub(true);
     const { error: signInError } = await signIn({ email, password });
-    setSubmitting(false);
-
-    if (signInError) {
-      setError(signInError);
-      return;
-    }
-    router.push(selectedRole === "admin" ? "/admin/dashboard" : "/dashboard");
+    setSub(false);
+    if (signInError) { setError(signInError); return; }
+    if (role === "super") router.push("/super-admin/dashboard");
+    else if (role === "admin") router.push("/admin/dashboard");
+    else router.push("/dashboard");
   };
 
-  const handlePasswordReset = () => {
-    router.push("/forgot-password");
-  };
+  const handleBack = () => { if (onBack) onBack(); else router.push("/"); };
 
   return (
-    <Card className="w-full max-w-md sm:max-w-lg lg:max-w-xl xl:max-w-2xl rounded-2xl shadow-2xl border border-gray-200 bg-white backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-      <CardHeader className="space-y-3">
-        <CardTitle className="text-2xl sm:text-3xl font-bold text-[#12372A] text-start">
-          Sign In
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5 px-6 pb-6">
-        {/* Role selection */}
-        <div className="space-y-3">
-          <label className="block text-sm font-semibold text-[#12372A]">
-            Select Account Type
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              type="button"
-              onClick={() => setSelectedRole("admin")}
-              variant={selectedRole === "admin" ? "default" : "outline"}
-              className={`h-11 font-medium transition-all ${
-                selectedRole === "admin"
-                  ? "bg-[#12372A] text-white hover:bg-[#1c4f3d] border-[#12372A] shadow-md"
-                  : "border-[#12372A] text-[#12372A] hover:bg-[#12372A]/5"
-              }`}
-            >
-              Admin
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setSelectedRole("user")}
-              variant={selectedRole === "user" ? "default" : "outline"}
-              className={`h-11 font-medium transition-all ${
-                selectedRole === "user"
-                  ? "bg-[#12372A] text-white hover:bg-[#1c4f3d] border-[#12372A] shadow-md"
-                  : "border-[#12372A] text-[#12372A] hover:bg-[#12372A]/5"
-              }`}
-            >
-              User
-            </Button>
-          </div>
-        </div>
+    <div
+      className="min-h-screen grid place-items-center px-4 py-10 sm:py-14 relative"
+      style={{
+        background:
+          "radial-gradient(900px 600px at 85% -10%, rgba(165,214,167,0.35), transparent 60%), " +
+          "radial-gradient(700px 500px at -10% 110%, rgba(46,125,50,0.22), transparent 60%), " +
+          "#f7f6f2",
+      }}
+    >
+      {/* Back chip */}
+      <button
+        onClick={handleBack}
+        className="absolute top-4 left-4 sm:top-5 sm:left-5 flex items-center gap-1.5 text-[13px] font-medium text-[#3a4a42] border border-[#e7e3d8] rounded-full px-3.5 py-1.5 cursor-pointer z-10 transition-all hover:-translate-x-0.5"
+        style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#fff")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.85)")}
+      >
+        <ChevronLeft size={15} />
+        Home
+      </button>
 
-        {error && (
-          <div className="p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300">
-            {error}
-          </div>
-        )}
-        {message && (
-          <div className="p-3.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300">
-            {message}
-          </div>
-        )}
+      {/* Card */}
+      <div
+        className="w-full max-w-[520px] md:max-w-[980px] bg-white rounded-2xl md:rounded-3xl overflow-hidden border border-[#e7e3d8] grid grid-cols-1 md:grid-cols-[1fr_1.15fr]"
+        style={{ boxShadow: "0 30px 80px -32px rgba(13,22,19,0.36), 0 8px 16px -8px rgba(13,22,19,0.10)" }}
+      >
+        {/* Left brand panel — hidden on mobile, shown md+ */}
+        <LoginBrandPanel headline={headline} sub={sub} />
 
-        <form onSubmit={handleSignIn} className="space-y-5">
-          <div className="space-y-2.5">
-            <label
-              htmlFor="email"
-              className="block text-sm font-semibold text-[#12372A]"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#12372A] focus:border-[#12372A] transition-all text-base"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div className="space-y-2.5">
-            <div className="flex justify-between items-center">
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold text-[#12372A]"
-              >
-                Password
-              </label>
-              <button
-                type="button"
-                onClick={handlePasswordReset}
-                className="text-sm font-medium text-[#12372A] hover:text-[#1c4f3d] hover:underline transition-all"
-              >
-                Forgot Password?
-              </button>
-            </div>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#12372A] focus:border-[#12372A] transition-all text-base"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#12372A] transition-colors focus:outline-none"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={submitting}
-            size="lg"
-            className="w-full bg-[#12372A] hover:bg-[#1c4f3d] text-white py-3.5 rounded-lg font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#12372A] disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-          >
-            {submitting
-              ? "Processing..."
-              : `Sign In as ${selectedRole === "admin" ? "Admin" : "User"}`}
-          </Button>
-        </form>
-
-        <p className="text-xs text-gray-500 text-center pt-2">
-          Developed by Laurente, J.R. & Dejos, P. | Department of Computer
-          Science and Technology 2025
-        </p>
-      </CardContent>
-    </Card>
+        {/* Right form panel — always visible */}
+        <LoginFormPanel
+          role={role}
+          onRoleChange={setRole}
+          email={email}
+          onEmailChange={setEmail}
+          password={password}
+          onPasswordChange={setPass}
+          showPwd={showPwd}
+          onTogglePwd={() => setShowPwd((v) => !v)}
+          submitting={submitting}
+          error={error}
+          onSubmit={handleSubmit}
+          onForgotPassword={() => router.push("/forgot-password")}
+        />
+      </div>
+    </div>
   );
 }
