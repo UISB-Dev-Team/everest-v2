@@ -13,18 +13,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileUp, Info, Download, AlertCircle } from "lucide-react";
 import { RegularCharge } from "@/features/regular-charges/data";
 import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
 import { ImportedBill, DormerWithBills } from "../../data";
-
-
+import type { Bill } from "@/features/payments/data";
 
 export interface ImportBillsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (bills: ImportedBill[], payable: RegularCharge | null) => Promise<{ successCount: number; errorCount: number; errors: string[] }>;
+  onImport: (
+    bills: ImportedBill[],
+    payable: RegularCharge | null,
+  ) => Promise<{
+    successCount: number;
+    errorCount: number;
+    errors: string[];
+    createdBills?: Bill[];
+  }>;
   isSubmitting: boolean;
   payables: RegularCharge[];
   billingPeriods: string[]; // raw values e.g. ["2026-01", "1st-semester (2025-2026)"]
@@ -41,15 +54,22 @@ export default function ImportBillsModal({
 }: ImportBillsModalProps) {
   const billingPeriodLabels = billingPeriods.map(getBillingPeriodLabel);
   const [csvText, setCsvText] = useState("");
-  const [selectedPayable, setSelectedPayable] = useState<RegularCharge | null>(null);
+  const [selectedPayable, setSelectedPayable] = useState<RegularCharge | null>(
+    null,
+  );
   const [rowCount, setRowCount] = useState(0);
   const [billCount, setBillCount] = useState(0);
-  const [importResult, setImportResult] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{
+    successCount: number;
+    errorCount: number;
+    errors: string[];
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateCounts = (text: string) => {
     const { headers, rows } = parseCsv(text);
-    const hasHeader = headers.length > 0 && headers[0].toLowerCase() === "email";
+    const hasHeader =
+      headers.length > 0 && headers[0].toLowerCase() === "email";
     setRowCount(hasHeader ? rows.length : Math.max(0, rows.length - 1));
     let estimated = 0;
     rows.forEach((cells) => {
@@ -66,7 +86,10 @@ export default function ImportBillsModal({
     updateCounts(text);
   };
 
-  const parseBillsCSV = (text: string, selectedPayable: RegularCharge | null) => {
+  const parseBillsCSV = (
+    text: string,
+    selectedPayable: RegularCharge | null,
+  ) => {
     const errors: string[] = [];
 
     if (!selectedPayable) {
@@ -77,12 +100,16 @@ export default function ImportBillsModal({
     const { headers, rows } = parseCsv(text);
 
     if (headers.length === 0 || rows.length === 0) {
-      errors.push("Invalid CSV format: File must contain at least a header row and one data row.");
+      errors.push(
+        "Invalid CSV format: File must contain at least a header row and one data row.",
+      );
       return { bills: [], errors };
     }
 
     if (headers.length < 4) {
-      errors.push("Invalid CSV format: Must have at least 4 columns (Email, First Name, Last Name, and billing period columns).");
+      errors.push(
+        "Invalid CSV format: Must have at least 4 columns (Email, First Name, Last Name, and billing period columns).",
+      );
       return { bills: [], errors };
     }
 
@@ -92,7 +119,7 @@ export default function ImportBillsModal({
       headers[2].toLowerCase() !== "last name"
     ) {
       errors.push(
-        `Invalid CSV headers: First three columns must be "Email", "First Name", "Last Name". Found: "${headers[0]}", "${headers[1]}", "${headers[2]}".`
+        `Invalid CSV headers: First three columns must be "Email", "First Name", "Last Name". Found: "${headers[0]}", "${headers[1]}", "${headers[2]}".`,
       );
       return { bills: [], errors };
     }
@@ -100,7 +127,9 @@ export default function ImportBillsModal({
     // Validate billing period column headers (columns 4+)
     const periodHeaders = headers.slice(3);
     if (periodHeaders.length === 0) {
-      errors.push("No billing period columns found. Please include at least one billing period column.");
+      errors.push(
+        "No billing period columns found. Please include at least one billing period column.",
+      );
       return { bills: [], errors };
     }
 
@@ -115,7 +144,7 @@ export default function ImportBillsModal({
 
     // Pre-build label → raw value map once
     const labelToValue = new Map(
-      billingPeriods.map((v) => [getBillingPeriodLabel(v), v])
+      billingPeriods.map((v) => [getBillingPeriodLabel(v), v]),
     );
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -127,7 +156,7 @@ export default function ImportBillsModal({
 
       if (parts.length < 4) {
         errors.push(
-          `Row ${rowNumber}: Insufficient columns. Expected at least 4, found ${parts.length}.`
+          `Row ${rowNumber}: Insufficient columns. Expected at least 4, found ${parts.length}.`,
         );
         continue;
       }
@@ -135,7 +164,9 @@ export default function ImportBillsModal({
       const [email, firstName, lastName] = parts;
 
       if (!email || !firstName || !lastName) {
-        errors.push(`Row ${rowNumber}: Email, First Name, and Last Name are all required.`);
+        errors.push(
+          `Row ${rowNumber}: Email, First Name, and Last Name are all required.`,
+        );
         continue;
       }
 
@@ -152,7 +183,9 @@ export default function ImportBillsModal({
         const periodLabel = headers[j];
         const billingPeriodValue = labelToValue.get(periodLabel);
         if (!billingPeriodValue) {
-          errors.push(`Row ${rowNumber}: Could not map billing period "${periodLabel}" to a valid value.`);
+          errors.push(
+            `Row ${rowNumber}: Could not map billing period "${periodLabel}" to a valid value.`,
+          );
           continue;
         }
 
@@ -170,12 +203,15 @@ export default function ImportBillsModal({
   };
 
   const handleImport = async () => {
-    const { bills, errors: parsingErrors } = parseBillsCSV(csvText, selectedPayable);
+    const { bills, errors: parsingErrors } = parseBillsCSV(
+      csvText,
+      selectedPayable,
+    );
 
     if (parsingErrors.length > 0) {
       // pass parsing errors to the parent componenet for display in results modal
-      const errorBills = parsingErrors.map(error => ({ 
-        error, 
+      const errorBills = parsingErrors.map((error) => ({
+        error,
         isParsingError: true,
         email: "",
         first_name: "",
@@ -189,7 +225,9 @@ export default function ImportBillsModal({
     }
 
     if (bills.length === 0) {
-      toast.error("No bills found to import. Make sure to include non-empty values in billing period columns.");
+      toast.error(
+        "No bills found to import. Make sure to include non-empty values in billing period columns.",
+      );
       return;
     }
 
@@ -217,7 +255,12 @@ export default function ImportBillsModal({
 
   const handleDownloadTemplate = () => {
     // Headers: Email, First Name, Last Name, then one column per billing period label
-    const headers = ["Email", "First Name", "Last Name", ...billingPeriodLabels];
+    const headers = [
+      "Email",
+      "First Name",
+      "Last Name",
+      ...billingPeriodLabels,
+    ];
 
     // One row per active dormer — billing period cells are empty, ready to be filled in
     const dataRows = dormers.map((d) => [
@@ -229,13 +272,14 @@ export default function ImportBillsModal({
 
     // Wrap every cell in double-quotes and escape any existing quotes (RFC 4180)
     const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
-    const csvContent =
-      [headers, ...dataRows]
-        .map((row) => row.map(escape).join(","))
-        .join("\n");
+    const csvContent = [headers, ...dataRows]
+      .map((row) => row.map(escape).join(","))
+      .join("\n");
 
     // Prepend UTF-8 BOM so Excel on Windows opens it without garbled characters
-    const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["﻿" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -260,16 +304,26 @@ export default function ImportBillsModal({
 
         {importResult ? (
           <div className="py-4 space-y-4">
-            <div className={`p-4 rounded-md flex gap-3 ${importResult.successCount > 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-              <Info className={`h-5 w-5 shrink-0 mt-0.5 ${importResult.successCount > 0 ? "text-green-600" : "text-red-600"}`} />
+            <div
+              className={`p-4 rounded-md flex gap-3 ${importResult.successCount > 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
+            >
+              <Info
+                className={`h-5 w-5 shrink-0 mt-0.5 ${importResult.successCount > 0 ? "text-green-600" : "text-red-600"}`}
+              />
               <div className="text-sm">
-                <p className={`font-semibold mb-1 ${importResult.successCount > 0 ? "text-green-800" : "text-red-800"}`}>
+                <p
+                  className={`font-semibold mb-1 ${importResult.successCount > 0 ? "text-green-800" : "text-red-800"}`}
+                >
                   Import Complete
                 </p>
                 <div className="space-y-1">
-                  <p className="text-green-700">Successfully created: {importResult.successCount} bills</p>
+                  <p className="text-green-700">
+                    Successfully created: {importResult.successCount} bills
+                  </p>
                   {importResult.errorCount > 0 && (
-                    <p className="text-red-700">Errors encountered: {importResult.errorCount}</p>
+                    <p className="text-red-700">
+                      Errors encountered: {importResult.errorCount}
+                    </p>
                   )}
                 </div>
               </div>
@@ -277,7 +331,9 @@ export default function ImportBillsModal({
 
             {importResult.errors.length > 0 && (
               <div className="mt-4">
-                <p className="text-sm font-semibold text-red-800 mb-2">Error Details:</p>
+                <p className="text-sm font-semibold text-red-800 mb-2">
+                  Error Details:
+                </p>
                 <div className="bg-red-50 p-3 rounded-md max-h-48 overflow-y-auto text-xs text-red-700 space-y-1 border border-red-100">
                   {importResult.errors.map((error, idx) => (
                     <div key={idx}>• {error}</div>
@@ -291,10 +347,14 @@ export default function ImportBillsModal({
             {/* ── Step 1: Download template ── */}
             <div className="rounded-lg border-2 border-dashed border-[#2E7D32] bg-green-50 p-4 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-[#1B5E20]">Step 1 — Download the template</p>
+                <p className="text-sm font-semibold text-[#1B5E20]">
+                  Step 1 — Download the template
+                </p>
                 <p className="text-xs text-green-800 mt-0.5">
-                  Pre-filled with all {dormers.length} current dormers and every supported billing period as a column.
-                  Just put <strong>1</strong> in a cell to create a bill, leave it empty to skip.
+                  Pre-filled with all {dormers.length} current dormers and every
+                  supported billing period as a column. Just put{" "}
+                  <strong>1</strong> in a cell to create a bill, leave it empty
+                  to skip.
                 </p>
               </div>
               <Button
@@ -313,9 +373,10 @@ export default function ImportBillsModal({
             <div className="bg-blue-50 p-3 rounded-md flex gap-2 text-xs text-blue-800">
               <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
               <p>
-                <strong>Step 2 —</strong> Fill in the template, then upload or paste it below.
-                Only cells with a value create a bill — empty cells are ignored.
-                Existing <strong>paid</strong> bills will be skipped automatically.
+                <strong>Step 2 —</strong> Fill in the template, then upload or
+                paste it below. Only cells with a value create a bill — empty
+                cells are ignored. Existing <strong>paid</strong> bills will be
+                skipped automatically.
               </p>
             </div>
 
@@ -323,9 +384,15 @@ export default function ImportBillsModal({
               <div className="bg-yellow-50 p-4 rounded-md flex gap-3 border border-yellow-200">
                 <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-800">
-                  <p className="font-semibold mb-1">Large Import Detected ({rowCount} students, ~{billCount} bills)</p>
+                  <p className="font-semibold mb-1">
+                    Large Import Detected ({rowCount} students, ~{billCount}{" "}
+                    bills)
+                  </p>
                   <p className="text-xs">
-                    Processing {rowCount} students with approximately {billCount} bills. This might take a while. Consider splitting into smaller batches (50 students each) for better reliability and easier error tracking.
+                    Processing {rowCount} students with approximately{" "}
+                    {billCount} bills. This might take a while. Consider
+                    splitting into smaller batches (50 students each) for better
+                    reliability and easier error tracking.
                   </p>
                 </div>
               </div>
@@ -337,15 +404,29 @@ export default function ImportBillsModal({
                 <span className="text-red-500 ml-1">*</span>
               </label>
               <Select
-                onValueChange={(value) => setSelectedPayable(payables.find(p => p.id === value) || null)}
+                onValueChange={(value) =>
+                  setSelectedPayable(
+                    payables.find((p) => p.id === value) || null,
+                  )
+                }
                 disabled={isSubmitting}
               >
-                <SelectTrigger className={!selectedPayable ? "border-red-300 focus:ring-red-400" : undefined}>
+                <SelectTrigger
+                  className={
+                    !selectedPayable
+                      ? "border-red-300 focus:ring-red-400"
+                      : undefined
+                  }
+                >
                   <SelectValue placeholder="Choose a payable type" />
                 </SelectTrigger>
                 <SelectContent className={undefined}>
                   {payables.map((payable) => (
-                    <SelectItem key={payable.id} value={payable.id} className={undefined}>
+                    <SelectItem
+                      key={payable.id}
+                      value={payable.id}
+                      className={undefined}
+                    >
                       {payable.name} - ₱{payable.amount}
                     </SelectItem>
                   ))}
@@ -353,7 +434,8 @@ export default function ImportBillsModal({
               </Select>
               {selectedPayable ? (
                 <p className="text-xs text-gray-500 mt-1">
-                  All imported bills will use ₱{selectedPayable.amount} as the amount due.
+                  All imported bills will use ₱{selectedPayable.amount} as the
+                  amount due.
                 </p>
               ) : (
                 <p className="text-xs text-red-500 mt-1">
@@ -397,9 +479,7 @@ export default function ImportBillsModal({
 
         <DialogFooter className={undefined}>
           {importResult ? (
-            <Button onClick={handleClose}>
-              Close
-            </Button>
+            <Button onClick={handleClose}>Close</Button>
           ) : (
             <>
               <Button
@@ -418,12 +498,12 @@ export default function ImportBillsModal({
                 variant={undefined}
                 size={undefined}
               >
-                {isSubmitting 
+                {isSubmitting
                   ? rowCount > 50 || billCount > 100
                     ? `Creating ~${billCount} bills... This might take a while...`
                     : "Creating bills..."
-                  : billCount > 0 
-                    ? `Create ~${billCount} Bills` 
+                  : billCount > 0
+                    ? `Create ~${billCount} Bills`
                     : "Create Bills"}
               </Button>
             </>
