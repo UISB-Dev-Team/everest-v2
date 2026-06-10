@@ -63,21 +63,17 @@ export async function listWithStats(): Promise<DormitoryWithStats[]> {
 }
 
 export async function getById(id: string): Promise<Dormitory | null> {
-  const { data, error } = await supabase.from("dormitories").select("*").eq("id", id).single();
-  if (error) throw error;
-  return data;
+//   TODO For Gian
+  return null;
 }
-export async function create(input: CreateDormitoryInput): Promise<Dormitory> {
-  const { data, error } = await supabase.from("dormitories").insert(input).single();
-  if (error) throw error;
-  return data;
+export async function create(input: CreateDormitoryInput): Promise<Dormitory | null> {
+//   TODO For Gian
+  return null;
 }
-export async function update(id: string, input: UpdateDormitoryInput): Promise<Dormitory> {
-  const { data, error } = await supabase.from("dormitories").update(input).eq("id", id).single();
-  if (error) throw error;
-  return data;
+export async function update(id: string, input: UpdateDormitoryInput): Promise<Dormitory | null> {
+//   TODO For Gian
+ return null;
 }
 export async function remove(id: string): Promise<void> {
-  const { error } = await supabase.from("dormitories").delete().eq("id", id);
-  if (error) throw error;
+//   TODO For Gian
 }
