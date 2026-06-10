@@ -5,6 +5,7 @@ import {
   CalendarRange,
   LayoutDashboard,
   Users,
+  UserCog,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { RoleShell, type NavItem } from "./role-shell";
@@ -18,6 +19,7 @@ const NAV_ITEMS: NavItem[] = [
     url: "/super-admin/academic-periods",
     icon: CalendarRange,
   },
+  { title: "Accounts", url: "/super-admin/accounts", icon: UserCog },
 ];
 
 export function SuperAdminShell({

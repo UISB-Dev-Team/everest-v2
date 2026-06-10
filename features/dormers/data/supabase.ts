@@ -530,6 +530,10 @@ export async function remove(id: string): Promise<void> {
       .or("is_deleted.eq.false,is_deleted.is.null")
       .eq("academic_period_id", periodId);
 
+    await supabaseAdmin.auth.admin.updateUserById(id, {
+      ban_duration: "876000h"
+    })
+
     if (billsError) throw new Error(billsError.message);
   } catch (e) {
     console.error("Failed to remove enrollment", e);
