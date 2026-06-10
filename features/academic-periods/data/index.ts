@@ -12,6 +12,7 @@ export interface AcademicPeriodsDataAccess {
   create(input: CreateAcademicPeriodInput): Promise<AcademicPeriod>;
   update(id: string, input: UpdateAcademicPeriodInput): Promise<AcademicPeriod>;
   setCurrent(id: string): Promise<AcademicPeriod>;
+  remove(id: string): Promise<void>;
 }
 
 export const academicPeriodsData: AcademicPeriodsDataAccess = supabase;

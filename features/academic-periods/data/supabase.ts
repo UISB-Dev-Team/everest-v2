@@ -6,7 +6,8 @@ const supabase = createClient();
 export async function list(): Promise<AcademicPeriod[]> {
   const { data, error } = await supabase
     .from("academic_periods")
-    .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
+    .select("*")
+    .eq("is_deleted", false)
     .order("start_date", { ascending: false });
 
   if (error || !data) {
@@ -19,7 +20,7 @@ export async function list(): Promise<AcademicPeriod[]> {
 export async function getCurrent(): Promise<AcademicPeriod | null> {
   const { data, error } = await supabase
     .from("academic_periods")
-    .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
+    .select("*")
     .eq("is_current", true)
     .single();
 
@@ -33,7 +34,8 @@ export async function getCurrent(): Promise<AcademicPeriod | null> {
 export async function getById(id: string): Promise<AcademicPeriod | null> {
   const { data, error } = await supabase
     .from("academic_periods")
-    .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
+    .select("*")
+    .eq("is_deleted", false)
     .eq("id", id)
     .single();
 
@@ -45,10 +47,18 @@ export async function getById(id: string): Promise<AcademicPeriod | null> {
 }
 
 export async function create(input: CreateAcademicPeriodInput): Promise<AcademicPeriod> {
+  if (input.is_current) {
+    const { error: resetError } = await supabase
+      .from("academic_periods")
+      .update({ is_current: false })
+      .neq("id", "");
+    if (resetError) throw resetError;
+  }
+
   const { data, error } = await supabase
     .from("academic_periods")
     .insert([input])
-    .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
+    .select("*")
     .single();
 
   if (error || !data) {
@@ -59,11 +69,19 @@ export async function create(input: CreateAcademicPeriodInput): Promise<Academic
 }
 
 export async function update(id: string, input: UpdateAcademicPeriodInput): Promise<AcademicPeriod> {
+  if (input.is_current) {
+    const { error: resetError } = await supabase
+      .from("academic_periods")
+      .update({ is_current: false })
+      .neq("id", id);
+    if (resetError) throw resetError;
+  }
+
   const { data, error } = await supabase
     .from("academic_periods")
     .update(input)
     .eq("id", id)
-    .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
+    .select("*")
     .single();
 
   if (error || !data) {
@@ -74,11 +92,17 @@ export async function update(id: string, input: UpdateAcademicPeriodInput): Prom
 }
 
 export async function setCurrent(id: string): Promise<AcademicPeriod> {
+  const { error: resetError } = await supabase
+    .from("academic_periods")
+    .update({ is_current: false })
+    .neq("id", id);
+  if (resetError) throw resetError;
+
   const { data, error } = await supabase
     .from("academic_periods")
     .update({ is_current: true })
     .eq("id", id)
-    .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
+    .select("*")
     .single();
 
   if (error || !data) {
@@ -86,4 +110,15 @@ export async function setCurrent(id: string): Promise<AcademicPeriod> {
   }
 
   return data;
+}
+
+export async function remove(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("academic_periods")
+    .update({ is_deleted: true })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
 }
