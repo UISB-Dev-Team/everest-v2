@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   CreateDormitoryInput,
   Dormitory,
@@ -15,7 +15,7 @@ export interface DormitoriesDataAccess {
   remove(id: string): Promise<void>;
 }
 
-export const dormitoriesData: DormitoriesDataAccess = mock;
+export const dormitoriesData: DormitoriesDataAccess = supabase;
 
 export type {
   CreateDormitoryInput,
