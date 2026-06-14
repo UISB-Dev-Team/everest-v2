@@ -175,13 +175,6 @@ export function AdminFinesPage() {
         searchPlaceholder="Search dormers by name, room, or email…"
         filters={[
           {
-            value: statusFilter,
-            onValueChange: setStatusFilter,
-            options: statusOptions,
-            placeholder: "Filter by status",
-            collapseOnMobile: true,
-          },
-          {
             value: roomFilter,
             onValueChange: setRoomFilter,
             options: roomOptions,

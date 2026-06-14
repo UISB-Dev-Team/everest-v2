@@ -281,15 +281,20 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
     }
   };
 
-  const importDormers = async (rows: CreateDormerInput[]) => {
+  const importDormers = async (
+    rows: CreateDormerInput[],
+    onProgress?: (phase: string, progress?: number, total?: number) => void
+  ) => {
     setIsSubmitting(true);
     setErrors([]);
     const errorList: string[] = [];
-    const created: DormerWithBills[] = []
+    const created: DormerWithBills[] = [];
     try {
-      for (const row of rows) {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
         if (_dormers.some((d) => d.email === row.email)) {
           errorList.push(`Dormer with email ${row.email} already exists.`);
+          onProgress?.("Importing Dormers", i + 1, rows.length);
           continue;
         }
         const password = generateRandomPassword();
@@ -304,21 +309,16 @@ export function useDormerActions(_dormers: Dormer[], _bills: Bill[], setDormers:
         await sendEmail({
           to: row?.email!,
           subject: "Dormer - Dormpay Invitation",
-          html: welcomeUser(
-            row.first_name,
-            row?.email!,
-            password,
-          )
-        })
+          html: welcomeUser(row.first_name, row?.email!, password),
+        });
+        onProgress?.("Importing Dormers", i + 1, rows.length);
       }
       if (created.length) setDormers((prev) => [...prev, ...created]);
       setErrors(errorList);
       if (errorList.length === 0) {
         toast.success(`Imported ${rows.length} dormer(s) successfully! Activation email has been sent.`);
       } else {
-        toast.warning(
-          `Imported with ${errorList.length} skipped row(s). See dialog for details.`
-        );
+        toast.warning(`Imported with ${errorList.length} skipped row(s). See dialog for details.`);
       }
     } catch (e) {
       console.error(e);

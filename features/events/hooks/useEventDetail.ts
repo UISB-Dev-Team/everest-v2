@@ -17,12 +17,12 @@ export function useEventDetail(eventId: string | null) {
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
-    if (!eventId) return;
+    if (!eventId || !academicPeriod?.id || !dormitoryId) return;
     setLoading(true);
     try {
       const [e, list] = await Promise.all([
         eventsData.getById(eventId),
-        eventsData.listDormersForEvent(eventId, academicPeriod?.id ?? ""),
+        eventsData.listDormersForEvent(eventId, academicPeriod?.id ?? "", dormitoryId ?? ""),
       ]);
       setEvent(e);
       setDormers(list);
@@ -32,7 +32,7 @@ export function useEventDetail(eventId: string | null) {
   };
 
   useEffect(() => {
-    if (!eventId) {
+    if (!eventId || !academicPeriod?.id || !dormitoryId) {
       setLoading(false);
       return;
     }
@@ -41,7 +41,7 @@ export function useEventDetail(eventId: string | null) {
     (async () => {
       const [e, list] = await Promise.all([
         eventsData.getById(eventId),
-        eventsData.listDormersForEvent(eventId, academicPeriod?.id ?? ""),
+        eventsData.listDormersForEvent(eventId, academicPeriod?.id ?? "", dormitoryId ?? ""),
       ]);
       if (cancelled) return;
       setEvent(e);

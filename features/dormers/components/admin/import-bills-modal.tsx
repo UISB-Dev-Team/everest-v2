@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, use } from "react";
+import { useState, useRef } from "react";
+import { parseCsv, readCsvFile } from "@/lib/csv/parse-csv";
 import {
   Dialog,
   DialogContent,
@@ -12,22 +13,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileUp, Info, ExternalLink, AlertCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileUp, Info, Download, AlertCircle } from "lucide-react";
 import { RegularCharge } from "@/features/regular-charges/data";
-import { useDormitory } from "@/lib/hooks/useDormitory";
 import { getBillingPeriodLabel } from "@/lib/utils/billing-periods";
-import { ImportedBill } from "../../data";
-
-
+import { ImportedBill, DormerWithBills } from "../../data";
+import type { Bill } from "@/features/payments/data";
 
 export interface ImportBillsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (bills: ImportedBill[], payable: RegularCharge | null) => Promise<{ successCount: number; errorCount: number; errors: string[] }>;
+  onImport: (
+    bills: ImportedBill[],
+    payable: RegularCharge | null,
+  ) => Promise<{
+    successCount: number;
+    errorCount: number;
+    errors: string[];
+    createdBills?: Bill[];
+  }>;
   isSubmitting: boolean;
   payables: RegularCharge[];
   billingPeriods: string[]; // raw values e.g. ["2026-01", "1st-semester (2025-2026)"]
+  dormers: DormerWithBills[];
 }
 export default function ImportBillsModal({
   isOpen,
@@ -35,38 +49,47 @@ export default function ImportBillsModal({
   onImport,
   isSubmitting,
   payables,
-  billingPeriods
+  billingPeriods,
+  dormers,
 }: ImportBillsModalProps) {
   const billingPeriodLabels = billingPeriods.map(getBillingPeriodLabel);
   const [csvText, setCsvText] = useState("");
-  const [selectedPayable, setSelectedPayable] = useState<RegularCharge | null>(null);
+  const [selectedPayable, setSelectedPayable] = useState<RegularCharge | null>(
+    null,
+  );
   const [rowCount, setRowCount] = useState(0);
   const [billCount, setBillCount] = useState(0);
-  const [importResult, setImportResult] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{
+    successCount: number;
+    errorCount: number;
+    errors: string[];
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateCounts = (text: string) => {
+    const { headers, rows } = parseCsv(text);
+    const hasHeader =
+      headers.length > 0 && headers[0].toLowerCase() === "email";
+    setRowCount(hasHeader ? rows.length : Math.max(0, rows.length - 1));
+    let estimated = 0;
+    rows.forEach((cells) => {
+      if (cells.length > 3) {
+        estimated += cells.slice(3).filter((c) => c.trim()).length;
+      }
+    });
+    setBillCount(estimated);
+  };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setCsvText(text);
-    const lines = text.trim().split("\n").filter(line => line.trim());
-    // subtract header row
-    const dataRows = lines.length > 0 && lines[0].toLowerCase().includes('email') ? lines.length - 1 : lines.length;
-    setRowCount(dataRows);
-    
-    // Rough estimate: count non-empty cells in billing period columns (starting from index 3)
-    let estimatedBills = 0;
-    lines.forEach((line, idx) => {
-      if (idx === 0 && line.toLowerCase().includes('email')) return; // Skip header
-      const cells = line.split(',');
-      if (cells.length > 3) {
-        // Count non-empty billing period cells (columns after first 3)
-        estimatedBills += cells.slice(3).filter(cell => cell.trim() && cell.trim() !== '').length;
-      }
-    });
-    setBillCount(estimatedBills);
+    updateCounts(text);
   };
 
-  const parseBillsCSV = (text: string, selectedPayable: RegularCharge | null) => {
+  const parseBillsCSV = (
+    text: string,
+    selectedPayable: RegularCharge | null,
+  ) => {
     const errors: string[] = [];
 
     if (!selectedPayable) {
@@ -74,96 +97,105 @@ export default function ImportBillsModal({
       return { bills: [], errors };
     }
 
-    const lines = text.trim().split("\n");
-    if (lines.length < 2) {
-      errors.push("Invalid CSV format: File must contain at least a header row and one data row.");
+    const { headers, rows } = parseCsv(text);
+
+    if (headers.length === 0 || rows.length === 0) {
+      errors.push(
+        "Invalid CSV format: File must contain at least a header row and one data row.",
+      );
       return { bills: [], errors };
     }
 
+    if (headers.length < 4) {
+      errors.push(
+        "Invalid CSV format: Must have at least 4 columns (Email, First Name, Last Name, and billing period columns).",
+      );
+      return { bills: [], errors };
+    }
+
+    if (
+      headers[0].toLowerCase() !== "email" ||
+      headers[1].toLowerCase() !== "first name" ||
+      headers[2].toLowerCase() !== "last name"
+    ) {
+      errors.push(
+        `Invalid CSV headers: First three columns must be "Email", "First Name", "Last Name". Found: "${headers[0]}", "${headers[1]}", "${headers[2]}".`,
+      );
+      return { bills: [], errors };
+    }
+
+    // Validate billing period column headers (columns 4+)
+    const periodHeaders = headers.slice(3);
+    if (periodHeaders.length === 0) {
+      errors.push(
+        "No billing period columns found. Please include at least one billing period column.",
+      );
+      return { bills: [], errors };
+    }
+
+    for (let j = 0; j < periodHeaders.length; j++) {
+      const period = periodHeaders[j];
+      if (!period) {
+        errors.push(`Column ${j + 4}: Billing period header is empty.`);
+      } else if (!billingPeriodLabels.includes(period)) {
+        errors.push(`Column ${j + 4}: Invalid billing period "${period}".`);
+      }
+    }
+
+    // Pre-build label → raw value map once
+    const labelToValue = new Map(
+      billingPeriods.map((v) => [getBillingPeriodLabel(v), v]),
+    );
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const bills: ImportedBill[] = [];
 
-    const headers = lines[0].split(",").map((h) => h.trim());
-    if (headers.length < 4) {
-      errors.push("Invalid CSV format: Must have at least 4 columns (Email, First Name, Last Name, and billing period columns).");
-      return { bills, errors };
-    }
-
-    if (headers[0].toLowerCase() !== "email" || headers[1].toLowerCase() !== "first name" || headers[2].toLowerCase() !== "last name") {
-      errors.push(`Invalid CSV headers: First three columns must be "Email", "First Name", "Last Name". Found: "${headers[0]}", "${headers[1]}", "${headers[2]}".`);
-      return { bills, errors };
-    }
-
-    // validate billing period headers (columns 4+)
-    const billingPeriods = headers.slice(3);
-    if (billingPeriods.length === 0) {
-      errors.push("No billing period columns found. Please include at least one billing period column.");
-      return { bills, errors };
-    }
-
-    for (let j = 0; j < billingPeriods.length; j++) {
-        const period = billingPeriods[j].trim();
-        if (!period) {
-        errors.push(`Column ${j + 4}: Billing period header is empty.`);
-        } else if (!billingPeriodLabels.includes(period)) {
-        errors.push(`Column ${j + 4}: Invalid billing period "${period}".`);
-        }
-    }
-
-    for (let i = 1; i < lines.length; i++) {
-      const rowNumber = i + 1;
-      const parts = lines[i].split(",").map((p) => p.trim());
+    for (let i = 0; i < rows.length; i++) {
+      const rowNumber = i + 2; // +2: 1-indexed, header is row 1
+      const parts = rows[i];
 
       if (parts.length < 4) {
-        errors.push(`Row ${rowNumber}: Insufficient columns. Expected at least 4 columns, found ${parts.length}.`);
+        errors.push(
+          `Row ${rowNumber}: Insufficient columns. Expected at least 4, found ${parts.length}.`,
+        );
         continue;
       }
 
-      const email = parts[0];
-      const firstName = parts[1];
-      const lastName = parts[2];
+      const [email, firstName, lastName] = parts;
 
       if (!email || !firstName || !lastName) {
-        errors.push(`Row ${rowNumber}: Missing required fields. Email, First Name, and Last Name are required.`);
+        errors.push(
+          `Row ${rowNumber}: Email, First Name, and Last Name are all required.`,
+        );
         continue;
       }
 
-      // basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         errors.push(`Row ${rowNumber}: Invalid email format "${email}".`);
         continue;
       }
 
-      // Process billing periods - create bills for non-empty cells
+      // A cell with any non-empty value triggers a bill for that period
       for (let j = 3; j < parts.length && j < headers.length; j++) {
-        const value = parts[j]?.trim();
-        // Non-empty cell indicates billing for that period
-        if (value && value !== "") {
-          const billingPeriodLabel = headers[j];
+        const value = parts[j];
+        if (!value) continue;
 
-          if (!billingPeriodLabel || !billingPeriodLabel.trim()) {
-            errors.push(`Row ${rowNumber}: Invalid billing period "${billingPeriodLabel}".`);
-            continue;
-          }
-
-          // Map the label to its consistent value for storage
-          const labelToValue = new Map(
-                billingPeriods.map((value) => [getBillingPeriodLabel(value), value])
-            );
-          const billingPeriodValue = labelToValue.get(billingPeriodLabel);
-          if (!billingPeriodValue) {
-            errors.push(`Row ${rowNumber}: Could not map billing period "${billingPeriodLabel}" to a valid value.`);
-            continue;
-          }
-
-          bills.push({
-            email: email,
-            first_name: firstName,
-            last_name: lastName,
-            billing_month: billingPeriodValue, // Use the consistent value, not the label
-            rowNumber: rowNumber,
-          });
+        const periodLabel = headers[j];
+        const billingPeriodValue = labelToValue.get(periodLabel);
+        if (!billingPeriodValue) {
+          errors.push(
+            `Row ${rowNumber}: Could not map billing period "${periodLabel}" to a valid value.`,
+          );
+          continue;
         }
+
+        bills.push({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          billing_month: billingPeriodValue,
+          rowNumber,
+        });
       }
     }
 
@@ -171,12 +203,15 @@ export default function ImportBillsModal({
   };
 
   const handleImport = async () => {
-    const { bills, errors: parsingErrors } = parseBillsCSV(csvText, selectedPayable);
+    const { bills, errors: parsingErrors } = parseBillsCSV(
+      csvText,
+      selectedPayable,
+    );
 
     if (parsingErrors.length > 0) {
       // pass parsing errors to the parent componenet for display in results modal
-      const errorBills = parsingErrors.map(error => ({ 
-        error, 
+      const errorBills = parsingErrors.map((error) => ({
+        error,
         isParsingError: true,
         email: "",
         first_name: "",
@@ -190,7 +225,9 @@ export default function ImportBillsModal({
     }
 
     if (bills.length === 0) {
-      toast.error("No bills found to import. Make sure to include non-empty values in billing period columns.");
+      toast.error(
+        "No bills found to import. Make sure to include non-empty values in billing period columns.",
+      );
       return;
     }
 
@@ -198,30 +235,12 @@ export default function ImportBillsModal({
     setImportResult(result);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      setCsvText(text);
-      const lines = text.trim().split("\n").filter(line => line.trim());
-      const dataRows = lines.length > 0 && lines[0].toLowerCase().includes('email') ? lines.length - 1 : lines.length;
-      setRowCount(dataRows);
-      
-      // Estimate bill count
-      let estimatedBills = 0;
-      lines.forEach((line, idx) => {
-        if (idx === 0 && line.toLowerCase().includes('email')) return;
-        const cells = line.split(',');
-        if (cells.length > 3) {
-          estimatedBills += cells.slice(3).filter(cell => cell.trim() && cell.trim() !== '').length;
-        }
-      });
-      setBillCount(estimatedBills);
-    };
-    reader.readAsText(file);
+    const text = await readCsvFile(file);
+    setCsvText(text);
+    updateCounts(text);
   };
 
   const handleClose = () => {
@@ -234,6 +253,43 @@ export default function ImportBillsModal({
     onClose();
   };
 
+  const handleDownloadTemplate = () => {
+    // Headers: Email, First Name, Last Name, then one column per billing period label
+    const headers = [
+      "Email",
+      "First Name",
+      "Last Name",
+      ...billingPeriodLabels,
+    ];
+
+    // One row per active dormer — billing period cells are empty, ready to be filled in
+    const dataRows = dormers.map((d) => [
+      d.email ?? "",
+      d.first_name ?? "",
+      d.last_name ?? "",
+      ...billingPeriodLabels.map(() => ""),
+    ]);
+
+    // Wrap every cell in double-quotes and escape any existing quotes (RFC 4180)
+    const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+    const csvContent = [headers, ...dataRows]
+      .map((row) => row.map(escape).join(","))
+      .join("\n");
+
+    // Prepend UTF-8 BOM so Excel on Windows opens it without garbled characters
+    const blob = new Blob(["﻿" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bills-import-template.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -242,22 +298,32 @@ export default function ImportBillsModal({
             Import Bills for Billing Periods
           </DialogTitle>
           <DialogDescription className={undefined}>
-            Upload or paste CSV data to create bills for multiple dormers across different billing periods. Bills will be created using dormer emails as unique identifiers, with names as additional reference.
+            Bulk-create bills for multiple dormers across billing periods.
           </DialogDescription>
         </DialogHeader>
 
         {importResult ? (
           <div className="py-4 space-y-4">
-            <div className={`p-4 rounded-md flex gap-3 ${importResult.successCount > 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-              <Info className={`h-5 w-5 shrink-0 mt-0.5 ${importResult.successCount > 0 ? "text-green-600" : "text-red-600"}`} />
+            <div
+              className={`p-4 rounded-md flex gap-3 ${importResult.successCount > 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
+            >
+              <Info
+                className={`h-5 w-5 shrink-0 mt-0.5 ${importResult.successCount > 0 ? "text-green-600" : "text-red-600"}`}
+              />
               <div className="text-sm">
-                <p className={`font-semibold mb-1 ${importResult.successCount > 0 ? "text-green-800" : "text-red-800"}`}>
+                <p
+                  className={`font-semibold mb-1 ${importResult.successCount > 0 ? "text-green-800" : "text-red-800"}`}
+                >
                   Import Complete
                 </p>
                 <div className="space-y-1">
-                  <p className="text-green-700">Successfully created: {importResult.successCount} bills</p>
+                  <p className="text-green-700">
+                    Successfully created: {importResult.successCount} bills
+                  </p>
                   {importResult.errorCount > 0 && (
-                    <p className="text-red-700">Errors encountered: {importResult.errorCount}</p>
+                    <p className="text-red-700">
+                      Errors encountered: {importResult.errorCount}
+                    </p>
                   )}
                 </div>
               </div>
@@ -265,7 +331,9 @@ export default function ImportBillsModal({
 
             {importResult.errors.length > 0 && (
               <div className="mt-4">
-                <p className="text-sm font-semibold text-red-800 mb-2">Error Details:</p>
+                <p className="text-sm font-semibold text-red-800 mb-2">
+                  Error Details:
+                </p>
                 <div className="bg-red-50 p-3 rounded-md max-h-48 overflow-y-auto text-xs text-red-700 space-y-1 border border-red-100">
                   {importResult.errors.map((error, idx) => (
                     <div key={idx}>• {error}</div>
@@ -276,81 +344,102 @@ export default function ImportBillsModal({
           </div>
         ) : (
           <div className="py-4 space-y-4">
-            <div className="bg-blue-50 p-4 rounded-md flex gap-3">
-              <Info className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-800 space-y-2">
-                <div>
-                  <p className="font-semibold mb-1.5">CSV Format:</p>
-                  <code className="bg-blue-100 px-2 py-1 rounded text-xs block w-fit">
-                    Email, First Name, Last Name, January 2026, February 2026, ...
-                  </code>
-                </div>
-                
-                <div className="space-y-1 text-xs">
-                  <p><strong>Empty cell:</strong> No bill for that period</p>
-                  <p><strong>Cell with "1":</strong> Creates bill for that period</p>
-                  <p><strong>Billing periods:</strong> Must exactly match system-defined periods (see valid periods below)</p>
-                  <p><strong>Monthly date format:</strong> Month YYYY (January 2026)</p>
-                  <p><strong>Best practice:</strong> Import ≤50 rows per batch for faster processing</p>
-                </div>
-                <a 
-                  href="https://docs.google.com/spreadsheets/d/1J0rTGDXO44DDkFjjaajou-be3dVBTuz3cDL_x2nb2yM/edit?gid=0#gid=0" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-700 hover:text-blue-900 font-medium text-xs inline-flex items-center gap-1 underline"
-                >
-                  View sample spreadsheet
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-                
-                <div className="mt-3 pt-3 border-t border-blue-200">
-                  <p className="font-semibold mb-1.5">Valid Billing Periods (Semestral/Monthly):</p>
-                  <div className="text-xs space-y-1 max-h-32 overflow-y-auto bg-blue-100 p-2 rounded">
-                    {billingPeriodLabels.map(period => (
-                      <div key={period} className="font-medium text-blue-800">
-                        {period}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs italic text-blue-700 mt-2">
-                    Column headers must exactly match the billing periods listed above
-                  </p>
-                </div>              
+            {/* ── Step 1: Download template ── */}
+            <div className="rounded-lg border-2 border-dashed border-[#2E7D32] bg-green-50 p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-[#1B5E20]">
+                  Step 1 — Download the template
+                </p>
+                <p className="text-xs text-green-800 mt-0.5">
+                  Pre-filled with all {dormers.length} current dormers and every
+                  supported billing period as a column. Just put{" "}
+                  <strong>1</strong> in a cell to create a bill, leave it empty
+                  to skip.
+                </p>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadTemplate}
+                className="shrink-0 border-[#2E7D32] text-[#2E7D32] hover:bg-green-100 font-semibold"
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                Download
+              </Button>
+            </div>
+
+            {/* ── Step 2: Upload hint ── */}
+            <div className="bg-blue-50 p-3 rounded-md flex gap-2 text-xs text-blue-800">
+              <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+              <p>
+                <strong>Step 2 —</strong> Fill in the template, then upload or
+                paste it below. Only cells with a value create a bill — empty
+                cells are ignored. Existing <strong>paid</strong> bills will be
+                skipped automatically.
+              </p>
             </div>
 
             {rowCount > 50 && (
               <div className="bg-yellow-50 p-4 rounded-md flex gap-3 border border-yellow-200">
                 <AlertCircle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-800">
-                  <p className="font-semibold mb-1">Large Import Detected ({rowCount} students, ~{billCount} bills)</p>
+                  <p className="font-semibold mb-1">
+                    Large Import Detected ({rowCount} students, ~{billCount}{" "}
+                    bills)
+                  </p>
                   <p className="text-xs">
-                    Processing {rowCount} students with approximately {billCount} bills. This might take a while. Consider splitting into smaller batches (50 students each) for better reliability and easier error tracking.
+                    Processing {rowCount} students with approximately{" "}
+                    {billCount} bills. This might take a while. Consider
+                    splitting into smaller batches (50 students each) for better
+                    reliability and easier error tracking.
                   </p>
                 </div>
               </div>
             )}
 
             <div>
-              <label className="text-sm font-medium">Select Payable Type</label>
-              <Select 
-                onValueChange={(value) => setSelectedPayable(payables.find(p => p.id === value) || null)}
+              <label className="text-sm font-medium">
+                Select Payable Type
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Select
+                onValueChange={(value) =>
+                  setSelectedPayable(
+                    payables.find((p) => p.id === value) || null,
+                  )
+                }
                 disabled={isSubmitting}
               >
-                <SelectTrigger className={undefined}>
+                <SelectTrigger
+                  className={
+                    !selectedPayable
+                      ? "border-red-300 focus:ring-red-400"
+                      : undefined
+                  }
+                >
                   <SelectValue placeholder="Choose a payable type" />
                 </SelectTrigger>
                 <SelectContent className={undefined}>
                   {payables.map((payable) => (
-                    <SelectItem key={payable.id} value={payable.id} className={undefined}>
+                    <SelectItem
+                      key={payable.id}
+                      value={payable.id}
+                      className={undefined}
+                    >
                       {payable.name} - ₱{payable.amount}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {selectedPayable && (
+              {selectedPayable ? (
                 <p className="text-xs text-gray-500 mt-1">
-                  All imported bills will use ₱{selectedPayable.amount} as the amount due
+                  All imported bills will use ₱{selectedPayable.amount} as the
+                  amount due.
+                </p>
+              ) : (
+                <p className="text-xs text-red-500 mt-1">
+                  Required — select a payable type before importing.
                 </p>
               )}
             </div>
@@ -390,9 +479,7 @@ export default function ImportBillsModal({
 
         <DialogFooter className={undefined}>
           {importResult ? (
-            <Button onClick={handleClose}>
-              Close
-            </Button>
+            <Button onClick={handleClose}>Close</Button>
           ) : (
             <>
               <Button
@@ -411,12 +498,12 @@ export default function ImportBillsModal({
                 variant={undefined}
                 size={undefined}
               >
-                {isSubmitting 
+                {isSubmitting
                   ? rowCount > 50 || billCount > 100
                     ? `Creating ~${billCount} bills... This might take a while...`
                     : "Creating bills..."
-                  : billCount > 0 
-                    ? `Create ~${billCount} Bills` 
+                  : billCount > 0
+                    ? `Create ~${billCount} Bills`
                     : "Create Bills"}
               </Button>
             </>
