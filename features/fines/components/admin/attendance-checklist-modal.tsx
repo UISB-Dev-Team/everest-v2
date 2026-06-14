@@ -195,7 +195,7 @@ export default function AttendanceChecklistModal({
         (d.room_number ?? "").toLowerCase().includes(q)
     );
     if (room) {
-      return filter.filter((d) => d.room_number === room);
+      return filter.filter((d) => d.room_number === room || room === "*");
     }
     return filter;
   }, [dormers, search, room]);
@@ -345,9 +345,9 @@ export default function AttendanceChecklistModal({
                   <SelectValue placeholder="Select room…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roomNumbers.map((r) => (
+                  {["*", ...roomNumbers].map((r) => (
                     <SelectItem key={r} value={r}>
-                      {r}
+                      {r === "*" ? "All" : r}
                     </SelectItem>
                   ))}
                 </SelectContent>

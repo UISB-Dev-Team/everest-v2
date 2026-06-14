@@ -125,6 +125,7 @@ export default function GenerateFinesModal({
         date_imposed: dateImposed,
         amount: payable.amount,
         imposed_by: user?.id!,
+        remarks: payable.name,
         };
         onGenerateFine(fineData);
     }
