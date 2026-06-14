@@ -134,6 +134,17 @@ export async function getDormerByEmail(email: string) : Promise<Profile | null> 
   return data ?? null
 }
 
+export async function getProfilesByEmails(emails: string[]): Promise<Profile[]> {
+  if (emails.length === 0) return [];
+  const normalized = emails.map((e) => e.toLowerCase().trim());
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, first_name, last_name")
+    .in("email", normalized);
+  if (error) throw error;
+  return (data ?? []) as unknown as Profile[];
+}
+
 export async function getDormerBills(dormerId: string, academicPeriodId: string): Promise<Bill[]> {
   const { data, error } = await supabase
     .from("bills")
@@ -518,6 +529,10 @@ export async function remove(id: string): Promise<void> {
       .eq("dormer_id", id)
       .or("is_deleted.eq.false,is_deleted.is.null")
       .eq("academic_period_id", periodId);
+
+    await supabaseAdmin.auth.admin.updateUserById(id, {
+      ban_duration: "876000h"
+    })
 
     if (billsError) throw new Error(billsError.message);
   } catch (e) {

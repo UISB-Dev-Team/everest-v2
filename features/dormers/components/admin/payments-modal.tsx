@@ -96,6 +96,21 @@ export default function PaymentModal({
     setNotes("");
     onClose();
   };
+
+  const handleChangeAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === "") {
+      setAmount("");
+      return;
+    }
+    const num = parseFloat(value);
+    if (isNaN(num) || num < 0 || num > remainingBalance) {
+      console.log("here")
+      return;
+    }
+    console.log("set set");
+    setAmount(value);
+  }
   
   if (!dormer || !bill) {
     return null;
@@ -177,7 +192,7 @@ export default function PaymentModal({
                 type="number"
                 placeholder={`e.g., ${remainingBalance.toFixed(2)}`}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={handleChangeAmount}
                 className="mt-1"
               />
             </div>

@@ -48,6 +48,8 @@ function buildStatus(
     unpaidFinesCount: unpaidFines.length,
     unpaidFinesTotal,
     outstandingTotal: unpaidBillsTotal + unpaidFinesTotal,
+    unpaidEventsTotal: 0,
+    unpaidEventsCount: 0
   };
 }
 

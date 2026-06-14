@@ -7,6 +7,8 @@ export interface ClearanceStatus {
   unpaidBillsTotal: number;
   unpaidFinesCount: number;
   unpaidFinesTotal: number;
+  unpaidEventsCount: number;
+  unpaidEventsTotal: number;
   outstandingTotal: number;
 }
 

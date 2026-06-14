@@ -11,25 +11,33 @@ export async function getStatusForDormer(
   const dormerData = await dormersData.getById(dormerId);
   if (!dormerData) throw new Error("Dormer not found");
 
-  const [billResult, fineResult] = await Promise.all([
+  const [billResult, fineResult, eventsResult] = await Promise.all([
     supabase
       .from("bills")
       .select("*")
       .eq("dormer_id", dormerId)
-      .eq("academic_period_id", academicPeriodId),
+      .eq("academic_period_id", academicPeriodId)
+      .eq("is_deleted", false),
     supabase
       .from("fine_impositions")
       .select("*")
       .eq("dormer_id", dormerId)
       .eq("academic_period_id", academicPeriodId),
+    supabase
+      .from("events")
+      .select("*")
+      .eq("academic_period_id", academicPeriodId)
+      .eq("is_deleted", false)
+      .eq("status", "Active")
   ]);
 
-  if (billResult.error || fineResult.error) {
+  if (billResult.error || fineResult.error || eventsResult.error) {
     throw new Error("Failed to fetch clearance status");
   }
 
   let unpaidBillsCount = 0, unpaidBillsTotal = 0;
   let unpaidFinesCount = 0, unpaidFinesTotal = 0;
+  let unpaidEventsCount = 0, unpaidEventsTotal = 0;
 
   for (const bill of billResult.data ?? []) {
     if (bill.status === "Unpaid") {
@@ -45,7 +53,22 @@ export async function getStatusForDormer(
     }
   }
 
-  const outstandingTotal = unpaidBillsTotal + unpaidFinesTotal;
+  for (const event of eventsResult.data ?? []) {
+    const { data: payment, error } = await supabase
+      .from("event_payments")
+      .select("*")
+      .eq("event_id", event.id)
+      .eq("dormer_id", dormerId)
+      .eq("academic_period_id", academicPeriodId)
+      .single();
+
+    if (error || !payment) {
+      unpaidEventsCount++;
+      unpaidEventsTotal += event.amount_due;
+    }
+  }
+
+  const outstandingTotal = unpaidBillsTotal + unpaidFinesTotal + unpaidEventsTotal;
   const dormerFullName = `${dormerData.first_name ?? ""} ${dormerData.last_name ?? ""}`.trim();
 
   return {
@@ -56,6 +79,8 @@ export async function getStatusForDormer(
     unpaidBillsTotal,
     unpaidFinesCount,
     unpaidFinesTotal,
+    unpaidEventsCount,
+    unpaidEventsTotal,
     outstandingTotal,
     isCleared: outstandingTotal === 0,
   };

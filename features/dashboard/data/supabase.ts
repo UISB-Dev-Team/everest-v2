@@ -10,6 +10,8 @@ import { AdminDashboardSnapshot, DormerDashboardSnapshot, SuperAdminDashboardSna
 import { dormersData } from "@/features/dormers/data";
 import { clearanceData } from "@/features/clearance/data";
 import { finesData } from "@/features/fines/data";
+import { dormitoriesData } from "@/features/dormitories/data";
+import { academicPeriodsData } from "@/features/academic-periods/data";
 
 export interface DashboardStats {
   summary: PaymentSummary;
@@ -66,12 +68,18 @@ export async function getAdminSnapshot(dormitoryId: string, academicPeriodId: st
 }
 
 export async function getSuperAdminSnapshot(): Promise<SuperAdminDashboardSnapshot> {
+  const [dormitories, dormers, academicPeriod] = await Promise.all([
+    dormitoriesData.list(),
+    dormersData.list(),
+    academicPeriodsData.getCurrent()
+  ]);
+  
   return {
-    dormitoryCount: 0,
-    dormerCount: 0,
+    dormitoryCount: dormitories.length,
+    dormerCount: dormers.length,
     totalCollected: 0,
     outstanding: 0,
-    currentAcademicYear: "",
-    currentSemester: "",
+    currentAcademicYear: academicPeriod?.academic_year ?? "",
+    currentSemester: academicPeriod?.semester ?? "",
   };
 }

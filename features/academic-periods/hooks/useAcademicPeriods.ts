@@ -29,42 +29,51 @@ export function useAcademicPeriod() {
         setError,
     } = useAcademicPeriodStore();
 
+    const refresh = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from("academic_periods")
+                .select("*")
+                .eq("is_deleted", false)
+                .order("start_date", { ascending: false });
+
+            if (error || !data) {
+                setError(error?.message ?? "Failed to load periods");
+                return;
+            }
+
+            const mapped: AcademicPeriod[] = data.map((d) => ({
+                id: d.id,
+                academic_year: d.academic_year,
+                semester: d.semester as "1st" | "2nd" | "Summer",
+                start_date: d.start_date,
+                end_date: d.end_date,
+                is_current: d.is_current,
+                created_at: d.created_at,
+                is_deleted: d.is_deleted,
+            }));
+
+            setAll(mapped);
+
+            const activePeriod = mapped.find((p) => p.is_current) ?? mapped[0] ?? null;
+            if (activePeriod) {
+                setCurrent(activePeriod);             // permanent reference to the DB-active period
+                if (!selected || !mapped.some((p) => p.id === selected.id)) {
+                    setSelected(activePeriod);         // default selection
+                }
+            }
+        } catch (err: any) {
+            setError(err?.message ?? "Failed to load periods");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (all.length > 0) return; // already loaded — skip refetch
-
-        setLoading(true);
-        supabase
-            .from("academic_periods")
-            .select("id, academic_year, semester, start_date, end_date, is_current, created_at")
-            .order("start_date", { ascending: false })
-            .then(({ data, error }) => {
-                if (error || !data) {
-                    setError(error?.message ?? "Failed to load periods");
-                    setLoading(false);
-                    return;
-                }
-
-                const mapped: AcademicPeriod[] = data.map((d) => ({
-                    id: d.id,
-                    academic_year: d.academic_year,
-                    semester: d.semester,
-                    start_date: d.start_date,
-                    end_date: d.end_date,
-                    is_current: d.is_current,
-                    created_at: d.created_at,
-                }));
-
-                setAll(mapped);
-
-                const activePeriod = mapped.find((p) => p.is_current) ?? mapped[0] ?? null;
-                if (activePeriod) {
-                    setCurrent(activePeriod);             // permanent reference to the DB-active period
-                    if (!selected) setSelected(activePeriod); // default selection, only if not already set
-                }
-
-                setLoading(false);
-            });
+        refresh();
     }, []);
 
-    return { all, current, selected, loading, error, setSelected };
+    return { all, current, selected, loading, error, setSelected, refresh };
 }

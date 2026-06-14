@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { readCsvFile } from "@/lib/csv/parse-csv";
 import {
   Dialog,
   DialogContent,
@@ -42,28 +43,48 @@ export default function ImportDormerModal({
   };
 
   const parseCSV = (text: string): CreateDormerInput[] => {
-    const lines = text.trim().split("\n");
+    // Normalize line endings and strip BOM
+    const cleaned = text.replace(/^﻿/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = cleaned.split("\n").filter((l) => l.trim());
     if (lines.length === 0) return [];
 
     const dormers: CreateDormerInput[] = [];
-    
-    lines.forEach((line, index) => {
-      // Split by comma, but handle potential quoted strings (basic CSV handling)
-      const parts = line.split(",").map(part => part.trim());
-      
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    lines.forEach((line) => {
+      // RFC 4180 quoted-field splitting
+      const parts: string[] = [];
+      let i = 0;
+      while (i < line.length) {
+        if (line[i] === '"') {
+          let field = "";
+          i++;
+          while (i < line.length) {
+            if (line[i] === '"' && line[i + 1] === '"') { field += '"'; i += 2; }
+            else if (line[i] === '"') { i++; break; }
+            else field += line[i++];
+          }
+          parts.push(field.trim());
+          if (line[i] === ",") i++;
+        } else {
+          const end = line.indexOf(",", i);
+          if (end === -1) { parts.push(line.slice(i).trim()); break; }
+          parts.push(line.slice(i, end).trim());
+          i = end + 1;
+        }
+      }
+
       if (parts.length >= 5) {
         const [firstName, lastName, email, phone, roomNumber] = parts;
-        
-        // Basic validation for email
-        if (email && email.includes("@")) {
+        if (email && emailRegex.test(email)) {
           dormers.push({
             first_name: firstName,
             last_name: lastName,
-            email: email,
-            phone: phone,
+            email,
+            phone,
             room_number: roomNumber,
             role: "dormer",
-            dormitory_id: dormitoryId
+            dormitory_id: dormitoryId,
           });
         }
       }
@@ -82,18 +103,13 @@ export default function ImportDormerModal({
     handleClose();
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      setCsvText(text);
-      const lines = text.trim().split("\n").filter(line => line.trim());
-      setRowCount(lines.length);
-    };
-    reader.readAsText(file);
+    const text = await readCsvFile(file);
+    setCsvText(text);
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter((l) => l.trim());
+    setRowCount(lines.length);
   };
 
   const handleClose = () => {
