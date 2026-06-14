@@ -51,7 +51,7 @@ export function useEventDetail(eventId: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [eventId, academicPeriod]);
+  }, [eventId, academicPeriod, dormitoryId]);
 
   return { event, dormers, loading, refresh };
 }
