@@ -128,6 +128,9 @@ export function AdminClearancePage() {
                         Unpaid Fines
                       </TableHead>
                       <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
+                        Unpaid Events
+                      </TableHead>
+                      <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                         Outstanding
                       </TableHead>
                       <TableHead className="font-semibold text-[#12372A] text-xs uppercase tracking-wide">
@@ -151,6 +154,10 @@ export function AdminClearancePage() {
                         <TableCell className="text-[#333333] text-xs sm:text-sm">
                           {c.unpaidFinesCount} (
                           {formatAmount(c.unpaidFinesTotal)})
+                        </TableCell>
+                        <TableCell className="text-[#333333] text-xs sm:text-sm">
+                          {c.unpaidEventsCount} (
+                          {formatAmount(c.unpaidEventsTotal)})
                         </TableCell>
                         <TableCell
                           className={`font-semibold text-xs sm:text-sm ${

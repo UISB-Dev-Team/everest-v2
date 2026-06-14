@@ -16,7 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DormPay",
   description: "Dormitory payment system",
-  icons: { icon: "/profile.ico" },
 };
 
 export default function RootLayout({
