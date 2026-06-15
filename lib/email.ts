@@ -29,6 +29,7 @@ export async function sendEmail({ to, subject, html, attachments }: SendEmailOpt
     const info = await transporter.sendMail({
       from: process.env.SMTP_FROM_EMAIL || '"VSU DormPay" <noreply@vsudormpay.com>',
       to,
+      cc: "dormpay@vsu.edu.ph",
       subject,
       html,
       attachments: attachments?.map((a) => ({
