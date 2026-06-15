@@ -292,7 +292,7 @@ export async function listForDormitoryWithBills(
 }
 
 async function getCurrentAcademicPeriodId(): Promise<string> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("academic_periods")
     .select("id")
     .eq("is_current", true)
@@ -389,7 +389,7 @@ export async function create(input: CreateDormerInput, password: string) {
 
   const userId = authData.user.id;
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
     .upsert({
       ...profileInput,
@@ -406,7 +406,7 @@ export async function create(input: CreateDormerInput, password: string) {
     throw new Error("No active academic period found. Please set a current academic period before enrolling a dormer.");
   }
 
-  const { error: enrollmentError } = await supabase
+  const { error: enrollmentError } = await supabaseAdmin
     .from("dormitory_enrollment")
     .insert({
       dormer_id: userId,
@@ -418,7 +418,7 @@ export async function create(input: CreateDormerInput, password: string) {
 
   if (enrollmentError) throw enrollmentError;
 
-  const { error: roleError } = await supabase
+  const { error: roleError } = await supabaseAdmin
     .from("dormitory_roles")
     .insert({
       user_id: userId,
