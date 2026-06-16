@@ -125,7 +125,11 @@ export default function ImportBillsModal({
     }
 
     // Validate billing period column headers (columns 4+)
-    const periodHeaders = headers.slice(3);
+    const periodHeaders = headers.slice(3).map((h) => {
+      // Strip ="..." wrapper if present (from downloaded template)
+      const match = h.match(/^="(.*)"$/);
+      return match ? match[1] : h;
+    });
     if (periodHeaders.length === 0) {
       errors.push(
         "No billing period columns found. Please include at least one billing period column.",
@@ -254,15 +258,10 @@ export default function ImportBillsModal({
   };
 
   const handleDownloadTemplate = () => {
-    // Headers: Email, First Name, Last Name, then one column per billing period label
-    const headers = [
-      "Email",
-      "First Name",
-      "Last Name",
-      ...billingPeriodLabels,
-    ];
+    const periodHeaders = billingPeriodLabels.map((label) => `="${label}"`);
 
-    // One row per active dormer — billing period cells are empty, ready to be filled in
+    const headers = ["Email", "First Name", "Last Name", ...periodHeaders];
+
     const dataRows = dormers.map((d) => [
       d.email ?? "",
       d.first_name ?? "",
@@ -270,14 +269,17 @@ export default function ImportBillsModal({
       ...billingPeriodLabels.map(() => ""),
     ]);
 
-    // Wrap every cell in double-quotes and escape any existing quotes (RFC 4180)
-    const escape = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+    // Only escape non-formula cells — formula cells must NOT be double-quoted
+    const escapeCell = (cell: string) => {
+      if (cell.startsWith('="')) return cell; // already a formula, don't wrap
+      return `"${cell.replace(/"/g, '""')}"`;
+    };
+
     const csvContent = [headers, ...dataRows]
-      .map((row) => row.map(escape).join(","))
+      .map((row) => row.map(escapeCell).join(","))
       .join("\n");
 
-    // Prepend UTF-8 BOM so Excel on Windows opens it without garbled characters
-    const blob = new Blob(["﻿" + csvContent], {
+    const blob = new Blob(["\uFEFF" + csvContent], {
       type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);

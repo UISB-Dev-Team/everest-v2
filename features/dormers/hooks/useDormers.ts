@@ -10,6 +10,7 @@ import type { Bill } from "@/features/payments/data";
 import type { RegularCharge } from "@/features/regular-charges/data";
 import { useAcademicPeriod } from "@/features/academic-periods/hooks/useAcademicPeriods";
 import { useDormitory } from "@/lib/hooks/useDormitory";
+import { generateBillingPeriods } from "../utils/generateBillingPeriod";
 
 /**
  * Mirrors the old `useDormers` hook surface: pulls dormers + bills + regular
@@ -27,6 +28,7 @@ export function useDormers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
+  const [billingPeriods, setBillingPeriods] = useState<string[]>([]);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -39,10 +41,12 @@ export function useDormers() {
     Promise.all([
       dormersData.listForDormitoryWithBills(dormitoryId, academicPeriodId),
       regularChargesData.listForDormitory(dormitoryId, academicPeriodId),
+      generateBillingPeriods(selectedPeriod?.semester!, selectedPeriod?.academic_year!)
     ])
-      .then(([d, p]) => {
+      .then(([d, p, bp]) => {
         if (cancelled) return;
         setDormers(d);
+        setBillingPeriods(bp);
         // Extract bills from the combined response
         const allBills = d.flatMap((dormer) => dormer.bills ?? []);
         setBills(allBills);
@@ -54,7 +58,7 @@ export function useDormers() {
     return () => {
       cancelled = true;
     };
-  }, [dormitoryId, academicPeriodId]);
+  }, [dormitoryId, academicPeriodId, selectedPeriod]);
 
   const dormersWithBills: DormerWithBills[] = useMemo(() => {
     if (!dormers.length) return [];
@@ -108,6 +112,7 @@ export function useDormers() {
     bills,
     setBills,
     payables,
+    billingPeriods,
     loading,
     paginatedDormers,
     filteredDormers,
