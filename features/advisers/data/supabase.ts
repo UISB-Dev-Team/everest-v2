@@ -101,8 +101,52 @@ export async function listForDormitory(dormitoryId: string): Promise<Adviser[]> 
 }
 
 export async function getById(id: string): Promise<Adviser | null> {
-    // TO DO for Norman   
-    return null
+    const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .eq("is_active", true)
+        .single();
+
+    if (profileError || !profile) {
+        console.error("Error fetching dormitory profiles:", profileError);
+        return null;
+    }
+
+    const { data: role, error: roleError } = await supabase
+        .from("dormitory_roles")
+        .select("*")
+        .eq("user_id", id)
+        .eq("role", "adviser")
+        .single();
+
+    if (roleError || !role) {
+        console.error("Error fetching dormitory roles:", roleError);
+        return null;
+    }
+
+    if (!role.dormitory_id) {
+        console.error("Adviser role is missing a dormitory_id");
+        return null;
+    }
+
+    const { data: dormitory, error: dormError } = await supabase
+        .from("dormitories")
+        .select("id, name")
+        .eq("id", role.dormitory_id)
+        .single();
+
+    if (dormError) {
+        console.error("Error fetching dormitories:", dormError);
+    }
+
+    return {
+        ...profile,
+        role_id: role.id,
+        role: role.role,
+        dormitory_id: role.dormitory_id,
+        dormitory_name: dormitory?.name ?? null,
+    } as Adviser;
 }
 
 export async function create(input: CreateAdviserInput): Promise<Adviser | void> {
