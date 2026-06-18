@@ -104,7 +104,7 @@ export async function listForDormitory(dormitoryId: string): Promise<Adviser[]> 
 }
 
 export async function getById(id: string): Promise<Adviser | null> {
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
         .from("profiles")
         .select("*")
         .eq("id", id)
@@ -116,11 +116,11 @@ export async function getById(id: string): Promise<Adviser | null> {
         return null;
     }
 
-    const { data: role, error: roleError } = await supabase
+    const { data: role, error: roleError } = await supabaseAdmin
         .from("dormitory_roles")
         .select("*")
         .eq("user_id", id)
-        .eq("role", "adviser")
+        .eq("is_active", true)
         .single();
 
     if (roleError || !role) {
@@ -133,7 +133,7 @@ export async function getById(id: string): Promise<Adviser | null> {
         return null;
     }
 
-    const { data: dormitory, error: dormError } = await supabase
+    const { data: dormitory, error: dormError } = await supabaseAdmin
         .from("dormitories")
         .select("id, name")
         .eq("id", role.dormitory_id)
@@ -182,6 +182,7 @@ export async function create(input: CreateAdviserInput): Promise<Adviser | void>
         .upsert({
             ...profileInput,
             id: userId,
+            is_active: true,
         })
         .select()
         .single();
@@ -197,6 +198,7 @@ export async function create(input: CreateAdviserInput): Promise<Adviser | void>
             user_id: userId,
             dormitory_id: dormitory_id,
             role: role,
+            is_active: true,
         })
         .select()
         .single();
@@ -222,10 +224,8 @@ export async function create(input: CreateAdviserInput): Promise<Adviser | void>
 }
 
 export async function update(input: UpdateAdviserInput): Promise<Adviser | void> {
-    // 1. Extract `id` so it isn't part of `profileInput`
     const { id, dormitory_id, role, ...profileInput } = input;
 
-    // 2. Only update if there are actual profile fields to change
     if (Object.keys(profileInput).length > 0) {
         const { error: profileError } = await supabaseAdmin
             .from("profiles")
@@ -235,7 +235,6 @@ export async function update(input: UpdateAdviserInput): Promise<Adviser | void>
         if (profileError) throw new Error(profileError.message);
     }
 
-    // 3. Only update the role if dormitory_id or role is provided
     if (dormitory_id !== undefined || role !== undefined) {
         const updates: any = {};
         if (dormitory_id !== undefined) updates.dormitory_id = dormitory_id;
@@ -252,7 +251,6 @@ export async function update(input: UpdateAdviserInput): Promise<Adviser | void>
         }
     }
 
-    // 4. Fetch the fully updated adviser object to return
     const updatedAdviser = await getById(id);
     if (!updatedAdviser) {
         throw new Error("Failed to retrieve updated adviser");
