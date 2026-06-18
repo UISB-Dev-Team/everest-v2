@@ -15,7 +15,7 @@ import type { Adviser } from "@/features/advisers/data";
 interface DeleteAdviserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDelete: (roleId: string) => Promise<void> | void;
+  onDelete: (id: string) => Promise<void> | void;
   adviser: Adviser | null;
 }
 
@@ -55,7 +55,7 @@ export default function DeleteAdviserModal({
           <Button
             variant="destructive"
             onClick={async () => {
-              await onDelete(adviser.role_id);
+              await onDelete(adviser.id);
               onClose();
             }}
             size="sm"
