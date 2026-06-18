@@ -1,4 +1,7 @@
+"use server";
+
 import { createClient } from "@/lib/supabase/client";
+import supabaseAdmin from "@/lib/supabase/admin";
 import type { Adviser, CreateAdviserInput, UpdateAdviserInput } from "./types";
 
 const supabase = createClient()
@@ -150,7 +153,72 @@ export async function getById(id: string): Promise<Adviser | null> {
 }
 
 export async function create(input: CreateAdviserInput): Promise<Adviser | void> {
-    // TO DO for Norman   
+    const { dormitory_id, role, ...profileInput } = input;
+
+    if (!dormitory_id) throw new Error("dormitory_id is required.");
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: profileInput.email,
+        password: "DefaultPassword123!",
+        email_confirm: true,
+        user_metadata: {
+            first_name: profileInput.first_name,
+            last_name: profileInput.last_name,
+            full_name: `${profileInput.first_name} ${profileInput.last_name}`,
+            role: role,
+            dormitory_id: dormitory_id,
+        },
+    });
+
+    if (authError || !authData.user) {
+        console.error("Error creating auth user:", authError);
+        throw authError;
+    }
+
+    const userId = authData.user.id;
+
+    const { data: profile, error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .upsert({
+            ...profileInput,
+            id: userId,
+        })
+        .select()
+        .single();
+
+    if (profileError) {
+        console.error("Error creating profile:", profileError);
+        throw profileError;
+    }
+
+    const { data: newRole, error: roleError } = await supabaseAdmin
+        .from("dormitory_roles")
+        .insert({
+            user_id: userId,
+            dormitory_id: dormitory_id,
+            role: role,
+        })
+        .select()
+        .single();
+
+    if (roleError) {
+        console.error("Error creating role:", roleError);
+        throw roleError;
+    }
+
+    const { data: dorm } = await supabaseAdmin
+        .from("dormitories")
+        .select("name")
+        .eq("id", dormitory_id)
+        .single();
+
+    return {
+        ...profile,
+        role_id: newRole.id,
+        role: role,
+        dormitory_id: dormitory_id,
+        dormitory_name: dorm?.name ?? null,
+    } as Adviser;
 }
 
 export async function update(input: UpdateAdviserInput): Promise<Adviser | void> {
