@@ -262,5 +262,31 @@ export async function update(input: UpdateAdviserInput): Promise<Adviser | void>
 }
 
 export async function remove(id: string): Promise<void> {
-    // TO DO for Norman   
+    try {
+        const { error: roleError } = await supabaseAdmin
+            .from("dormitory_roles")
+            .update({ is_active: false })
+            .eq("user_id", id);
+
+        if (roleError) {
+            console.error("Error removing adviser role:", roleError);
+            throw new Error(roleError.message);
+        }
+
+        const { error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .update({ is_active: false })
+            .eq("id", id);
+
+        if (profileError) {
+            console.error("Error removing adviser profile:", profileError);
+            throw new Error(profileError.message);
+        }
+        await supabaseAdmin.auth.admin.updateUserById(id, {
+            ban_duration: "876000h"
+        })
+    } catch (e) {
+        console.error("Failed to remove adviser", e);
+        throw e;
+    }
 }
