@@ -222,7 +222,43 @@ export async function create(input: CreateAdviserInput): Promise<Adviser | void>
 }
 
 export async function update(input: UpdateAdviserInput): Promise<Adviser | void> {
-    // TO DO for Norman   
+    // 1. Extract `id` so it isn't part of `profileInput`
+    const { id, dormitory_id, role, ...profileInput } = input;
+
+    // 2. Only update if there are actual profile fields to change
+    if (Object.keys(profileInput).length > 0) {
+        const { error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .update(profileInput)
+            .eq("id", id);
+
+        if (profileError) throw new Error(profileError.message);
+    }
+
+    // 3. Only update the role if dormitory_id or role is provided
+    if (dormitory_id !== undefined || role !== undefined) {
+        const updates: any = {};
+        if (dormitory_id !== undefined) updates.dormitory_id = dormitory_id;
+        if (role !== undefined) updates.role = role;
+
+        const { error: roleError } = await supabaseAdmin
+            .from("dormitory_roles")
+            .update(updates)
+            .eq("user_id", id);
+
+        if (roleError) {
+            console.error("Error updating role:", roleError);
+            throw roleError;
+        }
+    }
+
+    // 4. Fetch the fully updated adviser object to return
+    const updatedAdviser = await getById(id);
+    if (!updatedAdviser) {
+        throw new Error("Failed to retrieve updated adviser");
+    }
+
+    return updatedAdviser;
 }
 
 export async function remove(id: string): Promise<void> {
