@@ -38,10 +38,10 @@ export function useAdvisersActions() {
     }
   };
 
-  const removeAdviser = async (roleId: string) => {
+  const removeAdviser = async (id: string) => {
     setIsSubmitting(true);
     try {
-      await advisersData.remove(roleId);
+      await advisersData.remove(id);
       toast.success("Adviser removed.");
     } catch (e) {
       console.error(e);
