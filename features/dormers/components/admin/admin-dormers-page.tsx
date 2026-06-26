@@ -55,6 +55,7 @@ export function AdminDormersPage() {
     setDormers,
     bills,
     setBills,
+    billingPeriods,
     loading,
     paginatedDormers,
     filteredDormers,
@@ -429,7 +430,7 @@ export function AdminDormersPage() {
         onImport={handleImportBills}
         isSubmitting={isImportingBills}
         payables={payables}
-        billingPeriods={BILLING_PERIODS}
+        billingPeriods={billingPeriods}
         dormers={dormers}
       />
 

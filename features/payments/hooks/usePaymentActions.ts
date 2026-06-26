@@ -51,7 +51,7 @@ export function usePaymentActions() {
           dormer?.first_name! + " " + dormer?.last_name!,
           getBillingPeriodLabel(input.billing_month),
           newRemaining,
-          input.amount_paid,
+          input.amount,
           newStatus,
         )
       });
@@ -84,7 +84,7 @@ export function usePaymentActions() {
           user?.id ?? "",
         );
       }
-      
+
       toast.loading("Payments recorded! Sending bulk confirmation email...", { id: toastId });
 
       const totalAmountDue = bills.reduce((sum, b) => sum + b.total_amount_due, 0);
@@ -113,7 +113,7 @@ export function usePaymentActions() {
           }
         ),
       });
-      
+
       toast.success("All payments recorded and confirmation email sent!", { id: toastId });
     } catch (e) {
       console.error(e);

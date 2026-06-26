@@ -84,7 +84,7 @@ export default function AddEditAdviserModal({
       });
     } else if (adviser) {
       await onUpdate({
-        id: adviser.role_id,
+        id: adviser.id,
         first_name: firstName,
         last_name: lastName,
         email,
