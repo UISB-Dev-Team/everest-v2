@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import type { CreateDormitoryInput, Dormitory, DormitoryWithStats, UpdateDormitoryInput } from "./types";
+import type {
+  CreateDormitoryInput,
+  Dormitory,
+  DormitoryWithStats,
+  UpdateDormitoryInput,
+} from "./types";
 
 const supabase = createClient();
 
@@ -58,22 +63,40 @@ export async function listWithStats(): Promise<DormitoryWithStats[]> {
         occupancy_percentage,
         adviser_full_name,
       };
-    })
+    }),
   );
 }
 
 export async function getById(id: string): Promise<Dormitory | null> {
-//   TODO For Gian
+  //   TODO For Gian
+  const { data: dormitory, error } = await supabase
+    .from("dormitories")
+    .select("*")
+    .eq("id", id)
+    .eq("is_deleted", false)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching dormitory ${id}:`, error);
+    return null;
+  }
+
+  return dormitory;
+}
+export async function create(
+  input: CreateDormitoryInput,
+): Promise<Dormitory | null> {
+  //   TODO For Gian
+
   return null;
 }
-export async function create(input: CreateDormitoryInput): Promise<Dormitory | null> {
-//   TODO For Gian
+export async function update(
+  id: string,
+  input: UpdateDormitoryInput,
+): Promise<Dormitory | null> {
+  //   TODO For Gian
   return null;
-}
-export async function update(id: string, input: UpdateDormitoryInput): Promise<Dormitory | null> {
-//   TODO For Gian
- return null;
 }
 export async function remove(id: string): Promise<void> {
-//   TODO For Gian
+  //   TODO For Gian
 }
