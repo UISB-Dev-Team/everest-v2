@@ -87,8 +87,17 @@ export async function create(
   input: CreateDormitoryInput,
 ): Promise<Dormitory | null> {
   //   TODO For Gian
+  const { data: dormitory, error } = await supabase
+    .from("dormitories")
+    .insert([input])
+    .select()
+    .single();
 
-  return null;
+  if (error) {
+    console.error("Error creating dormitory:", error);
+    throw error;
+  }
+  return dormitory;
 }
 export async function update(
   id: string,
