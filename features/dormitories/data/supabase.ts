@@ -94,7 +94,7 @@ export async function create(
     .single();
 
   if (error) {
-    console.error("Error creating dormitory:", error);
+    console.error(`Error creating dormitory:`, error);
     throw error;
   }
   return dormitory;
@@ -104,7 +104,19 @@ export async function update(
   input: UpdateDormitoryInput,
 ): Promise<Dormitory | null> {
   //   TODO For Gian
-  return null;
+  const { data: dormitory, error } = await supabase
+    .from("dormitories")
+    .update(input)
+    .eq("id", id)
+    .eq("is_deleted", false)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Error updating dormitory ${id}:`, error);
+    throw error;
+  }
+  return dormitory;
 }
 export async function remove(id: string): Promise<void> {
   //   TODO For Gian
