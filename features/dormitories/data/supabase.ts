@@ -68,7 +68,6 @@ export async function listWithStats(): Promise<DormitoryWithStats[]> {
 }
 
 export async function getById(id: string): Promise<Dormitory | null> {
-  //   TODO For Gian
   const { data: dormitory, error } = await supabase
     .from("dormitories")
     .select("*")
@@ -86,7 +85,6 @@ export async function getById(id: string): Promise<Dormitory | null> {
 export async function create(
   input: CreateDormitoryInput,
 ): Promise<Dormitory | null> {
-  //   TODO For Gian
   const { data: dormitory, error } = await supabase
     .from("dormitories")
     .insert([input])
@@ -103,7 +101,6 @@ export async function update(
   id: string,
   input: UpdateDormitoryInput,
 ): Promise<Dormitory | null> {
-  //   TODO For Gian
   const { data: dormitory, error } = await supabase
     .from("dormitories")
     .update(input)
@@ -119,5 +116,13 @@ export async function update(
   return dormitory;
 }
 export async function remove(id: string): Promise<void> {
-  //   TODO For Gian
+  const { error } = await supabase
+    .from("dormitories")
+    .update({ is_deleted: true })
+    .eq("id", id);
+
+  if (error) {
+    console.error(`Error removing dormitory ${id}:`, error);
+    throw error;
+  }
 }
