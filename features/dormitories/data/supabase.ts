@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
-import type { CreateDormitoryInput, Dormitory, DormitoryWithStats, UpdateDormitoryInput } from "./types";
+import type {
+  CreateDormitoryInput,
+  Dormitory,
+  DormitoryWithStats,
+  UpdateDormitoryInput,
+} from "./types";
 
 const supabase = createClient();
 
@@ -58,22 +63,66 @@ export async function listWithStats(): Promise<DormitoryWithStats[]> {
         occupancy_percentage,
         adviser_full_name,
       };
-    })
+    }),
   );
 }
 
 export async function getById(id: string): Promise<Dormitory | null> {
-//   TODO For Gian
-  return null;
+  const { data: dormitory, error } = await supabase
+    .from("dormitories")
+    .select("*")
+    .eq("id", id)
+    .eq("is_deleted", false)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching dormitory ${id}:`, error);
+    return null;
+  }
+
+  return dormitory;
 }
-export async function create(input: CreateDormitoryInput): Promise<Dormitory | null> {
-//   TODO For Gian
-  return null;
+export async function create(
+  input: CreateDormitoryInput,
+): Promise<Dormitory | null> {
+  const { data: dormitory, error } = await supabase
+    .from("dormitories")
+    .insert([input])
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Error creating dormitory:`, error);
+    throw error;
+  }
+  return dormitory;
 }
-export async function update(id: string, input: UpdateDormitoryInput): Promise<Dormitory | null> {
-//   TODO For Gian
- return null;
+export async function update(
+  id: string,
+  input: UpdateDormitoryInput,
+): Promise<Dormitory | null> {
+  const { data: dormitory, error } = await supabase
+    .from("dormitories")
+    .update(input)
+    .eq("id", id)
+    .eq("is_deleted", false)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Error updating dormitory ${id}:`, error);
+    throw error;
+  }
+  return dormitory;
 }
 export async function remove(id: string): Promise<void> {
-//   TODO For Gian
+  const { error } = await supabase
+    .from("dormitories")
+    .update({ is_deleted: true })
+    .eq("id", id);
+
+  if (error) {
+    console.error(`Error removing dormitory ${id}:`, error);
+    throw error;
+  }
 }
