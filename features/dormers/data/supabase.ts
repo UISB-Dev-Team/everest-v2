@@ -134,6 +134,17 @@ export async function getDormerByEmail(email: string) : Promise<Profile | null> 
   return data ?? null
 }
 
+export async function getProfilesByEmails(emails: string[]): Promise<Profile[]> {
+  if (emails.length === 0) return [];
+  const normalized = emails.map((e) => e.toLowerCase().trim());
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, first_name, last_name")
+    .in("email", normalized);
+  if (error) throw error;
+  return (data ?? []) as unknown as Profile[];
+}
+
 export async function getDormerBills(dormerId: string, academicPeriodId: string): Promise<Bill[]> {
   const { data, error } = await supabase
     .from("bills")
@@ -281,7 +292,7 @@ export async function listForDormitoryWithBills(
 }
 
 async function getCurrentAcademicPeriodId(): Promise<string> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("academic_periods")
     .select("id")
     .eq("is_current", true)
@@ -378,7 +389,7 @@ export async function create(input: CreateDormerInput, password: string) {
 
   const userId = authData.user.id;
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
     .upsert({
       ...profileInput,
@@ -395,7 +406,7 @@ export async function create(input: CreateDormerInput, password: string) {
     throw new Error("No active academic period found. Please set a current academic period before enrolling a dormer.");
   }
 
-  const { error: enrollmentError } = await supabase
+  const { error: enrollmentError } = await supabaseAdmin
     .from("dormitory_enrollment")
     .insert({
       dormer_id: userId,
@@ -407,7 +418,7 @@ export async function create(input: CreateDormerInput, password: string) {
 
   if (enrollmentError) throw enrollmentError;
 
-  const { error: roleError } = await supabase
+  const { error: roleError } = await supabaseAdmin
     .from("dormitory_roles")
     .insert({
       user_id: userId,
@@ -518,6 +529,10 @@ export async function remove(id: string): Promise<void> {
       .eq("dormer_id", id)
       .or("is_deleted.eq.false,is_deleted.is.null")
       .eq("academic_period_id", periodId);
+
+    await supabaseAdmin.auth.admin.updateUserById(id, {
+      ban_duration: "876000h"
+    })
 
     if (billsError) throw new Error(billsError.message);
   } catch (e) {

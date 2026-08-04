@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   Adviser,
   CreateAdviserInput,
@@ -9,12 +9,12 @@ export interface AdvisersDataAccess {
   list(): Promise<Adviser[]>;
   listForDormitory(dormitoryId: string): Promise<Adviser[]>;
   getById(id: string): Promise<Adviser | null>;
-  create(input: CreateAdviserInput): Promise<Adviser>;
-  update(input: UpdateAdviserInput): Promise<Adviser>;
+  create(input: CreateAdviserInput): Promise<Adviser | void>;
+  update(input: UpdateAdviserInput): Promise<Adviser | void>;
   remove(id: string): Promise<void>;
 }
 
-export const advisersData: AdvisersDataAccess = mock;
+export const advisersData: AdvisersDataAccess = supabase;
 
 export type {
   Adviser,

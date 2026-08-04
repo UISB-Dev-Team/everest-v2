@@ -109,9 +109,6 @@ export default function DormerExpensesTable({
                     <TableHead className="hidden lg:table-cell font-semibold text-[#12372A] text-xs uppercase tracking-wide">
                       Recorded By
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-[#12372A] text-xs uppercase tracking-wide">
-                      Action
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -195,17 +192,6 @@ export default function DormerExpensesTable({
                               </div>
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-right w-[140px]">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onViewDetails(expense)}
-                            className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all font-medium whitespace-nowrap"
-                          >
-                            <Eye className="h-4 w-4 mr-1" /> View Details
-                          </Button>
-                          
                         </TableCell>
                       </TableRow>
                     );

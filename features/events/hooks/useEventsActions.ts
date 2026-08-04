@@ -191,7 +191,7 @@ export function useEventsActions() {
     setIsSubmitting(true);
     try {
       const [dormers, event] = await Promise.all([
-        eventsData.listDormersForEvent(eventId, academicPeriod?.id!),
+        eventsData.listDormersForEvent(eventId, academicPeriod?.id!, dormitoryId!),
         eventsData.getById(eventId),
       ]);
 

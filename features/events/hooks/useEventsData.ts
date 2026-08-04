@@ -43,7 +43,7 @@ export function useEventsData() {
       const paymentMap: Record<string, EventPayment[]> = {};
       await Promise.all(
         eventList.map(async (event) => {
-          const payments = await eventsData.listPaymentsForEvent(event.id, academicPeriod?.id ?? "");
+          const payments = await eventsData.listPaymentsForEvent(event.id, academicPeriod?.id ?? "", dormitoryId);
           paymentMap[event.id] = payments;
         })
       );
@@ -71,7 +71,7 @@ export function useEventsData() {
       const paymentMap: Record<string, EventPayment[]> = {};
       await Promise.all(
         eventList.map(async (event) => {
-          const payments = await eventsData.listPaymentsForEvent(event.id, academicPeriod?.id ?? "");
+          const payments = await eventsData.listPaymentsForEvent(event.id, academicPeriod?.id ?? "", dormitoryId);
           paymentMap[event.id] = payments;
         })
       );

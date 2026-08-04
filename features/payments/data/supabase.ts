@@ -62,6 +62,33 @@ export async function findExistingBill(dormerId: string, billingMonth: string, r
     }
 }
 
+/**
+ * Fetches all existing bills for the given dormers + charge in one query.
+ * Used by bulk import to detect duplicates/paid bills without N round-trips.
+ */
+export async function findExistingBillsBatch(
+  dormerIds: string[],
+  regularChargeId: string
+): Promise<{ id: string; dormer_id: string; billing_month: string; status: string }[]> {
+  if (dormerIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("bills")
+    .select("id, dormer_id, billing_month, status")
+    .in("dormer_id", dormerIds)
+    .eq("regular_charge_id", regularChargeId)
+    .or("is_deleted.eq.false,is_deleted.is.null");
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Inserts multiple bills in a single network call. */
+export async function createBillsBatch(inputs: CreateBillInput[]): Promise<Bill[]> {
+  if (inputs.length === 0) return [];
+  const { data, error } = await supabase.from("bills").insert(inputs).select();
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function listBillsForDormer(dormerId: string, academicPeriodId: string): Promise<Bill[]> {
     try{
         const { data, error } = await supabase.from("bills").select("*")

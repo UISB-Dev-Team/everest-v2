@@ -17,8 +17,8 @@ export interface EventsDataAccess {
   update(id: string, input: UpdateEventInput): Promise<Event>;
   remove(id: string): Promise<void>;
 
-  listPaymentsForEvent(eventId: string, academicPeriodId: string): Promise<EventPaymentWithRecorder[]>;
-  listDormersForEvent(eventId: string, academicPeriodId: string): Promise<EventDormerData[]>;
+  listPaymentsForEvent(eventId: string, academicPeriodId: string, dormitoryId: string): Promise<EventPaymentWithRecorder[]>;
+  listDormersForEvent(eventId: string, academicPeriodId: string, dormitoryId: string): Promise<EventDormerData[]>;
   recordEventPayment(input: CreateEventPaymentInput): Promise<EventPayment>;
 
   listAllEventPayables(dormitoryId: string, academicPeriodId: string): Promise<EventPayable[]>;

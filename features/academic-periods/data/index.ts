@@ -1,4 +1,4 @@
-import * as mock from "./mock";
+import * as supabase from "./supabase";
 import type {
   AcademicPeriod,
   CreateAcademicPeriodInput,
@@ -12,9 +12,10 @@ export interface AcademicPeriodsDataAccess {
   create(input: CreateAcademicPeriodInput): Promise<AcademicPeriod>;
   update(id: string, input: UpdateAcademicPeriodInput): Promise<AcademicPeriod>;
   setCurrent(id: string): Promise<AcademicPeriod>;
+  remove(id: string): Promise<void>;
 }
 
-export const academicPeriodsData: AcademicPeriodsDataAccess = mock;
+export const academicPeriodsData: AcademicPeriodsDataAccess = supabase;
 
 export type {
   AcademicPeriod,

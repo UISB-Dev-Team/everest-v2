@@ -96,6 +96,13 @@ export function DormerClearancePage() {
                 tone={status.unpaidFinesCount === 0 ? "positive" : "danger"}
               />
               <SummaryTile
+                label="Unpaid Events"
+                value={`${status.unpaidEventsCount} (${formatAmount(
+                  status.unpaidEventsTotal
+                )})`}
+                tone={status.unpaidEventsCount === 0 ? "positive" : "danger"}
+              />
+              <SummaryTile
                 label="Outstanding Total"
                 value={`${formatAmount(status.outstandingTotal)}`}
                 tone={status.outstandingTotal === 0 ? "positive" : "danger"}

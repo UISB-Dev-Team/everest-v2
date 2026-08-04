@@ -70,13 +70,15 @@ export async function remove(id: string): Promise<void> {
 
 export async function listPaymentsForEvent(
   eventId: string,
-  academicPeriodId: string
+  academicPeriodId: string,
+  dormitoryId: string
 ): Promise<EventPaymentWithRecorder[]> {
   const { data, error } = await supabase
     .from("event_payments")
     .select("*, profiles!event_payments_recorded_by_fkey(*)")
     .eq("event_id", eventId)
     .eq("academic_period_id", academicPeriodId)
+    .eq("dormitory_id", dormitoryId)
     .eq("is_deleted", false);
   if (error) throw error;
 
@@ -91,14 +93,16 @@ export async function listPaymentsForEvent(
 }
 export async function listDormersForEvent(
   eventId: string,
-  academicPeriodId: string
+  academicPeriodId: string,
+  dormitoryId: string
 ): Promise<EventDormerData[]> {
   // 1. Get all active dormers enrolled in this academic period
   const { data: enrollments, error: enrollmentsError } = await supabase
     .from("dormitory_enrollment")
     .select("*, dormer:profiles!dormitory_enrollment_dormer_id_fkey(*)")
     .eq("academic_period_id", academicPeriodId)
-    .eq("status", "active");
+    .eq("status", "active")
+    .eq("dormitory_id", dormitoryId);
 
   if (enrollmentsError) throw enrollmentsError;
   if (!enrollments) throw new Error("No dormers found");
