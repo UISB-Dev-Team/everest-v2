@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 interface LandingNavProps {
@@ -14,12 +15,14 @@ export function LandingNav({ onSignIn }: LandingNavProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        <div
-          className="w-8 h-8 rounded-xl grid place-items-center font-extrabold text-[#0d2a1f] text-[13px] shrink-0"
-          style={{ background: "linear-gradient(135deg, #a5d6a7, #2e7d32)" }}
-        >
-          DP
-        </div>
+        <Image
+          src="/profile.png"
+          alt="DormPay Logo"
+          width={32}
+          height={32}
+          priority
+          className="w-8 h-8 rounded-xl shrink-0"
+        />
         <strong
           className="text-[#1a2b23] text-[15px] sm:text-[17px]"
           style={{ letterSpacing: "-0.02em" }}

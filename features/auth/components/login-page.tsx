@@ -9,10 +9,10 @@ import { useViewTransition } from "@/features/auth/hooks/useViewTransition";
 
 function LoginFormSkeleton() {
   return (
-    <div
-      className="w-full animate-pulse rounded-[28px] bg-white opacity-80"
-      style={{ maxWidth: 900, height: 540 }}
-    />
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-[1fr_1.15fr] w-full animate-pulse bg-white">
+      <div className="hidden md:block bg-[#12372a]/20 min-h-screen" />
+      <div className="min-h-screen bg-white" />
+    </div>
   );
 }
 
