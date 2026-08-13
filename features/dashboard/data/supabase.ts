@@ -5,6 +5,7 @@ import { listForDormitory as listRegularCharges } from "@/features/regular-charg
 import type { Dormer } from "@/features/dormers/data/types";
 import type { RegularCharge } from "@/features/regular-charges/data/types";
 import { listPaymentsForDormitory, summaryForDormitory } from "@/features/payments/data/supabase";
+import { summaryForDormitory as expensesSummaryForDormitory } from "@/features/expenses/data/supabase";
 import { Bill, PaymentSummary, PaymentWithRecorder } from "@/features/payments/data";
 import { AdminDashboardSnapshot, DormerDashboardSnapshot, SuperAdminDashboardSnapshot } from "./types";
 import { dormersData } from "@/features/dormers/data";
@@ -15,6 +16,7 @@ import { academicPeriodsData } from "@/features/academic-periods/data";
 
 export interface DashboardStats {
   summary: PaymentSummary;
+  expenses: number;
   dormers: Dormer[];
   regularCharges: RegularCharge[];
   recentPayments: PaymentWithRecorder[];
@@ -24,14 +26,15 @@ export async function getDashboardStats(
   dormitoryId: string,
   academicPeriodId: string
 ): Promise<DashboardStats> {
-  const [summary, dormers, regularCharges, recentPayments] = await Promise.all([
+  const [summary, expensesSummary, dormers, regularCharges, recentPayments] = await Promise.all([
     summaryForDormitory(dormitoryId, academicPeriodId),
+    expensesSummaryForDormitory(dormitoryId, academicPeriodId),
     listDormers(dormitoryId, academicPeriodId),
     listRegularCharges(dormitoryId, academicPeriodId),
     listPaymentsForDormitory(dormitoryId, academicPeriodId),
   ]);
 
-  return { summary, dormers, regularCharges, recentPayments };
+  return { summary, expenses: expensesSummary.totalExpenses, dormers, regularCharges, recentPayments };
 }
 
 export async function getDormerSnapshot(dormerId: string, academicPeriodId: string): Promise<DormerDashboardSnapshot> {
@@ -42,14 +45,14 @@ export async function getDormerSnapshot(dormerId: string, academicPeriodId: stri
   const totalFines = dormerFines.reduce((acc, fine) => acc + fine.amount, 0);
   const outstanding = totalBilled - totalPaid;
 
-  return { 
+  return {
     totalBilled,
     totalPaid,
     outstanding,
     totalFines,
     recentBills: dormerBills.slice(0, 5),
     recentFines: dormerFines.slice(0, 5),
-   };
+  };
 }
 
 export async function getAdminSnapshot(dormitoryId: string, academicPeriodId: string): Promise<AdminDashboardSnapshot> {
@@ -73,7 +76,7 @@ export async function getSuperAdminSnapshot(): Promise<SuperAdminDashboardSnapsh
     dormersData.list(),
     academicPeriodsData.getCurrent()
   ]);
-  
+
   return {
     dormitoryCount: dormitories.length,
     dormerCount: dormers.length,
