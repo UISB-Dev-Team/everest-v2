@@ -67,7 +67,7 @@ export function AdminDashboardPage() {
   const [isAddFineOpen, setIsAddFineOpen] = useState(false);
   const [fineToEdit, setFineToEdit] = useState<FineCategory | null>(null);
   const [isSavingFineState, setIsSavingFineState] = useState(false);
-  const [ sendingEmail, setSendingEmail ] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   if (loading) return <DashboardSkeleton />;
 
@@ -82,7 +82,7 @@ export function AdminDashboardPage() {
   const { summary, dormers, recentPayments } = stats;
 
   // ── Derived values ──────────────────────────────────────────────────────────
-  const fundBalance = summary.totalPaid; // total collected
+  const fundBalance = summary.totalPaid - stats.expenses; // total collected minus expenses
   const collectibles = summary.remaining;
   const activeDormers = dormers.length;
 
@@ -131,7 +131,7 @@ export function AdminDashboardPage() {
 
   const handleSavePayable = async (input: any) => {
     setIsSavingPayable(true)
-    await savePayable({id: input.id, name: input.name, amount: input.amount, description: input.description})
+    await savePayable({ id: input.id, name: input.name, amount: input.amount, description: input.description })
     setIsSavingPayable(false)
   }
 
@@ -426,7 +426,7 @@ export function AdminDashboardPage() {
         onClose={() => setIsAddPayableOpen(false)}
         payable={payableToEdit}
         onSave={handleSavePayable}
-      /> 
+      />
 
       <AddFineCategoryModal
         isOpen={isAddFineOpen}
