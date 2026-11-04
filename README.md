@@ -1,238 +1,105 @@
-# DormPay v2 (everest-v2)
+# DormPay v2 (`everest-v2`)
 
-Next.js 16 (App Router) + React 19 + Supabase scaffold for the DormPay rewrite. Every feature is wired against a **mock data layer** so the frontend works end-to-end before the real Supabase queries are written. The lead developer wires real backends after by replacing one line per feature.
+Multi-dormitory financial management, billing, event fee tracking, expense logging, fine management, and semester clearance platform for **Visayas State University (VSU)** dormitories. Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS v4**, and **Supabase (PostgreSQL, Auth, Storage)**.
+
+> **AI Agents & Developers**: Start with [`AGENTS.md`](./AGENTS.md) and the verified documentation in [`docs/ai-context/`](./docs/ai-context/) for architecture, database schema, role permissions, and development workflow.
+
+---
 
 ## Getting Started
 
 ```bash
+# 1. Install dependencies
 npm install
-npm run typecheck   # tsc --noEmit (after `next typegen`)
-npm run build
+
+# 2. Configure .env.local (pointing to the DormPay DEVELOPMENT Supabase project)
+# See docs/ai-context/development-workflow.md for the full environment template.
+
+# 3. Verify route types & TypeScript compilation
+npm run typecheck   # runs `next typegen && tsc --noEmit`
+
+# 4. Start the Next.js 16 Turbopack dev server
 npm run dev         # http://localhost:3000
 ```
 
-Required env vars (already configured in `.env.local`):
+### Required Environment Variables (`.env.local`)
 
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://<dev-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<dev-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<dev-service-role-key>
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=<smtp-user>
+SMTP_PASSWORD=<smtp-app-password>
+SMTP_FROM_EMAIL="DormPay <dormpay@vsu.edu.ph>"
 ```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-```
 
-The mock layer doesn't read these — they're only used once the real Supabase impl ships.
+---
 
-## Routes
+## Routes & Role Access (22 Routes)
 
-The app has three role-based route groups, with **17 routes** total:
+DormPay serves **6 roles** (`dormer`, `adviser`, `sa`, `treasurer`, `auditor`, `super_admin`) across 4 route groups, enforced by [`proxy.ts`](./proxy.ts) on the server and [`AuthGuard`](./features/auth/components/auth-guard.tsx) on the client:
 
-| URL                                | Role                                  |
-| ---------------------------------- | ------------------------------------- |
-| `/login`                           | public                                |
-| `/dashboard` `/payments` `/fines` `/clearance` | `dormer`                  |
-| `/admin/dashboard` `/admin/dormers` `/admin/payments` `/admin/fines` `/admin/expenses` `/admin/events` `/admin/events/[id]` `/admin/clearance` | `adviser \| treasurer \| auditor \| sa` |
-| `/super-admin/dashboard` `/super-admin/dormitories` `/super-admin/advisers` `/super-admin/academic-periods` | `super_admin`                |
+| Route Group | URLs | Allowed Roles |
+| :--- | :--- | :--- |
+| **Public / Auth** | `/login`, `/forgot-password`, `/update-password`, `/auth/callback` | Public / Recovery Session |
+| **Dormer Portal** | `/dashboard`, `/payments`, `/expenses`, `/fines`, `/clearance` | `dormer` |
+| **Admin Portal (Full)** | `/admin/dashboard`, `/admin/dormers`, `/admin/payments`, `/admin/expenses`, `/admin/fines` | `adviser`, `sa` |
+| **Admin Portal (Events & Clearance)** | `/admin/events`, `/admin/events/all-events`, `/admin/events/[id]`, `/admin/clearance` | `adviser`, `sa`, `treasurer`, `auditor` |
+| **Super Admin Portal** | `/super-admin/dashboard`, `/super-admin/academic-periods`, `/super-admin/dormitories`, `/super-admin/advisers`, `/super-admin/accounts` | `super_admin` |
 
-`/` redirects to `/dashboard`.
+`/` redirects to `/dashboard` (which proxies authenticated users to their role's home route defined in [`features/auth/lib/role-home.ts`](./features/auth/lib/role-home.ts)).
 
-### Switching mock roles in dev
+---
 
-The mock auth defaults to a fake `dormer`. Use any of:
+## Architecture & Directory Structure
 
-- The **floating role switcher** in the bottom-right corner of every page (dev only).
-- A query param: `/dashboard?role=adviser` or `?role=super_admin` or `?role=unauthenticated`.
-- A direct call: `authData.setMockRole?.("super_admin")` from your browser devtools after importing the module.
-
-The current mock role persists in `localStorage` under `dormpay.mock.role` so navigation keeps the role.
-
-## Architecture
-
-```
-app/                              # Next.js App Router routes — thin
-  (auth)/login/page.tsx
-  (dormer)/{dashboard,payments,fines,clearance}/page.tsx
-  (admin)/admin/{dashboard,payments,fines,clearance,academic-periods}/page.tsx
-  (super-admin)/super-admin/{dashboard,dormitories}/page.tsx
+```text
+app/                              # Next.js 16 App Router — thin route wrappers & layouts
+  (auth)/{login,forgot-password}/page.tsx
+  (dormer)/{dashboard,payments,expenses,fines,clearance}/page.tsx
+  (admin)/admin/{dashboard,dormers,payments,expenses,events,fines,clearance}/...
+  (super-admin)/super-admin/{dashboard,academic-periods,dormitories,advisers,accounts}/page.tsx
+  auth/callback/route.ts
+  update-password/page.tsx
   layout.tsx
-  page.tsx                        # redirects to /dashboard
+  page.tsx
 
-features/                         # one folder per domain feature
-  auth/
-  dormers/
-  payments/
-  fines/
-  expenses/
-  events/
-  clearance/
-  regular-charges/
-  advisers/
-  dormitories/
-  academic-periods/
-  dashboard/
-  # Each feature has: components/, hooks/, data/{index,mock,types}.ts
-  auth/
-    components/                   # login-form, role-switcher, auth-guard
-    hooks/useAuth.ts
-    data/{index.ts, mock.ts, types.ts}
-  payments/
-  fines/
-  clearance/
-  academic-periods/
-  dashboard/                      # cross-feature aggregate views + sidebars
+features/                         # 13 vertical domain slices
+  academic-periods/               # Semester CRUD, activation, & Zustand global store
+  accounts/                       # Super Admin user directory & ban/unban Server Actions
+  advisers/                       # Adviser provisioning, promotion, & dormitory assignment
+  auth/                           # Login, password recovery, useAuth, & AuthGuard
+  clearance/                      # Semester clearance calculation & certificate issuance
+  dashboard/                      # Role dashboards (Dormer, Admin, Super Admin) & RoleShells
+  dormers/                        # Dormer enrollment, CSV import, room assignment, & bills modal
+  dormitories/                    # Dormitory & room catalog management
+  events/                         # Dormitory events & contribution tracking
+  expenses/                       # Operational expenses & receipt image uploads (Storage)
+  fines/                          # Fine catalog, single/CSV fine impositions, & payments
+  payments/                       # Monthly/bulk bill generation, payment recording, & CSV export
+  regular-charges/                # Recurring dormitory fee templates
 
-components/
-  ui/                             # shadcn primitives (button, card, input, label, badge, skeleton, separator, table)
-  page-transition.tsx
-  loading-screen.tsx
-
-lib/
-  supabase/{client.ts, server.ts, database.types.ts}
-  utils/{cn.ts, format.ts, billing-periods.ts}
-
-mocks/fixtures/                   # JSON fixtures consumed by every feature's mock.ts
-
-emails/                           # plain HTML-string templates (no Firebase, no React)
-  dormers/, fines/
-
-database.types.ts                 # auto-generated by `supabase gen types` — DO NOT EDIT MANUALLY
+components/ui/                    # shadcn/ui primitives + shared composite components (components/ui/shared/)
+emails/                           # 14 HTML string email templates sent via lib/email.ts (Nodemailer)
+lib/                              # Supabase clients, RFC 4180 CSV parser, hooks, formatters
+supabase/migrations/              # PostgreSQL schema migrations
+docs/ai-context/                  # Verified developer & AI-agent documentation
+.agents/skills/                   # Workspace AI coding skills
 ```
 
-## The data-access seam
+---
 
-This is the most important thing in the repo. **Every feature exposes a typed interface; components consume the interface, never the implementation.** Swapping mock → real Supabase is a one-line change.
+## Developer Documentation & AI Context
 
-Pattern (e.g. `features/payments/data/index.ts`):
+Stable context documentation is maintained in [`docs/ai-context/`](./docs/ai-context/):
 
-```ts
-import * as mock from "./mock";
-import type { Bill, Payment, PaymentSummary } from "./types";
-
-export interface PaymentsDataAccess {
-  listForDormer(dormerId: string): Promise<Payment[]>;
-  listBillsForDormer(dormerId: string): Promise<Bill[]>;
-  // ...
-}
-
-// Single switch point.
-export const paymentsData: PaymentsDataAccess = mock;
-```
-
-Components use the hook:
-
-```tsx
-import { useDormerPayments } from "@/features/payments/hooks/usePayments";
-
-function BillsPage() {
-  const { user } = useAuth();
-  const { bills, summary, loading } = useDormerPayments(user?.id ?? null);
-  // ...
-}
-```
-
-The hook reads from `paymentsData`, not from `mock` directly.
-
-### Worked example — swapping `payments` to real Supabase
-
-1. Write the real impl alongside `mock.ts`:
-
-   ```
-   features/payments/data/supabase.ts
-   ```
-
-   Implementing every method of `PaymentsDataAccess` against `createClient()` from `@/lib/supabase/client` (or `@/lib/supabase/server` for server components):
-
-   ```ts
-   // features/payments/data/supabase.ts
-   import { createClient } from "@/lib/supabase/client";
-   import type {
-     Bill,
-     CreatePaymentInput,
-     Payment,
-     PaymentSummary,
-   } from "./types";
-
-   const supabase = createClient();
-
-   export async function listForDormer(dormerId: string): Promise<Payment[]> {
-     const { data, error } = await supabase
-       .from("payments")
-       .select("*")
-       .eq("dormer_id", dormerId);
-     if (error) throw error;
-     return data;
-   }
-   // ...etc, one method per interface entry
-   ```
-
-2. Flip the switch in `features/payments/data/index.ts`:
-
-   ```diff
-   - import * as mock from "./mock";
-   - export const paymentsData: PaymentsDataAccess = mock;
-   + import * as supabase from "./supabase";
-   + export const paymentsData: PaymentsDataAccess = supabase;
-   ```
-
-That's it. Every component, hook, and page that uses `paymentsData` is now hitting the real DB. Do the same for each feature in `features/<name>/data/index.ts`.
-
-For staged rollouts you can branch by env:
-
-```ts
-import * as mock from "./mock";
-import * as supabase from "./supabase";
-
-export const paymentsData: PaymentsDataAccess =
-  process.env.NEXT_PUBLIC_USE_MOCK === "true" ? mock : supabase;
-```
-
-## Auth
-
-`features/auth/hooks/useAuth.ts` returns `{ user, session, loading, isAuthenticated, signIn, signOut }`. It's backed by `useSyncExternalStore` so it's SSR-safe.
-
-The shape is derived from Supabase, **not** Firebase:
-
-```ts
-interface AuthUser {
-  id: string;          // Supabase user.id (NOT user.uid)
-  email: string;
-  fullName: string;
-  role: "dormer" | "adviser" | "treasurer" | "auditor" | "sa" | "super_admin";
-  dormitoryId: string | null;
-  avatarUrl: string | null;
-}
-```
-
-The lead wires real auth by writing `features/auth/data/supabase.ts` and flipping the export in `features/auth/data/index.ts` — exactly like the payments example above. The `subscribe`/`getSnapshot` shape maps directly onto Supabase's `onAuthStateChange` listener.
-
-`features/auth/components/auth-guard.tsx` wraps each protected route group's layout and redirects unauthorized users.
-
-## What is NOT in here
-
-- No Firebase. No `firestore`, `getAuth`, `onSnapshot`, `onAuthStateChanged`, `user.uid`. Run a grep — zero hits.
-- No real Supabase queries yet (per scaffolding spec). The `lib/supabase/{client,server}.ts` clients are configured but unused.
-- No `events`, `expenses`, `dormers` admin features yet (deferred — old repo had them, new spec doesn't).
-- No middleware/proxy yet.
-- No tests. Add Vitest/Playwright when wiring real backends.
-
-## Component conventions
-
-- **Components are presentational.** They take props and render. They don't fetch.
-- **Hooks fetch.** A `useFooData()` hook calls `fooData.method()`, manages loading/error state, returns a plain object.
-- **Pages compose.** A `page.tsx` calls a hook, hands the result to a presentational component.
-- If a component needs to fetch, **lift the fetch into a hook** in the same feature.
-
-## Conventions, gotchas
-
-- **Next 16 async APIs**: `params` and `searchParams` in pages/layouts are `Promise<...>`. Use the global `PageProps<"/route">` / `LayoutProps<"/route">` helpers (auto-generated by `next typegen`).
-- **`tsc` needs typegen first.** `npm run typecheck` runs `next typegen && tsc --noEmit` together; running `tsc` alone before any build will miss the generated types.
-- **Don't edit `database.types.ts` by hand.** Regenerate from Supabase: `npx supabase gen types typescript --linked > database.types.ts`.
-- **Brand color**: `var(--brand)` (`#12372a`) and `var(--brand-hover)` (`#1c4f3d`). Defined in `app/globals.css`. Use the `Button` `variant="brand"` for primary actions.
-- **Turbopack is the default** in Next 16 for both `dev` and `build`. No flag needed.
-
-## Acceptance state
-
-- ✅ Zero Firebase deps in `package.json` / lockfile.
-- ✅ `npm run typecheck` passes (zero errors).
-- ✅ `npm run build` passes (zero errors, zero env-var warnings).
-- ✅ Every route renders 200 from the dev server with mock data.
-- ✅ Every feature has `data/index.ts` + `data/mock.ts` + `data/types.ts`.
-- ✅ No component imports `mock.ts` directly — only `data/index.ts` does.
-- ✅ Grep for `firebase`, `firestore`, `getAuth`, `onSnapshot`, `onAuthStateChanged`, `user.uid` — zero hits.
+- [`project-overview.md`](./docs/ai-context/project-overview.md) — Purpose, role hierarchy, domain model, and system boundaries.
+- [`architecture.md`](./docs/ai-context/architecture.md) — Component communication, vertical slice boundaries, client vs. server adapters, and auth flows.
+- [`codebase-context.md`](./docs/ai-context/codebase-context.md) — Route map, feature module anatomy, shared components, and file lookup table.
+- [`technical-context.md`](./docs/ai-context/technical-context.md) — Framework versions, Next.js 16 conventions, Supabase clients, SMTP email, and CSV engine.
+- [`functional-context.md`](./docs/ai-context/functional-context.md) — Workflows and business rules for all 13 feature modules.
+- [`development-workflow.md`](./docs/ai-context/development-workflow.md) — Local setup, `.env.local`, verification commands, and troubleshooting.
+- [`database-context.md`](./docs/ai-context/database-context.md) — All 15 database tables, 7 enums, 6 functions, 5 triggers, RLS policies, and migration conventions.
